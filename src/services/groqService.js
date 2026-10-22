@@ -54,27 +54,49 @@ export async function askGroqChatbot(messages, customApiKey = '') {
       ...messages.slice(-8) // Keep last 8 turns for context window efficiency
     ];
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: formattedMessages,
-        temperature: 0.4,
-        max_tokens: 600
-      })
-    });
+    // List of widely supported free Groq models in priority order
+    const candidateModels = ['llama-3.1-8b-instant', 'llama3-8b-8192', 'mixtral-8x7b-32768'];
+    let lastError = null;
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err?.error?.message || 'Groq API request failed');
+    for (const modelName of candidateModels) {
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: formattedMessages,
+            temperature: 0.4,
+            max_tokens: 600
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices[0]?.message?.content;
+          if (content) return content;
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          lastError = errData?.error?.message || `HTTP ${response.status}`;
+          // If model doesn't exist, loop to next candidate model
+          if (lastError.includes('model') || lastError.includes('does not exist')) {
+            continue;
+          } else {
+            throw new Error(lastError);
+          }
+        }
+      } catch (e) {
+        lastError = e.message;
+        if (!e.message.includes('model') && !e.message.includes('does not exist')) {
+          throw e;
+        }
+      }
     }
 
-    const data = await response.json();
-    return data.choices[0]?.message?.content || "I apologize, but I could not formulate a response. Please reach out to our concierge at +91 86199 28710.";
+    throw new Error(lastError || 'Groq API request failed');
   } catch (error) {
     console.error('Groq Chatbot Error:', error);
     // If the API call fails (rate limit or network), fallback gracefully to offline intelligence
