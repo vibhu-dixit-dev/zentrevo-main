@@ -136,11 +136,6 @@ export default function ChatbotWidget({ currentTheme }) {
           aria-label="Open Zentrevo AI Concierge"
           title={`Chat with ${persona.name}`}
         >
-          {/* Subtle Radar Halo */}
-          <span className={`absolute -inset-1 rounded-full animate-ping opacity-30 ${
-            isSapphire ? 'bg-amber-400' : isEmerald ? 'bg-emerald-400' : 'bg-stone-400'
-          }`} />
-
           {/* Theme-Adaptive Icon */}
           <IconComponent className="w-6 h-6 transition-transform group-hover:rotate-12 duration-300 relative z-10" />
 
@@ -151,7 +146,7 @@ export default function ChatbotWidget({ currentTheme }) {
 
       {/* Floating Chat Modal */}
       {isOpen && (
-        <div className={`w-[92vw] sm:w-[420px] h-[580px] rounded-3xl shadow-2xl border flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 ${
+        <div className={`w-[92vw] sm:w-[390px] h-[460px] max-h-[72vh] rounded-3xl shadow-2xl border flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 ${
           isSapphire
             ? 'bg-[#060d1c] border-amber-500/35 text-stone-100 shadow-blue-950/80'
             : isEmerald

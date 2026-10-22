@@ -29,9 +29,6 @@ export default function WhatsAppWidget() {
         className="group relative w-13 h-13 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer shadow-emerald-950/40"
         aria-label="Connect on WhatsApp with Zentrevo Concierge"
       >
-        {/* Pulsing Green Radar Ping */}
-        <span className="absolute -inset-1 rounded-full bg-[#25D366]/40 animate-ping pointer-events-none" />
-
         {/* Authentic WhatsApp Icon SVG */}
         <svg
           className="w-7 h-7 fill-white relative z-10 transition-transform group-hover:rotate-12 duration-300"
