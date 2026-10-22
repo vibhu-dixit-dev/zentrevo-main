@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail } from 'lucide-react';
+import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight } from 'lucide-react';
 
 export default function BookingInquirySection({ currentTheme }) {
   const isEmerald = currentTheme === 'emerald';
@@ -96,6 +96,31 @@ export default function BookingInquirySection({ currentTheme }) {
                     <span className="text-[10px] uppercase font-semibold text-stone-400 block">Official Support Email</span>
                     <span className="text-sm font-semibold tracking-wide">zentrevo.official@outlook.com</span>
                   </div>
+                </a>
+
+                {/* Instant WhatsApp Priority Chat */}
+                <a 
+                  href="https://wa.me/918619928710?text=Hello%20Zentrevo%20Concierge%2C%20I%20am%20visiting%20your%20website%20and%20would%20like%20to%20inquire%20about%20curating%20a%20custom%20luxury%20itinerary.%20Could%20you%20please%20share%20more%20details%3F"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`p-4 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] ${
+                    isSapphire
+                      ? 'bg-[#081226]/80 border-emerald-500/40 text-white hover:border-emerald-400'
+                      : isEmerald
+                        ? 'bg-emerald-950/60 border-emerald-600/50 text-white hover:border-emerald-400'
+                        : 'bg-emerald-50/60 border-emerald-200 text-stone-900 hover:border-emerald-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-md">
+                      <MessageCircle className="w-5 h-5 fill-current" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-emerald-500 block">Fastest Direct Route</span>
+                      <span className="text-sm font-bold tracking-wide">Instant WhatsApp Chat</span>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-emerald-500" />
                 </a>
 
                 {/* Consultation Hours */}
