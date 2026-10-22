@@ -8,16 +8,16 @@ import VideoStorySection from './components/VideoStorySection';
 import BookingInquirySection from './components/BookingInquirySection';
 import DetailModal from './components/DetailModal';
 import Footer from './components/Footer';
-import { Compass } from 'lucide-react';
+import { Compass, Crown } from 'lucide-react';
 
 export default function App() {
-  // Theme State: Defaulted to 'editorial' (Travelio & Travel Editorial Mono) as requested
+  // Theme State: 'editorial' (Default) | 'sapphire' (Royal Sapphire & Gold) | 'emerald' (Emerald Luxe)
   const [currentTheme, setCurrentTheme] = useState('editorial');
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const toggleTheme = () => {
-    setCurrentTheme((prev) => (prev === 'editorial' ? 'emerald' : 'editorial'));
+  const handleSelectTheme = (themeName) => {
+    setCurrentTheme(themeName);
   };
 
   const handleOpenDestination = (destination) => {
@@ -38,52 +38,56 @@ export default function App() {
   };
 
   const isEmerald = currentTheme === 'emerald';
+  const isSapphire = currentTheme === 'sapphire';
+  const isEditorial = currentTheme === 'editorial';
 
   return (
     <div 
       className={`min-h-screen transition-colors duration-500 font-sans-clean ${
-        isEmerald 
-          ? 'bg-[#061813] text-stone-100' 
-          : 'bg-[#faf9f6] text-stone-900'
+        isSapphire
+          ? 'bg-[#050a16] text-stone-100'
+          : isEmerald 
+            ? 'bg-[#061813] text-stone-100' 
+            : 'bg-[#faf9f6] text-stone-900'
       }`}
     >
       {/* Main Navigation */}
       <Navbar 
         currentTheme={currentTheme}
-        onToggleTheme={toggleTheme}
+        onSelectTheme={handleSelectTheme}
         onOpenInquiry={handleScrollToInquiry}
       />
 
-      {/* Hero Section (incorporates Template 1, 2, and 3) */}
+      {/* Hero Section */}
       <HeroSection 
         currentTheme={currentTheme}
         onSelectDestination={handleOpenDestination}
         onOpenInquiry={handleScrollToInquiry}
       />
 
-      {/* Statistics & Partner Credibility Bar (Template 2) */}
+      {/* Statistics & Partner Credibility Bar */}
       <StatsBar 
         currentTheme={currentTheme} 
       />
 
-      {/* Curated Destinations Grid (Template 1 & 2) */}
+      {/* Curated Destinations Grid */}
       <DestinationsGrid 
         currentTheme={currentTheme}
         onSelectDestination={handleOpenDestination}
       />
 
-      {/* Experience & Core Beliefs Split Section (Template 1 & 2) */}
+      {/* Experience & Core Beliefs Split Section */}
       <ExperienceSplit 
         currentTheme={currentTheme}
         onOpenInquiry={handleScrollToInquiry}
       />
 
-      {/* Video Story Showcase, Testimonials & Journal (Template 1 & 2) */}
+      {/* Video Story Showcase, Testimonials & Journal */}
       <VideoStorySection 
         currentTheme={currentTheme} 
       />
 
-      {/* Booking & Inquiry Form (Template 2 "Voyages of Wonder") */}
+      {/* Booking & Inquiry Form */}
       <BookingInquirySection 
         currentTheme={currentTheme} 
       />
@@ -91,7 +95,7 @@ export default function App() {
       {/* Footer */}
       <Footer 
         currentTheme={currentTheme}
-        onToggleTheme={toggleTheme}
+        onSelectTheme={handleSelectTheme}
       />
 
       {/* Interactive Destination Detail Modal */}
@@ -103,35 +107,52 @@ export default function App() {
         currentTheme={currentTheme}
       />
 
-      {/* Floating Theme Switcher Dock (Client UX Helper) */}
+      {/* Floating 3-Theme Switcher Dock */}
       <div className="fixed bottom-6 right-6 z-40">
         <div className={`p-1.5 rounded-full shadow-2xl border backdrop-blur-xl flex items-center gap-1 transition-all ${
-          isEmerald
-            ? 'bg-[#0d2b23]/95 border-emerald-600/50 text-white shadow-emerald-950/60'
-            : 'bg-white/95 border-stone-300 text-stone-900 shadow-stone-300/80'
+          isSapphire
+            ? 'bg-[#0c1a38]/95 border-amber-500/40 text-white shadow-blue-950/70'
+            : isEmerald
+              ? 'bg-[#0d2b23]/95 border-emerald-600/50 text-white shadow-emerald-950/60'
+              : 'bg-white/95 border-stone-300 text-stone-900 shadow-stone-300/80'
         }`}>
           <div className="pl-2 pr-1 text-stone-400">
             <Compass className="w-3.5 h-3.5" />
           </div>
 
+          {/* Option 1: Editorial Mono (Default) */}
           <button
-            onClick={() => setCurrentTheme('editorial')}
-            className={`px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-              !isEmerald 
+            onClick={() => handleSelectTheme('editorial')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              isEditorial 
                 ? 'bg-stone-950 text-white shadow-md font-bold' 
-                : 'text-emerald-300/80 hover:text-white'
+                : 'text-stone-400 hover:text-stone-100'
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-stone-300"></span>
             <span>Editorial Mono</span>
           </button>
 
+          {/* Option 2: Royal Sapphire & Gold */}
           <button
-            onClick={() => setCurrentTheme('emerald')}
-            className={`px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            onClick={() => handleSelectTheme('sapphire')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              isSapphire 
+                ? 'bg-amber-400 text-stone-950 shadow-md font-bold' 
+                : 'text-stone-400 hover:text-amber-300'
+            }`}
+          >
+            <Crown className="w-3 h-3 text-amber-500" />
+            <span>Royal Sapphire</span>
+          </button>
+
+          {/* Option 3: Emerald Luxe */}
+          <button
+            onClick={() => handleSelectTheme('emerald')}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               isEmerald 
                 ? 'bg-emerald-400 text-stone-950 shadow-md font-bold' 
-                : 'text-stone-400 hover:text-stone-700'
+                : 'text-stone-400 hover:text-emerald-400'
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-600"></span>

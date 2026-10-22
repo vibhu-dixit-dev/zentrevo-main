@@ -4,18 +4,21 @@ import { ShieldCheck, Award, HeartHandshake, Compass } from 'lucide-react';
 
 export default function StatsBar({ currentTheme }) {
   const isEmerald = currentTheme === 'emerald';
+  const isSapphire = currentTheme === 'sapphire';
 
   const icons = [Compass, Award, HeartHandshake, ShieldCheck];
 
   return (
     <section className="px-4 sm:px-8 py-8">
       <div className="max-w-7xl mx-auto">
-        {/* Metric Ribbon (Template 2 Style) */}
+        {/* Metric Ribbon */}
         <div 
           className={`rounded-3xl p-6 sm:p-10 transition-all duration-300 border shadow-xl ${
-            isEmerald
-              ? 'bg-[#0d2b23] border-emerald-800/60 text-white shadow-emerald-950/20'
-              : 'bg-white border-stone-200 text-stone-900 shadow-stone-200/50'
+            isSapphire
+              ? 'bg-[#0a142c] border-amber-500/30 text-white shadow-blue-950/40'
+              : isEmerald
+                ? 'bg-[#0d2b23] border-emerald-800/60 text-white shadow-emerald-950/20'
+                : 'bg-white border-stone-200 text-stone-900 shadow-stone-200/50'
           }`}
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 divide-y lg:divide-y-0 lg:divide-x divide-stone-200/20">
@@ -24,7 +27,11 @@ export default function StatsBar({ currentTheme }) {
               return (
                 <div key={idx} className={`flex items-start gap-4 ${idx > 0 ? 'pt-6 lg:pt-0 lg:pl-8' : ''}`}>
                   <div className={`p-3 rounded-2xl ${
-                    isEmerald ? 'bg-emerald-900/50 text-emerald-400 border border-emerald-700/40' : 'bg-stone-100 text-stone-800 border border-stone-200'
+                    isSapphire
+                      ? 'bg-amber-950/60 text-amber-400 border border-amber-500/40'
+                      : isEmerald 
+                        ? 'bg-emerald-900/50 text-emerald-400 border border-emerald-700/40' 
+                        : 'bg-stone-100 text-stone-800 border border-stone-200'
                   }`}>
                     <IconComp className="w-5 h-5" />
                   </div>
@@ -35,7 +42,9 @@ export default function StatsBar({ currentTheme }) {
                     <div className="text-sm font-semibold mt-1">
                       {stat.label}
                     </div>
-                    <div className={`text-xs mt-0.5 ${isEmerald ? 'text-emerald-300/70' : 'text-stone-500'}`}>
+                    <div className={`text-xs mt-0.5 ${
+                      isSapphire ? 'text-amber-300/70' : isEmerald ? 'text-emerald-300/70' : 'text-stone-500'
+                    }`}>
                       {stat.detail}
                     </div>
                   </div>
@@ -54,7 +63,11 @@ export default function StatsBar({ currentTheme }) {
             {partnerLogos.map((p, i) => (
               <div key={i} className="flex flex-col items-center group cursor-default">
                 <span className={`font-semibold tracking-wider text-sm transition-colors ${
-                  isEmerald ? 'text-stone-300 group-hover:text-emerald-300' : 'text-stone-700 group-hover:text-stone-950'
+                  isSapphire 
+                    ? 'text-stone-300 group-hover:text-amber-300'
+                    : isEmerald 
+                      ? 'text-stone-300 group-hover:text-emerald-300' 
+                      : 'text-stone-700 group-hover:text-stone-950'
                 }`}>
                   {p.name}
                 </span>
