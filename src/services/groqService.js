@@ -54,8 +54,8 @@ export async function askGroqChatbot(messages, customApiKey = '') {
       ...messages.slice(-8) // Keep last 8 turns for context window efficiency
     ];
 
-    // List of widely supported free Groq models in priority order
-    const candidateModels = ['llama-3.1-8b-instant', 'llama3-8b-8192', 'mixtral-8x7b-32768'];
+    // List of active models for this Groq account
+    const candidateModels = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'llama-3.1-8b-instant'];
     let lastError = null;
 
     for (const modelName of candidateModels) {
@@ -81,8 +81,8 @@ export async function askGroqChatbot(messages, customApiKey = '') {
         } else {
           const errData = await response.json().catch(() => ({}));
           lastError = errData?.error?.message || `HTTP ${response.status}`;
-          // If model doesn't exist, loop to next candidate model
-          if (lastError.includes('model') || lastError.includes('does not exist')) {
+          // If model doesn't exist or is decommissioned, try next
+          if (lastError.includes('model') || lastError.includes('does not exist') || lastError.includes('decommissioned')) {
             continue;
           } else {
             throw new Error(lastError);
@@ -90,7 +90,7 @@ export async function askGroqChatbot(messages, customApiKey = '') {
         }
       } catch (e) {
         lastError = e.message;
-        if (!e.message.includes('model') && !e.message.includes('does not exist')) {
+        if (!e.message.includes('model') && !e.message.includes('does not exist') && !e.message.includes('decommissioned')) {
           throw e;
         }
       }
