@@ -105,13 +105,8 @@ export async function askGroqChatbot(messages, customApiKey = '') {
 }
 
 // Fallback intelligence engine when no API key is provided or during network timeouts
-function getOfflineKnowledgeResponse(userInput, apiError = null) {
+function getOfflineKnowledgeResponse(userInput) {
   const query = (userInput || '').toLowerCase();
-
-  let fallbackNote = "";
-  if (apiError) {
-    fallbackNote = `\n\n*(Notice: Live Groq API connection had an issue: ${apiError}. Showing internal dossier)*`;
-  }
 
   if (query.includes('destination') || query.includes('package') || query.includes('where') || query.includes('place')) {
     return `Zentrevo currently offers 6 world-renowned signature luxury itineraries:
@@ -123,7 +118,7 @@ function getOfflineKnowledgeResponse(userInput, apiError = null) {
 * **Aurora Wilderness, Iceland** ($3,400 / guest • 8 Days) — Blue Lagoon private retreat & northern lights glass cabins.
 * **Uluwatu & Ubud, Bali** ($1,980 / guest • 7 Days) — Cliffside infinity villas & sacred jungle healing.
 
-Would you like more details on a specific destination, or shall we arrange a custom proposal?${fallbackNote}`;
+Would you like more details on a specific destination, or shall we arrange a custom proposal?`;
   }
 
   if (query.includes('price') || query.includes('cost') || query.includes('rate') || query.includes('how much')) {
@@ -136,7 +131,7 @@ Would you like more details on a specific destination, or shall we arrange a cus
 * **Kyoto Heritage**: $3,100 (9 Days)
 * **Iceland Aurora Wilderness**: $3,400 (8 Days)
 
-All packages feature flexible cancellation up to 14 days prior to travel.${fallbackNote}`;
+All packages feature flexible cancellation up to 14 days prior to travel.`;
   }
 
   if (query.includes('contact') || query.includes('phone') || query.includes('email') || query.includes('call') || query.includes('address') || query.includes('office') || query.includes('location')) {
@@ -147,7 +142,7 @@ All packages feature flexible cancellation up to 14 days prior to travel.${fallb
 * 📍 **Headquarters**: **Nawa City, Rajasthan, India 341509**
 * ⏰ **Consultation Hours**: 9:00 AM – 8:00 PM EST (7 days a week)
 
-You can also submit your travel dates in our **"Voyages of Wonder"** section on the site for a full dossier within 24 hours!${fallbackNote}`;
+You can also submit your travel dates in our **"Voyages of Wonder"** section on the site for a full dossier within 24 hours!`;
   }
 
   if (query.includes('book') || query.includes('reserve') || query.includes('how to book') || query.includes('inquiry')) {
@@ -157,7 +152,7 @@ You can also submit your travel dates in our **"Voyages of Wonder"** section on 
 2. **Dossier Curation**: A dedicated Senior Journey Curator designs a custom day-by-day proposal within 24 hours.
 3. **VIP Hand-off**: All private aviation, villas, VIP airport clearance, and private hosts are locked in.
 
-Would you like me to guide you to the booking section?${fallbackNote}`;
+Would you like me to guide you to the booking section?`;
   }
 
   // General welcome response
@@ -168,5 +163,5 @@ I can assist you with:
 * Custom itinerary planning & pricing
 * Instant contact with our team via **+91 86199 28710** or **zentrevo.official@outlook.com**
 
-How may I assist your next journey today?${fallbackNote}`;
+How may I assist your next journey today?`;
 }

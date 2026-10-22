@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, Crown, Compass, Key, ExternalLink, Bot, RotateCcw } from 'lucide-react';
+import { X, Send, Sparkles, Crown, Compass } from 'lucide-react';
 import { askGroqChatbot } from '../services/groqService';
 
 export default function ChatbotWidget({ currentTheme }) {
@@ -8,10 +8,6 @@ export default function ChatbotWidget({ currentTheme }) {
   const isEditorial = currentTheme === 'editorial';
 
   const [isOpen, setIsOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem('zentrevo_groq_api_key') || '');
-  const [isSavedKey, setIsSavedKey] = useState(() => !!localStorage.getItem('zentrevo_groq_api_key'));
-
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -93,24 +89,12 @@ export default function ChatbotWidget({ currentTheme }) {
         ...prev,
         {
           role: 'assistant',
-          content: "I apologize, but I could not connect with our concierge servers at this moment. Please call our team at +91 86199 28710."
+          content: "I apologize, but I could not connect with our concierge servers at this moment. Please call our team at +91 86199 28710 or email zentrevo.official@outlook.com."
         }
       ]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSaveApiKey = (e) => {
-    e.preventDefault();
-    if (apiKeyInput.trim()) {
-      localStorage.setItem('zentrevo_groq_api_key', apiKeyInput.trim());
-      setIsSavedKey(true);
-    } else {
-      localStorage.removeItem('zentrevo_groq_api_key');
-      setIsSavedKey(false);
-    }
-    setShowSettings(false);
   };
 
   const quickPrompts = [
@@ -172,67 +156,16 @@ export default function ChatbotWidget({ currentTheme }) {
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* Groq Key Configuration Modal Trigger */}
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-2 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 text-stone-400 hover:text-stone-100 transition-colors cursor-pointer"
-                title="Configure Groq API Key"
-              >
-                <Key className="w-4 h-4" />
-              </button>
-
               {/* Close Button */}
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 text-stone-400 hover:text-stone-100 transition-colors cursor-pointer"
+                aria-label="Close Chat"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
-
-          {/* API Key Settings Overlay */}
-          {showSettings && (
-            <div className="p-4 border-b bg-stone-900/95 text-stone-100 text-xs space-y-3 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <span className="font-bold flex items-center gap-1.5 text-amber-400">
-                  <Key className="w-3.5 h-3.5" />
-                  Groq API Key Settings
-                </span>
-                <a
-                  href="https://console.groq.com/keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-stone-400 hover:text-white flex items-center gap-1 underline"
-                >
-                  Get Free Key <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <p className="text-[11px] text-stone-400 leading-relaxed">
-                Paste your free Groq API key below to power this assistant with Llama 3.3. (Or add <code>VITE_GROQ_API_KEY</code> in your <code>.env</code> file).
-              </p>
-              <form onSubmit={handleSaveApiKey} className="flex gap-2">
-                <input
-                  type="password"
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder="gsk_..."
-                  className="flex-1 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 rounded-xl bg-amber-400 text-stone-950 font-bold hover:bg-amber-300 text-xs cursor-pointer"
-                >
-                  Save
-                </button>
-              </form>
-              {isSavedKey && (
-                <p className="text-[10px] text-emerald-400 flex items-center gap-1">
-                  ✓ Custom Groq key is active in your browser
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Message Stream */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
