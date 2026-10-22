@@ -8,16 +8,16 @@ import VideoStorySection from './components/VideoStorySection';
 import BookingInquirySection from './components/BookingInquirySection';
 import DetailModal from './components/DetailModal';
 import Footer from './components/Footer';
-import { Sparkles, Layers, Sliders } from 'lucide-react';
+import { Compass } from 'lucide-react';
 
 export default function App() {
-  // Theme State: 'emerald' (Template 2 Breezio Style) | 'editorial' (Template 1 & 3 Travelio / Travel Style)
-  const [currentTheme, setCurrentTheme] = useState('emerald');
+  // Theme State: Defaulted to 'editorial' (Travelio & Travel Editorial Mono) as requested
+  const [currentTheme, setCurrentTheme] = useState('editorial');
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const toggleTheme = () => {
-    setCurrentTheme((prev) => (prev === 'emerald' ? 'editorial' : 'emerald'));
+    setCurrentTheme((prev) => (prev === 'editorial' ? 'emerald' : 'editorial'));
   };
 
   const handleOpenDestination = (destination) => {
@@ -47,19 +47,6 @@ export default function App() {
           : 'bg-[#faf9f6] text-stone-900'
       }`}
     >
-      {/* Top Banner Notice for Reviewing Client */}
-      <div className={`py-2 px-4 text-center text-xs font-medium border-b transition-colors flex items-center justify-center gap-2 ${
-        isEmerald 
-          ? 'bg-[#09221b] border-emerald-900/60 text-emerald-300' 
-          : 'bg-stone-100 border-stone-200 text-stone-700'
-      }`}>
-        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-        <span>
-          Previewing UI Theme: <strong className="font-semibold uppercase">{isEmerald ? 'Theme 2: Breezio Emerald Luxe' : 'Theme 1: Travelio Editorial Luxury'}</strong>. 
-          Use the toggle in the header or bottom-right to switch!
-        </span>
-      </div>
-
       {/* Main Navigation */}
       <Navbar 
         currentTheme={currentTheme}
@@ -123,17 +110,9 @@ export default function App() {
             ? 'bg-[#0d2b23]/95 border-emerald-600/50 text-white shadow-emerald-950/60'
             : 'bg-white/95 border-stone-300 text-stone-900 shadow-stone-300/80'
         }`}>
-          <button
-            onClick={() => setCurrentTheme('emerald')}
-            className={`px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-              isEmerald 
-                ? 'bg-emerald-400 text-stone-950 shadow-md font-bold' 
-                : 'text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-700"></span>
-            <span>Emerald Luxe</span>
-          </button>
+          <div className="pl-2 pr-1 text-stone-400">
+            <Compass className="w-3.5 h-3.5" />
+          </div>
 
           <button
             onClick={() => setCurrentTheme('editorial')}
@@ -145,6 +124,18 @@ export default function App() {
           >
             <span className="w-2 h-2 rounded-full bg-stone-300"></span>
             <span>Editorial Mono</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTheme('emerald')}
+            className={`px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              isEmerald 
+                ? 'bg-emerald-400 text-stone-950 shadow-md font-bold' 
+                : 'text-stone-400 hover:text-stone-700'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+            <span>Emerald Luxe</span>
           </button>
         </div>
       </div>
