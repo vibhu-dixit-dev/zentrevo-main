@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown } from 'lucide-react';
+import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail } from 'lucide-react';
 
 export default function BookingInquirySection({ currentTheme }) {
   const isEmerald = currentTheme === 'emerald';
@@ -35,7 +35,7 @@ export default function BookingInquirySection({ currentTheme }) {
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
-            {/* Left Column: Form Details & Value */}
+            {/* Left Column: Form Details & Real Contact Data */}
             <div className="lg:col-span-5 space-y-8">
               <div>
                 <p className={`text-xs font-semibold uppercase tracking-widest mb-2 flex items-center gap-1.5 ${
@@ -52,26 +52,53 @@ export default function BookingInquirySection({ currentTheme }) {
                 </p>
               </div>
 
-              {/* Contact Information Cards */}
+              {/* Real Contact Information Cards */}
               <div className="space-y-4">
-                <div className={`p-4 rounded-2xl border flex items-center gap-4 ${
-                  isSapphire 
-                    ? 'bg-[#081226]/70 border-amber-500/30' 
-                    : isEmerald 
-                      ? 'bg-emerald-950/40 border-emerald-800/50' 
-                      : 'bg-stone-50 border-stone-200'
-                }`}>
+                {/* Direct Phone */}
+                <a 
+                  href="tel:+918619928710"
+                  className={`p-4 rounded-2xl border flex items-center gap-4 transition-all hover:scale-[1.01] ${
+                    isSapphire 
+                      ? 'bg-[#081226]/70 border-amber-500/30 text-white hover:border-amber-400' 
+                      : isEmerald 
+                        ? 'bg-emerald-950/40 border-emerald-800/50 text-white hover:border-emerald-500' 
+                        : 'bg-stone-50 border-stone-200 text-stone-900 hover:border-stone-400'
+                  }`}
+                >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     isSapphire ? 'bg-amber-400/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
                   }`}>
                     <Phone className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-stone-400 block">Direct Concierge Line</span>
-                    <span className="text-sm font-bold">+1 (800) 555-0129</span>
+                    <span className="text-[10px] uppercase font-semibold text-stone-400 block">Direct Concierge Phone</span>
+                    <span className="text-sm font-bold tracking-wide">+91 86199 28710</span>
                   </div>
-                </div>
+                </a>
 
+                {/* Direct Email */}
+                <a 
+                  href="mailto:zentrevo.official@outlook.com"
+                  className={`p-4 rounded-2xl border flex items-center gap-4 transition-all hover:scale-[1.01] ${
+                    isSapphire 
+                      ? 'bg-[#081226]/70 border-amber-500/30 text-white hover:border-amber-400' 
+                      : isEmerald 
+                        ? 'bg-emerald-950/40 border-emerald-800/50 text-white hover:border-emerald-500' 
+                        : 'bg-stone-50 border-stone-200 text-stone-900 hover:border-stone-400'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    isSapphire ? 'bg-amber-400/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+                  }`}>
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-semibold text-stone-400 block">Official Support Email</span>
+                    <span className="text-sm font-semibold tracking-wide">zentrevo.official@outlook.com</span>
+                  </div>
+                </a>
+
+                {/* Consultation Hours */}
                 <div className={`p-4 rounded-2xl border flex items-center gap-4 ${
                   isSapphire 
                     ? 'bg-[#081226]/70 border-amber-500/30' 
@@ -86,10 +113,11 @@ export default function BookingInquirySection({ currentTheme }) {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-stone-400 block">Consultation Hours</span>
-                    <span className="text-sm font-semibold">9:00 AM – 8:00 PM EST (7 Days/Week)</span>
+                    <span className="text-sm font-semibold">9:00 AM – 8:00 PM (All 7 Days)</span>
                   </div>
                 </div>
 
+                {/* Office Location */}
                 <div className={`p-4 rounded-2xl border flex items-center gap-4 ${
                   isSapphire 
                     ? 'bg-[#081226]/70 border-amber-500/30' 
@@ -103,8 +131,8 @@ export default function BookingInquirySection({ currentTheme }) {
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-semibold text-stone-400 block">Global Offices</span>
-                    <span className="text-sm font-semibold">Zürich • Tokyo • San Francisco • London</span>
+                    <span className="text-[10px] uppercase font-semibold text-stone-400 block">Headquarters / Location</span>
+                    <span className="text-sm font-semibold">Nawa City, Rajasthan, India 341509</span>
                   </div>
                 </div>
               </div>
@@ -128,7 +156,7 @@ export default function BookingInquirySection({ currentTheme }) {
                     </div>
                     <h3 className="text-2xl font-bold">Your Itinerary Request Is Received</h3>
                     <p className={`text-sm max-w-md mx-auto ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-                      Thank you, <span className={`font-semibold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>{formData.name || 'valued traveler'}</span>. One of our Senior Journey Curators will reach out within 24 hours with your preliminary dossier.
+                      Thank you, <span className={`font-semibold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>{formData.name || 'valued traveler'}</span>. Our senior team will review your dossier and reply from <strong className="underline">zentrevo.official@outlook.com</strong> within 24 hours.
                     </p>
                     <button
                       onClick={() => setSubmitted(false)}
@@ -173,7 +201,7 @@ export default function BookingInquirySection({ currentTheme }) {
                           required
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          placeholder="kathleen@domain.com"
+                          placeholder="zentrevo.official@outlook.com"
                           className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all ${
                             isSapphire
                               ? 'bg-[#050b18]/90 border-slate-700 text-white focus:border-amber-400'
@@ -194,7 +222,7 @@ export default function BookingInquirySection({ currentTheme }) {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                          placeholder="+1 (555) 000-0000"
+                          placeholder="+91 86199 28710"
                           className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all ${
                             isSapphire
                               ? 'bg-[#050b18]/90 border-slate-700 text-white focus:border-amber-400'

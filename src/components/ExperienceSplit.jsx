@@ -184,7 +184,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                 </button>
 
                 <a 
-                  href="tel:+18005550199"
+                  href="tel:+918619928710"
                   className={`inline-flex items-center gap-2.5 px-5 py-3 rounded-full text-xs font-semibold transition-all border ${
                     isSapphire
                       ? 'border-amber-500/40 text-amber-300 hover:bg-[#071126]'
@@ -194,7 +194,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                   }`}
                 >
                   <PhoneCall className="w-3.5 h-3.5" />
-                  <span>Call Us: +1 (800) 555-0199</span>
+                  <span>Call Us: +91 86199 28710</span>
                 </a>
               </div>
             </div>
