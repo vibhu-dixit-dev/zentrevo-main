@@ -7,57 +7,51 @@ export default function BookingInquirySection({ currentTheme }) {
   const isEditorial = currentTheme === 'editorial';
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     destination: 'Italy (Amalfi Coast)',
     guests: '2 Guests (Couple)',
-    message: ''
+    message: '',
+    _hp_security_check: ''
   });
 
-  const targetEmail = import.meta.env.VITE_CONTACT_EMAIL || 'contact@zentrevo.in';
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage('');
 
-  // Check if returning from FormSubmit reCAPTCHA completion
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('submitted') === 'true') {
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.success) {
         setSubmitted(true);
-        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      } else {
+        if (data.message && data.message.includes('SMTP_PASS')) {
+          setErrorMessage('Vercel SMTP configuration pending: Please add SMTP_PASS in Vercel settings.');
+        } else {
+          throw new Error(data.message || 'Could not send inquiry.');
+        }
       }
+    } catch (err) {
+      console.error('Submission error:', err);
+      setErrorMessage(err.message || 'Could not connect with concierge servers. Please connect directly via WhatsApp or Phone below.');
+    } finally {
+      setIsSubmitting(false);
     }
-  }, []);
-
-  const autoResponseMessage = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          Z E N T R E V O   T R A V E L   C O .
-         Private Concierge & Curated Expeditions
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-DOSSIER CONFIRMATION RECEIPT
-
-Dear ${formData.name || 'Valued Traveler'},
-
-Thank you for choosing ZENTREVO Travel Co. for your upcoming voyage.
-
-We have successfully received your bespoke journey inquiry:
-• Target Destination : ${formData.destination}
-• Party Size         : ${formData.guests}
-
-STATUS: IN REVIEW BY SENIOR CURATION TEAM
-Our private journey specialists are reviewing your preferences and will craft a personalized day-by-day itinerary proposal within 24 hours.
-
-PRIORITY CONCIERGE ACCESS:
-• Instant WhatsApp : +91 86199 28710
-• Direct Phone     : +91 86199 28710
-• Official Email   : contact@zentrevo.in
-• Global Office    : Nawa City, Rajasthan, India 341509
-
-Warmest regards,
-The ZENTREVO Private Concierge Team
-www.zentrevo.in
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`.trim();
+  };
 
   return (
     <section id="inquiry" className="px-4 sm:px-8 py-20 scroll-mt-24">
@@ -233,26 +227,16 @@ www.zentrevo.in
                     </button>
                   </div>
                 ) : (
-                  <form 
-                    action={`https://formsubmit.co/${targetEmail}`} 
-                    method="POST" 
-                    className="space-y-4"
-                  >
-                    {/* FormSubmit Configurations: reCAPTCHA & Autoresponse enabled */}
-                    <input type="hidden" name="_captcha" value="true" />
-                    <input type="hidden" name="_template" value="table" />
-                    <input type="hidden" name="_subject" value={`✨ New ZENTREVO Expedition Inquiry: ${formData.name || 'Traveler'} (${formData.destination})`} />
-                    <textarea 
-                      name="_autoresponse" 
-                      value={autoResponseMessage} 
-                      readOnly 
-                      style={{ display: 'none' }} 
-                    />
-                    <input type="hidden" name="_replyto" value={formData.email} />
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Invisible Honeypot Spam Trap (bots fill this, humans don't) */}
                     <input 
-                      type="hidden" 
-                      name="_next" 
-                      value={typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?submitted=true#inquiry` : ''} 
+                      type="text" 
+                      name="_hp_security_check" 
+                      value={formData._hp_security_check || ''} 
+                      onChange={(e) => setFormData({...formData, _hp_security_check: e.target.value})} 
+                      style={{ display: 'none' }} 
+                      tabIndex={-1} 
+                      autoComplete="off" 
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -391,9 +375,19 @@ www.zentrevo.in
                       />
                     </div>
 
+                    {errorMessage && (
+                      <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2.5">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{errorMessage}</span>
+                      </div>
+                    )}
+
                     <button
                       type="submit"
+                      disabled={isSubmitting}
                       className={`w-full py-4 rounded-full font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${
+                        isSubmitting ? 'opacity-70 cursor-wait' : ''
+                      } ${
                         isSapphire
                           ? 'bg-gradient-to-r from-amber-400 to-amber-300 text-stone-950 hover:from-amber-300 hover:to-amber-200 shadow-amber-500/25'
                           : isEmerald
@@ -401,13 +395,22 @@ www.zentrevo.in
                             : 'bg-stone-950 text-white hover:bg-stone-800 shadow-stone-900/25'
                       }`}
                     >
-                      <Send className="w-4 h-4" />
-                      <span>Send My Bespoke Request</span>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Transmitting Dossier to Concierge...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Send My Bespoke Request</span>
+                        </>
+                      )}
                     </button>
 
                     <div className="flex items-center justify-center gap-1.5 text-[11px] opacity-60">
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Protected by reCAPTCHA & encrypted transmission</span>
+                      <span>Direct TLS Encrypted Delivery via contact@zentrevo.in</span>
                     </div>
                   </form>
                 )}
