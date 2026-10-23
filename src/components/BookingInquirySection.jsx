@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export default function BookingInquirySection({ currentTheme }) {
   const isEmerald = currentTheme === 'emerald';
@@ -12,14 +12,52 @@ export default function BookingInquirySection({ currentTheme }) {
     email: '',
     phone: '',
     destination: 'Italy (Amalfi Coast)',
-    guests: '2 Guests',
+    guests: '2 Guests (Couple)',
     message: ''
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
-  };
+  const targetEmail = import.meta.env.VITE_CONTACT_EMAIL || 'contact@zentrevo.in';
+
+  // Check if returning from FormSubmit reCAPTCHA completion
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('submitted') === 'true') {
+        setSubmitted(true);
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      }
+    }
+  }, []);
+
+  const autoResponseMessage = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          Z E N T R E V O   T R A V E L   C O .
+         Private Concierge & Curated Expeditions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DOSSIER CONFIRMATION RECEIPT
+
+Dear ${formData.name || 'Valued Traveler'},
+
+Thank you for choosing ZENTREVO Travel Co. for your upcoming voyage.
+
+We have successfully received your bespoke journey inquiry:
+• Target Destination : ${formData.destination}
+• Party Size         : ${formData.guests}
+
+STATUS: IN REVIEW BY SENIOR CURATION TEAM
+Our private journey specialists are reviewing your preferences and will craft a personalized day-by-day itinerary proposal within 24 hours.
+
+PRIORITY CONCIERGE ACCESS:
+• Instant WhatsApp : +91 86199 28710
+• Direct Phone     : +91 86199 28710
+• Official Email   : contact@zentrevo.in
+• Global Office    : Nawa City, Rajasthan, India 341509
+
+Warmest regards,
+The ZENTREVO Private Concierge Team
+www.zentrevo.in
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`.trim();
 
   return (
     <section id="inquiry" className="px-4 sm:px-8 py-20 scroll-mt-24">
@@ -78,7 +116,7 @@ export default function BookingInquirySection({ currentTheme }) {
 
                 {/* Direct Email */}
                 <a 
-                  href="mailto:zentrevo.official@outlook.com"
+                  href="mailto:contact@zentrevo.in"
                   className={`p-4 rounded-2xl border flex items-center gap-4 transition-all hover:scale-[1.01] ${
                     isSapphire 
                       ? 'bg-[#081226]/70 border-amber-500/30 text-white hover:border-amber-400' 
@@ -94,7 +132,7 @@ export default function BookingInquirySection({ currentTheme }) {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-stone-400 block">Official Support Email</span>
-                    <span className="text-sm font-semibold tracking-wide">zentrevo.official@outlook.com</span>
+                    <span className="text-sm font-semibold tracking-wide">contact@zentrevo.in</span>
                   </div>
                 </a>
 
@@ -181,7 +219,7 @@ export default function BookingInquirySection({ currentTheme }) {
                     </div>
                     <h3 className="text-2xl font-bold">Your Itinerary Request Is Received</h3>
                     <p className={`text-sm max-w-md mx-auto ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-                      Thank you, <span className={`font-semibold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>{formData.name || 'valued traveler'}</span>. Our senior team will review your dossier and reply from <strong className="underline">zentrevo.official@outlook.com</strong> within 24 hours.
+                      Thank you, <span className={`font-semibold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>{formData.name || 'valued traveler'}</span>. Our senior team will review your dossier and reply from <strong className="underline">contact@zentrevo.in</strong> within 24 hours.
                     </p>
                     <button
                       onClick={() => setSubmitted(false)}
@@ -195,7 +233,28 @@ export default function BookingInquirySection({ currentTheme }) {
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form 
+                    action={`https://formsubmit.co/${targetEmail}`} 
+                    method="POST" 
+                    className="space-y-4"
+                  >
+                    {/* FormSubmit Configurations: reCAPTCHA & Autoresponse enabled */}
+                    <input type="hidden" name="_captcha" value="true" />
+                    <input type="hidden" name="_template" value="table" />
+                    <input type="hidden" name="_subject" value={`✨ New ZENTREVO Expedition Inquiry: ${formData.name || 'Traveler'} (${formData.destination})`} />
+                    <textarea 
+                      name="_autoresponse" 
+                      value={autoResponseMessage} 
+                      readOnly 
+                      style={{ display: 'none' }} 
+                    />
+                    <input type="hidden" name="_replyto" value={formData.email} />
+                    <input 
+                      type="hidden" 
+                      name="_next" 
+                      value={typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?submitted=true#inquiry` : ''} 
+                    />
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider block mb-1.5">
@@ -203,6 +262,7 @@ export default function BookingInquirySection({ currentTheme }) {
                         </label>
                         <input
                           type="text"
+                          name="name"
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -223,10 +283,11 @@ export default function BookingInquirySection({ currentTheme }) {
                         </label>
                         <input
                           type="email"
+                          name="email"
                           required
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          placeholder="zentrevo.official@outlook.com"
+                          placeholder="contact@zentrevo.in"
                           className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all ${
                             isSapphire
                               ? 'bg-[#050b18]/90 border-slate-700 text-white focus:border-amber-400'
@@ -245,6 +306,7 @@ export default function BookingInquirySection({ currentTheme }) {
                         </label>
                         <input
                           type="tel"
+                          name="phone"
                           value={formData.phone}
                           onChange={(e) => setFormData({...formData, phone: e.target.value})}
                           placeholder="+91 86199 28710"
@@ -260,11 +322,12 @@ export default function BookingInquirySection({ currentTheme }) {
 
                       <div>
                         <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider block mb-1.5">
-                          Target Destination
+                          Travelers / Party Size
                         </label>
                         <select
-                          value={formData.destination}
-                          onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                          name="guests"
+                          value={formData.guests}
+                          onChange={(e) => setFormData({...formData, guests: e.target.value})}
                           className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all cursor-pointer ${
                             isSapphire
                               ? 'bg-[#050b18] border-slate-700 text-white focus:border-amber-400'
@@ -273,15 +336,39 @@ export default function BookingInquirySection({ currentTheme }) {
                                 : 'bg-white border-stone-300 text-stone-900 focus:border-stone-800'
                           }`}
                         >
-                          <option value="Amalfi Coast, Italy">Amalfi Coast, Italy</option>
-                          <option value="Kyoto, Japan">Kyoto, Japan</option>
-                          <option value="Swiss Alps, Switzerland">Swiss Alps, Switzerland</option>
-                          <option value="Cappadocia, Turkey">Cappadocia, Turkey</option>
-                          <option value="Aurora Wilderness, Iceland">Aurora Wilderness, Iceland</option>
-                          <option value="Uluwatu & Ubud, Bali">Uluwatu & Ubud, Bali</option>
-                          <option value="Custom Multi-Country">Custom Multi-Country Expedition</option>
+                          <option value="1 Solo Explorer">1 Solo Explorer</option>
+                          <option value="2 Guests (Couple)">2 Guests (Couple)</option>
+                          <option value="3-4 Small Private Party">3-4 Small Private Party</option>
+                          <option value="5-8 Family Expedition">5-8 Family Expedition</option>
+                          <option value="8+ Private Charter / Group">8+ Private Charter / Group</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider block mb-1.5">
+                        Target Destination
+                      </label>
+                      <select
+                        name="destination"
+                        value={formData.destination}
+                        onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                        className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all cursor-pointer ${
+                          isSapphire
+                            ? 'bg-[#050b18] border-slate-700 text-white focus:border-amber-400'
+                            : isEmerald
+                              ? 'bg-emerald-950/60 border-emerald-800 text-white focus:border-emerald-400'
+                              : 'bg-white border-stone-300 text-stone-900 focus:border-stone-800'
+                        }`}
+                      >
+                        <option value="Amalfi Coast, Italy">Amalfi Coast, Italy</option>
+                        <option value="Kyoto, Japan">Kyoto, Japan</option>
+                        <option value="Swiss Alps, Switzerland">Swiss Alps, Switzerland</option>
+                        <option value="Cappadocia, Turkey">Cappadocia, Turkey</option>
+                        <option value="Aurora Wilderness, Iceland">Aurora Wilderness, Iceland</option>
+                        <option value="Uluwatu & Ubud, Bali">Uluwatu & Ubud, Bali</option>
+                        <option value="Custom Multi-Country">Custom Multi-Country Expedition</option>
+                      </select>
                     </div>
 
                     <div>
@@ -290,6 +377,7 @@ export default function BookingInquirySection({ currentTheme }) {
                       </label>
                       <textarea
                         rows={3}
+                        name="message"
                         value={formData.message}
                         onChange={(e) => setFormData({...formData, message: e.target.value})}
                         placeholder="Dates in mind, celebration milestones, accommodation preferences, private jet needs..."
@@ -316,6 +404,11 @@ export default function BookingInquirySection({ currentTheme }) {
                       <Send className="w-4 h-4" />
                       <span>Send My Bespoke Request</span>
                     </button>
+
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] opacity-60">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Protected by reCAPTCHA & encrypted transmission</span>
+                    </div>
                   </form>
                 )}
               </div>

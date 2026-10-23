@@ -56,7 +56,7 @@ export default function Footer({ currentTheme, onSelectTheme }) {
 
             <div className="text-xs text-stone-400 space-y-1 pt-1">
               <p><span className="text-stone-300 font-semibold">Headquarters:</span> Nawa City, Rajasthan, India 341509</p>
-              <p><span className="text-stone-300 font-semibold">Email:</span> <a href="mailto:zentrevo.official@outlook.com" className="hover:text-amber-400 underline">zentrevo.official@outlook.com</a></p>
+              <p><span className="text-stone-300 font-semibold">Email:</span> <a href="mailto:contact@zentrevo.in" className="hover:text-amber-400 underline">contact@zentrevo.in</a></p>
               <p><span className="text-stone-300 font-semibold">Phone:</span> <a href="tel:+918619928710" className="hover:text-amber-400">+91 86199 28710</a></p>
             </div>
 
@@ -72,8 +72,8 @@ export default function Footer({ currentTheme, onSelectTheme }) {
                 <Globe className="w-4 h-4" />
               </a>
               <a
-                href="mailto:zentrevo.official@outlook.com"
-                title="Email: zentrevo.official@outlook.com"
+                href="mailto:contact@zentrevo.in"
+                title="Email: contact@zentrevo.in"
                 className={`w-8 h-8 rounded-full bg-stone-800 hover:text-stone-950 flex items-center justify-center transition-all text-stone-400 ${
                   isSapphire ? 'hover:bg-amber-400' : 'hover:bg-emerald-500'
                 }`}

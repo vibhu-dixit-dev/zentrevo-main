@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Play, X, Star, Quote, ArrowRight, Volume2, Sparkles, Crown } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, Pause, X, Star, Quote, ArrowRight, Volume2, VolumeX, Sparkles, Crown } from 'lucide-react';
 import { testimonials, blogArticles } from '../data/travelData';
 
 export default function VideoStorySection({ currentTheme }) {
@@ -7,8 +7,76 @@ export default function VideoStorySection({ currentTheme }) {
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
 
-  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+  const containerRef = useRef(null);
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
+
+  // IntersectionObserver: Automatically plays when scrolled into view, pauses when scrolled up/away
+  useEffect(() => {
+    const video = videoRef.current;
+    const container = containerRef.current;
+    if (!video || !container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // User scrolled to card -> auto play video smoothly
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => setIsPlaying(true))
+                .catch(() => {
+                  // Browser autoplay with sound restriction handled by muted=true
+                  video.muted = true;
+                  setIsMuted(true);
+                  video.play().then(() => setIsPlaying(true)).catch(() => {});
+                });
+            }
+          } else {
+            // User scrolled away or scrolled up -> auto pause video
+            video.pause();
+            setIsPlaying(false);
+          }
+        });
+      },
+      {
+        threshold: 0.4 // Triggers when 40% of the card is visible
+      }
+    );
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Manual toggle play/pause on card click
+  const handleTogglePlayPause = (e) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      video.play().then(() => setIsPlaying(true)).catch(() => {});
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  // Toggle Mute / Sound
+  const handleToggleMute = (e) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  };
 
   const activeReview = testimonials[activeTestimonialIndex];
 
@@ -16,7 +84,7 @@ export default function VideoStorySection({ currentTheme }) {
     <section id="stories" className="px-4 sm:px-8 py-16 scroll-mt-24">
       <div className="max-w-7xl mx-auto space-y-20">
         
-        {/* Cinematic Video Teaser */}
+        {/* Cinematic Video Teaser Header */}
         <div>
           <div className="text-center max-w-2xl mx-auto mb-10">
             <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${
@@ -30,44 +98,82 @@ export default function VideoStorySection({ currentTheme }) {
               Adventures And Stories Captured In Pictures
             </h2>
             <p className={`text-sm mt-3 ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-              Watch a 90-second glimpse through the lens of our private expedition travelers across 4 continents.
+              Watch a panoramic 4K glimpse through the lens of our private expedition travelers across 4 continents.
             </p>
           </div>
 
-          {/* Cinematic Landscape Card */}
+          {/* Interactive Scroll-Aware Cinematic Video Card */}
           <div 
-            onClick={() => setIsPlayingVideo(true)}
-            className="group relative rounded-[36px] overflow-hidden aspect-[16/8] sm:aspect-[21/9] cursor-pointer shadow-2xl border border-stone-800/20"
+            ref={containerRef}
+            onClick={handleTogglePlayPause}
+            className="group relative rounded-[32px] sm:rounded-[36px] overflow-hidden aspect-[16/10] sm:aspect-[16/9] cursor-pointer shadow-2xl border border-stone-800/20 bg-stone-950"
           >
-            <img
-              src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80"
-              alt="Cinematic mountain valley"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter brightness-90 group-hover:brightness-100"
+            {/* Native HTML5 Video matching exact starting picture with poster and video feed */}
+            <video
+              ref={videoRef}
+              src="/videos/yosemite-valley.webm"
+              poster="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80"
+              muted={isMuted}
+              loop
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover object-bottom"
             />
             
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/30" />
+            {/* Cinematic Gradient Vignette - Softened so river and water ripples remain clearly visible */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/30 pointer-events-none" />
 
-            {/* Center Play Button */}
+            {/* Center Play / Pause Control Button */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative">
-                <span className={`absolute -inset-4 rounded-full animate-ping ${isSapphire ? 'bg-amber-400/20' : 'bg-white/20'}`} />
-                <div className={`w-16 sm:w-20 h-16 sm:h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform duration-300 group-hover:scale-115 ${
-                  isSapphire ? 'bg-amber-400 text-stone-950' : 'bg-white/90 backdrop-blur-md text-stone-950'
-                }`}>
+              <div 
+                className={`w-16 sm:w-20 h-16 sm:h-20 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-110 ${
+                  isPlaying 
+                    ? 'opacity-0 group-hover:opacity-90 bg-black/60 text-white backdrop-blur-md' 
+                    : isSapphire 
+                      ? 'bg-amber-400 text-stone-950 opacity-100' 
+                      : 'bg-white/95 text-stone-950 opacity-100'
+                }`}
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 sm:w-7 h-6 sm:h-7 fill-current" />
+                ) : (
                   <Play className="w-6 sm:w-7 h-6 sm:h-7 fill-current ml-1" />
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Bottom Caption Pill */}
-            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-white text-xs sm:text-sm">
-              <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
-                <Volume2 className={`w-4 h-4 ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`} />
-                <span className="font-medium">4K Cinematic Reel • Dolomites & Swiss Horizons</span>
+            {/* Top Badge: Auto-Play Indicator */}
+            <div className="absolute top-6 left-6 flex items-center gap-2">
+              <div className="px-3 py-1 rounded-full text-[11px] font-semibold bg-black/60 backdrop-blur-md text-white border border-white/10 flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span>{isPlaying ? 'Auto-Playing on Scroll' : 'Auto-Paused (Scroll In View)'}</span>
               </div>
-              <span className="hidden sm:inline-block bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider">
-                Click To Play Preview
-              </span>
+            </div>
+
+            {/* Bottom Caption Bar */}
+            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-white text-xs sm:text-sm">
+              {/* Sound / Mute Toggle Pill */}
+              <button
+                onClick={handleToggleMute}
+                className="flex items-center gap-2.5 bg-black/60 hover:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/15 transition-colors cursor-pointer"
+                title={isMuted ? "Unmute Sound" : "Mute Sound"}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4 text-stone-300" />
+                ) : (
+                  <Volume2 className={`w-4 h-4 ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`} />
+                )}
+                <span className="font-medium text-xs">
+                  {isMuted ? 'Muted • Click for Sound' : 'Audio Active'}
+                </span>
+              </button>
+
+              {/* Click to Pause / Play Action Hint */}
+              <div className="hidden sm:flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-xs">
+                <span className="opacity-80">
+                  {isPlaying ? 'Click anywhere to Pause' : 'Click anywhere to Resume'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -175,7 +281,7 @@ export default function VideoStorySection({ currentTheme }) {
               }`}>
                 Field Notes & Stories
               </p>
-              <h3 className={`${isEditorial ? 'font-editorial font-medium' : 'font-sans font-bold'} text-2xl sm:text-3xl`}>
+              <h3 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-2xl sm:text-3xl`}>
                 Adventure Thrills and Excitement Await
               </h3>
             </div>
@@ -236,38 +342,6 @@ export default function VideoStorySection({ currentTheme }) {
         </div>
 
       </div>
-
-      {/* Video Modal Player */}
-      {isPlayingVideo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-lg p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl bg-stone-950 rounded-3xl overflow-hidden border border-stone-800 shadow-2xl">
-            <button
-              onClick={() => setIsPlayingVideo(false)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="aspect-video relative">
-              <iframe
-                className="w-full h-full"
-                src="https://www.youtube-nocookie.com/embed/ScMzIvxBSi4?autoplay=1&mute=0"
-                title="Cinematic Travel Video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-            <div className="p-4 bg-stone-900 text-stone-300 text-xs flex items-center justify-between">
-              <span>Zentrevo Film Collection • Dolomites, Amalfi & Swiss Rail</span>
-              <button 
-                onClick={() => setIsPlayingVideo(false)}
-                className="text-white hover:underline text-xs"
-              >
-                Close Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

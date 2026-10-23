@@ -89,7 +89,7 @@ export default function ChatbotWidget({ currentTheme }) {
         ...prev,
         {
           role: 'assistant',
-          content: "I apologize, but I could not connect with our concierge servers at this moment. Please call our team at +91 86199 28710 or email zentrevo.official@outlook.com."
+          content: "I apologize, but I could not connect with our concierge servers at this moment. Please call our team at +91 86199 28710 or email contact@zentrevo.in."
         }
       ]);
     } finally {
