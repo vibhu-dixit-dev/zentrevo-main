@@ -115,8 +115,8 @@ export default function App() {
       {/* 2. Floating AI Concierge Chatbot Widget (Bottom-Right, Theme-Adaptive) */}
       <ChatbotWidget currentTheme={currentTheme} />
 
-      {/* 3. Centered 3-Theme Switcher Dock (Bottom-Center) */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+      {/* 3. Centered 3-Theme Switcher Dock (Bottom-Center - Hidden on mobile to prevent overlap with WhatsApp & Chatbot) */}
+      <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
         <div className={`pointer-events-auto p-1.5 rounded-full shadow-2xl border backdrop-blur-xl flex items-center gap-1 transition-all ${
           isSapphire
             ? 'bg-[#0c1a38]/95 border-amber-500/40 text-white shadow-blue-950/70'
