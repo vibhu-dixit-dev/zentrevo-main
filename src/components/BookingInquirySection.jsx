@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Phone, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight, Loader2, AlertCircle, ShieldCheck, ChevronDown, Check } from 'lucide-react';
 
 export default function BookingInquirySection({ currentTheme }) {
   const isEmerald = currentTheme === 'emerald';
@@ -13,11 +13,60 @@ export default function BookingInquirySection({ currentTheme }) {
     name: '',
     email: '',
     phone: '',
-    destination: 'Italy (Amalfi Coast)',
-    guests: '2 Guests (Couple)',
+    destination: 'Select Destination',
+    guests: 'Select Travelers',
     message: '',
     _hp_security_check: ''
   });
+
+  const [destOpen, setDestOpen] = useState(false);
+  const [guestsOpen, setGuestsOpen] = useState(false);
+
+  const destRef = useRef(null);
+  const guestsRef = useRef(null);
+
+  const destinationOptions = [
+    'Select Destination',
+    'Amalfi Coast, Italy',
+    'Kyoto, Japan',
+    'Swiss Alps, Switzerland',
+    'Cappadocia, Turkey',
+    'Aurora Wilderness, Iceland',
+    'Uluwatu & Ubud, Bali',
+    'Custom Multi-Country Expedition'
+  ];
+
+  const guestsOptions = [
+    'Select Travelers',
+    '1 Solo Explorer',
+    '2 Guests (Couple)',
+    '3-4 Small Private Party',
+    '5-8 Family Expedition',
+    '8+ Private Charter / Group'
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (destRef.current && !destRef.current.contains(event.target)) {
+        setDestOpen(false);
+      }
+      if (guestsRef.current && !guestsRef.current.contains(event.target)) {
+        setGuestsOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setDestOpen(false);
+        setGuestsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -170,7 +219,7 @@ export default function BookingInquirySection({ currentTheme }) {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-stone-400 block">Consultation Hours</span>
-                    <span className="text-sm font-semibold">9:00 AM – 8:00 PM (All 7 Days)</span>
+                    <span className="text-sm font-semibold">24/7 (All 7 Days)</span>
                   </div>
                 </div>
 
@@ -189,7 +238,7 @@ export default function BookingInquirySection({ currentTheme }) {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-stone-400 block">Headquarters / Location</span>
-                    <span className="text-sm font-semibold">Nawa City, Rajasthan, India 341509</span>
+                    <span className="text-sm font-semibold">Sector 49, Gurugram 122018</span>
                   </div>
                 </div>
               </div>
@@ -250,7 +299,6 @@ export default function BookingInquirySection({ currentTheme }) {
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          placeholder="e.g. Kathleen Smith"
                           className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all ${
                             isSapphire
                               ? 'bg-[#050b18]/90 border-slate-700 text-white focus:border-amber-400'
@@ -271,7 +319,6 @@ export default function BookingInquirySection({ currentTheme }) {
                           required
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          placeholder="contact@zentrevo.in"
                           className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all ${
                             isSapphire
                               ? 'bg-[#050b18]/90 border-slate-700 text-white focus:border-amber-400'
@@ -293,7 +340,6 @@ export default function BookingInquirySection({ currentTheme }) {
                           name="phone"
                           value={formData.phone}
                           onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                          placeholder="+91 86199 28710"
                           className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all ${
                             isSapphire
                               ? 'bg-[#050b18]/90 border-slate-700 text-white focus:border-amber-400'
@@ -304,55 +350,155 @@ export default function BookingInquirySection({ currentTheme }) {
                         />
                       </div>
 
-                      <div>
+                      <div className="relative" ref={guestsRef}>
                         <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider block mb-1.5">
                           Travelers / Party Size
                         </label>
-                        <select
-                          name="guests"
-                          value={formData.guests}
-                          onChange={(e) => setFormData({...formData, guests: e.target.value})}
-                          className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all cursor-pointer ${
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGuestsOpen(!guestsOpen);
+                            setDestOpen(false);
+                          }}
+                          aria-haspopup="listbox"
+                          aria-expanded={guestsOpen}
+                          className={`w-full px-4 py-3 rounded-2xl text-sm border flex items-center justify-between text-left transition-all duration-200 cursor-pointer ${
                             isSapphire
-                              ? 'bg-[#050b18] border-slate-700 text-white focus:border-amber-400'
+                              ? `bg-[#050b18] text-white ${guestsOpen ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-700 hover:border-slate-500'}`
                               : isEmerald
-                                ? 'bg-emerald-950/60 border-emerald-800 text-white focus:border-emerald-400'
-                                : 'bg-white border-stone-300 text-stone-900 focus:border-stone-800'
+                                ? `bg-emerald-950/60 text-white ${guestsOpen ? 'border-emerald-400 ring-2 ring-emerald-400/20' : 'border-emerald-800 hover:border-emerald-600'}`
+                                : `bg-white text-stone-900 ${guestsOpen ? 'border-stone-800 ring-2 ring-stone-800/10' : 'border-stone-300 hover:border-stone-400'}`
                           }`}
                         >
-                          <option value="1 Solo Explorer">1 Solo Explorer</option>
-                          <option value="2 Guests (Couple)">2 Guests (Couple)</option>
-                          <option value="3-4 Small Private Party">3-4 Small Private Party</option>
-                          <option value="5-8 Family Expedition">5-8 Family Expedition</option>
-                          <option value="8+ Private Charter / Group">8+ Private Charter / Group</option>
-                        </select>
+                          <span className={formData.guests === 'Select Travelers' ? 'text-stone-400' : 'font-medium'}>
+                            {formData.guests}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 transition-transform duration-300 text-stone-400 ${guestsOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                        </button>
+
+                        {/* Smooth Dropdown Panel */}
+                        <div
+                          className={`absolute left-0 right-0 mt-2 rounded-2xl p-2 shadow-2xl z-50 border backdrop-blur-xl transition-all duration-200 ease-out origin-top ${
+                            guestsOpen 
+                              ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+                              : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+                          } ${
+                            isSapphire
+                              ? 'bg-[#091530]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90'
+                              : isEmerald
+                                ? 'bg-[#0a241d]/98 border-emerald-700/60 text-stone-100 shadow-emerald-950/90'
+                                : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl shadow-stone-300/60'
+                          }`}
+                        >
+                          <div className="max-h-56 overflow-y-auto space-y-1 py-1">
+                            {guestsOptions.map((option) => {
+                              const isSelected = formData.guests === option;
+                              const isDefaultPlaceholder = option === 'Select Travelers';
+                              return (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({ ...formData, guests: option });
+                                    setGuestsOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3.5 py-2.5 text-xs rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                                    isSelected
+                                      ? isSapphire
+                                        ? 'bg-amber-400/20 text-amber-300 font-semibold'
+                                        : isEmerald
+                                          ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
+                                          : 'bg-stone-900 text-white font-semibold'
+                                      : isSapphire
+                                        ? 'hover:bg-white/10 text-stone-200'
+                                        : isEmerald
+                                          ? 'hover:bg-white/10 text-stone-200'
+                                          : 'hover:bg-stone-100 text-stone-800'
+                                  } ${isDefaultPlaceholder ? 'italic text-stone-400 font-normal' : ''}`}
+                                >
+                                  <span>{option}</span>
+                                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
+                    <div className="relative" ref={destRef}>
                       <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider block mb-1.5">
                         Target Destination
                       </label>
-                      <select
-                        name="destination"
-                        value={formData.destination}
-                        onChange={(e) => setFormData({...formData, destination: e.target.value})}
-                        className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all cursor-pointer ${
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDestOpen(!destOpen);
+                          setGuestsOpen(false);
+                        }}
+                        aria-haspopup="listbox"
+                        aria-expanded={destOpen}
+                        className={`w-full px-4 py-3 rounded-2xl text-sm border flex items-center justify-between text-left transition-all duration-200 cursor-pointer ${
                           isSapphire
-                            ? 'bg-[#050b18] border-slate-700 text-white focus:border-amber-400'
+                            ? `bg-[#050b18] text-white ${destOpen ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-700 hover:border-slate-500'}`
                             : isEmerald
-                              ? 'bg-emerald-950/60 border-emerald-800 text-white focus:border-emerald-400'
-                              : 'bg-white border-stone-300 text-stone-900 focus:border-stone-800'
+                              ? `bg-emerald-950/60 text-white ${destOpen ? 'border-emerald-400 ring-2 ring-emerald-400/20' : 'border-emerald-800 hover:border-emerald-600'}`
+                              : `bg-white text-stone-900 ${destOpen ? 'border-stone-800 ring-2 ring-stone-800/10' : 'border-stone-300 hover:border-stone-400'}`
                         }`}
                       >
-                        <option value="Amalfi Coast, Italy">Amalfi Coast, Italy</option>
-                        <option value="Kyoto, Japan">Kyoto, Japan</option>
-                        <option value="Swiss Alps, Switzerland">Swiss Alps, Switzerland</option>
-                        <option value="Cappadocia, Turkey">Cappadocia, Turkey</option>
-                        <option value="Aurora Wilderness, Iceland">Aurora Wilderness, Iceland</option>
-                        <option value="Uluwatu & Ubud, Bali">Uluwatu & Ubud, Bali</option>
-                        <option value="Custom Multi-Country">Custom Multi-Country Expedition</option>
-                      </select>
+                        <span className={formData.destination === 'Select Destination' ? 'text-stone-400' : 'font-medium'}>
+                          {formData.destination}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 text-stone-400 ${destOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                      </button>
+
+                      {/* Smooth Dropdown Panel */}
+                      <div
+                        className={`absolute left-0 right-0 mt-2 rounded-2xl p-2 shadow-2xl z-50 border backdrop-blur-xl transition-all duration-200 ease-out origin-top ${
+                          destOpen 
+                            ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+                            : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+                        } ${
+                          isSapphire
+                            ? 'bg-[#091530]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90'
+                            : isEmerald
+                              ? 'bg-[#0a241d]/98 border-emerald-700/60 text-stone-100 shadow-emerald-950/90'
+                              : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl shadow-stone-300/60'
+                        }`}
+                      >
+                        <div className="max-h-60 overflow-y-auto space-y-1 py-1">
+                          {destinationOptions.map((option) => {
+                            const isSelected = formData.destination === option;
+                            const isDefaultPlaceholder = option === 'Select Destination';
+                            return (
+                              <button
+                                key={option}
+                                type="button"
+                                onClick={() => {
+                                  setFormData({ ...formData, destination: option });
+                                  setDestOpen(false);
+                                }}
+                                className={`w-full text-left px-3.5 py-2.5 text-xs rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                                  isSelected
+                                    ? isSapphire
+                                      ? 'bg-amber-400/20 text-amber-300 font-semibold'
+                                      : isEmerald
+                                        ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
+                                        : 'bg-stone-900 text-white font-semibold'
+                                    : isSapphire
+                                      ? 'hover:bg-white/10 text-stone-200'
+                                      : isEmerald
+                                        ? 'hover:bg-white/10 text-stone-200'
+                                        : 'hover:bg-stone-100 text-stone-800'
+                                } ${isDefaultPlaceholder ? 'italic text-stone-400 font-normal' : ''}`}
+                              >
+                                <span>{option}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
 
                     <div>
@@ -364,7 +510,6 @@ export default function BookingInquirySection({ currentTheme }) {
                         name="message"
                         value={formData.message}
                         onChange={(e) => setFormData({...formData, message: e.target.value})}
-                        placeholder="Dates in mind, celebration milestones, accommodation preferences, private jet needs..."
                         className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none transition-all ${
                           isSapphire
                             ? 'bg-[#050b18]/90 border-slate-700 text-white focus:border-amber-400'

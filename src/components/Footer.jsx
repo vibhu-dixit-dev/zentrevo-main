@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Compass, ArrowRight, Check, Globe, Share2, Mail, Crown } from 'lucide-react';
+import { Compass, ArrowRight, Check, Globe, Share2, Mail, Crown, Sparkles } from 'lucide-react';
+import { SOCIAL_CHANNELS } from '../data/socialChannels';
 
 export default function Footer({ currentTheme, onSelectTheme }) {
   const isEmerald = currentTheme === 'emerald';
@@ -55,40 +56,40 @@ export default function Footer({ currentTheme, onSelectTheme }) {
             </p>
 
             <div className="text-xs text-stone-400 space-y-1 pt-1">
-              <p><span className="text-stone-300 font-semibold">Headquarters:</span> Nawa City, Rajasthan, India 341509</p>
+              <p><span className="text-stone-300 font-semibold">Headquarters:</span> Sector 49, Gurugram 122018</p>
               <p><span className="text-stone-300 font-semibold">Email:</span> <a href="mailto:contact@zentrevo.in" className="hover:text-amber-400 underline">contact@zentrevo.in</a></p>
               <p><span className="text-stone-300 font-semibold">Phone:</span> <a href="tel:+918619928710" className="hover:text-amber-400">+91 86199 28710</a></p>
             </div>
 
-            {/* Social / Channel Icons */}
-            <div className="flex items-center gap-3 pt-2">
-              <a
-                href="#"
-                title="Global Network"
-                className={`w-8 h-8 rounded-full bg-stone-800 hover:text-stone-950 flex items-center justify-center transition-all text-stone-400 ${
-                  isSapphire ? 'hover:bg-amber-400' : 'hover:bg-emerald-500'
-                }`}
-              >
-                <Globe className="w-4 h-4" />
-              </a>
-              <a
-                href="mailto:contact@zentrevo.in"
-                title="Email: contact@zentrevo.in"
-                className={`w-8 h-8 rounded-full bg-stone-800 hover:text-stone-950 flex items-center justify-center transition-all text-stone-400 ${
-                  isSapphire ? 'hover:bg-amber-400' : 'hover:bg-emerald-500'
-                }`}
-              >
-                <Mail className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                title="Share & Media"
-                className={`w-8 h-8 rounded-full bg-stone-800 hover:text-stone-950 flex items-center justify-center transition-all text-stone-400 ${
-                  isSapphire ? 'hover:bg-amber-400' : 'hover:bg-emerald-500'
-                }`}
-              >
-                <Share2 className="w-4 h-4" />
-              </a>
+            {/* Official Social Media Channels */}
+            <div className="pt-2">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-400 block mb-2.5">
+                Official Channels
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {SOCIAL_CHANNELS.map((social) => {
+                  const IconComponent = social.icon;
+                  return (
+                    <a
+                      key={social.id}
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`${social.name} • ${social.handle}`}
+                      aria-label={social.name}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border ${
+                        isSapphire
+                          ? 'bg-[#081226] border-slate-800 text-stone-400 hover:text-stone-950 hover:bg-amber-400 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-400/20 hover:scale-110'
+                          : isEmerald
+                            ? 'bg-emerald-950/70 border-emerald-900/60 text-stone-400 hover:text-stone-950 hover:bg-emerald-400 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-400/20 hover:scale-110'
+                            : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-950 hover:bg-white hover:border-white hover:shadow-lg hover:scale-110'
+                      }`}
+                    >
+                      <IconComponent className="w-3.5 h-3.5" />
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -157,6 +158,53 @@ export default function Footer({ currentTheme, onSelectTheme }) {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+
+        {/* Full-width Luxury Social Discovery Ribbon */}
+        <div className={`mt-10 p-5 sm:p-6 rounded-3xl border flex flex-col lg:flex-row items-center justify-between gap-5 transition-all ${
+          isSapphire
+            ? 'bg-[#081226]/85 border-amber-500/25 text-stone-200'
+            : isEmerald
+              ? 'bg-emerald-950/40 border-emerald-800/40 text-stone-200'
+              : 'bg-stone-800/60 border-stone-800 text-stone-300'
+        }`}>
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+              isSapphire ? 'bg-amber-400/20 text-amber-400' : isEmerald ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white'
+            }`}>
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-white">Join Our Global Expedition Community</p>
+              <p className="text-[11px] text-stone-400">Exclusive visual journals, architectural reels, and real-time expedition dispatches.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {SOCIAL_CHANNELS.map((social) => {
+              const IconComponent = social.icon;
+              return (
+                <a
+                  key={social.id}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`${social.name}: ${social.handle}`}
+                  aria-label={social.name}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 transition-all duration-300 cursor-pointer ${
+                    isSapphire
+                      ? 'bg-[#050b18] border-slate-700/80 text-stone-300 hover:border-amber-400 hover:bg-amber-400 hover:text-stone-950 hover:scale-105 hover:shadow-md hover:shadow-amber-400/20'
+                      : isEmerald
+                        ? 'bg-emerald-950/80 border-emerald-800/70 text-stone-300 hover:border-emerald-400 hover:bg-emerald-400 hover:text-stone-950 hover:scale-105 hover:shadow-md hover:shadow-emerald-400/20'
+                        : 'bg-stone-900 border-stone-700 text-stone-300 hover:border-stone-400 hover:bg-white hover:text-stone-950 hover:scale-105 hover:shadow-md'
+                  }`}
+                >
+                  <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                  <span className="text-[11px]">{social.name}</span>
+                </a>
+              );
+            })}
           </div>
         </div>
 

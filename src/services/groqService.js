@@ -11,10 +11,10 @@ CRITICAL INSTRUCTIONS:
 
 ZENTREVO ESSENTIAL COMPANY FACTS:
 - Company Name: ZENTREVO Travel Co.
-- Headquarters / Location: Nawa City, Rajasthan, India 341509
+- Headquarters / Location: Sector 49, Gurugram 122018
 - Direct Phone Concierge: +91 86199 28710
 - Official Support Email: contact@zentrevo.in
-- Hours: 9:00 AM – 8:00 PM EST (7 days a week)
+- Hours: 24/7 (All 7 Days, Round the Clock)
 - Experience: Over 25 years of excellence in curating private travel
 - Stats: 200+ curated destinations across 48 countries, 20k+ happy adventurers, 98% satisfaction rating
 
@@ -139,8 +139,8 @@ All packages feature flexible cancellation up to 14 days prior to travel.`;
 
 * 📞 **Direct Phone / WhatsApp**: **+91 86199 28710**
 * ✉️ **Official Support Email**: **contact@zentrevo.in**
-* 📍 **Headquarters**: **Nawa City, Rajasthan, India 341509**
-* ⏰ **Consultation Hours**: 9:00 AM – 8:00 PM EST (7 days a week)
+* 📍 **Headquarters**: **Sector 49, Gurugram 122018**
+* ⏰ **Consultation Hours**: **24/7 (All 7 Days, Round the Clock)**
 
 You can also submit your travel dates in our **"Voyages of Wonder"** section on the site for a full dossier within 24 hours!`;
   }

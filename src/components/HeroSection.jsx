@@ -7,9 +7,9 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
   const isEditorial = currentTheme === 'editorial';
 
   // Search State
-  const [selectedLocation, setSelectedLocation] = useState('Italy (Amalfi Coast)');
+  const [selectedLocation, setSelectedLocation] = useState('Select Destination');
   const [selectedDate, setSelectedDate] = useState('Oct 28 - Nov 4, 2026');
-  const [selectedGuests, setSelectedGuests] = useState('2 Guests');
+  const [selectedGuests, setSelectedGuests] = useState('Select Travelers');
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
   const [guestsDropdownOpen, setGuestsDropdownOpen] = useState(false);
 
@@ -359,35 +359,52 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
         >
           {/* Field 1: Location */}
           <div className="relative w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
-               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}>
+               onClick={() => {
+                 setLocationDropdownOpen(!locationDropdownOpen);
+                 setGuestsDropdownOpen(false);
+               }}>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
               <MapPin className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
               <span>Destination</span>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-sm font-medium truncate">{selectedLocation}</span>
-              <ChevronDown className="w-4 h-4 text-stone-400" />
+              <span className={`text-sm truncate ${selectedLocation === 'Select Destination' ? 'text-stone-400 font-normal' : 'font-medium'}`}>
+                {selectedLocation}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${locationDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
             </div>
 
-            {locationDropdownOpen && (
-              <div className={`absolute top-full left-0 mt-3 w-72 rounded-2xl p-2 shadow-2xl z-50 border max-h-60 overflow-y-auto ${
-                isSapphire ? 'bg-[#0c1a38] border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23] border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white border-stone-200 text-stone-900 shadow-2xl'
-              }`}>
-                {['Italy (Amalfi Coast)', 'Japan (Kyoto)', 'Switzerland (Glacier Express)', 'Turkey (Cappadocia)', 'Bali (Uluwatu & Ubud)', 'Iceland (Aurora Wilderness)'].map(loc => (
-                  <button
-                    key={loc}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedLocation(loc);
-                      setLocationDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-amber-500/20 hover:text-amber-300 transition-colors cursor-pointer"
-                  >
-                    {loc}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className={`absolute top-full left-0 mt-3 w-72 rounded-2xl p-2 shadow-2xl z-50 border max-h-60 overflow-y-auto backdrop-blur-xl transition-all duration-200 ease-out origin-top ${
+              locationDropdownOpen 
+                ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+                : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+            } ${
+              isSapphire ? 'bg-[#0c1a38]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23]/98 border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl'
+            }`}>
+              {['Select Destination', 'Italy (Amalfi Coast)', 'Japan (Kyoto)', 'Switzerland (Glacier Express)', 'Turkey (Cappadocia)', 'Bali (Uluwatu & Ubud)', 'Iceland (Aurora Wilderness)'].map(loc => (
+                <button
+                  key={loc}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedLocation(loc);
+                    setLocationDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs rounded-xl transition-colors cursor-pointer ${
+                    selectedLocation === loc
+                      ? isSapphire
+                        ? 'bg-amber-400/20 text-amber-300 font-semibold'
+                        : isEmerald
+                          ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
+                          : 'bg-stone-900 text-white font-semibold'
+                      : isSapphire || isEmerald
+                        ? 'hover:bg-white/10 text-stone-200'
+                        : 'hover:bg-stone-100 text-stone-800'
+                  } ${loc === 'Select Destination' ? 'italic text-stone-400 font-normal' : ''}`}
+                >
+                  {loc}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="hidden md:block h-10 w-px bg-stone-300/40" />
@@ -411,35 +428,52 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
 
           {/* Field 3: Person / Guests */}
           <div className="relative w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
-               onClick={() => setGuestsDropdownOpen(!guestsDropdownOpen)}>
+               onClick={() => {
+                 setGuestsDropdownOpen(!guestsDropdownOpen);
+                 setLocationDropdownOpen(false);
+               }}>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
               <Users className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
               <span>Travelers</span>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-sm font-medium">{selectedGuests}</span>
-              <ChevronDown className="w-4 h-4 text-stone-400" />
+              <span className={`text-sm truncate ${selectedGuests === 'Select Travelers' ? 'text-stone-400 font-normal' : 'font-medium'}`}>
+                {selectedGuests}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${guestsDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
             </div>
 
-            {guestsDropdownOpen && (
-              <div className={`absolute top-full left-0 mt-3 w-64 rounded-2xl p-2 shadow-2xl z-50 border max-h-60 overflow-y-auto ${
-                isSapphire ? 'bg-[#0c1a38] border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23] border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white border-stone-200 text-stone-900 shadow-2xl'
-              }`}>
-                {['1 Solo Explorer', '2 Guests (Couple)', '3 Guests', '4-6 Family / Private Group'].map(g => (
-                  <button
-                    key={g}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedGuests(g);
-                      setGuestsDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-amber-500/20 hover:text-amber-300 transition-colors cursor-pointer"
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className={`absolute top-full left-0 mt-3 w-64 rounded-2xl p-2 shadow-2xl z-50 border max-h-60 overflow-y-auto backdrop-blur-xl transition-all duration-200 ease-out origin-top ${
+              guestsDropdownOpen 
+                ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+                : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+            } ${
+              isSapphire ? 'bg-[#0c1a38]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23]/98 border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl'
+            }`}>
+              {['Select Travelers', '1 Solo Explorer', '2 Guests (Couple)', '3 Guests', '4-6 Family / Private Group'].map(g => (
+                <button
+                  key={g}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedGuests(g);
+                    setGuestsDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs rounded-xl transition-colors cursor-pointer ${
+                    selectedGuests === g
+                      ? isSapphire
+                        ? 'bg-amber-400/20 text-amber-300 font-semibold'
+                        : isEmerald
+                          ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
+                          : 'bg-stone-900 text-white font-semibold'
+                      : isSapphire || isEmerald
+                        ? 'hover:bg-white/10 text-stone-200'
+                        : 'hover:bg-stone-100 text-stone-800'
+                  } ${g === 'Select Travelers' ? 'italic text-stone-400 font-normal' : ''}`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Search CTA Button */}

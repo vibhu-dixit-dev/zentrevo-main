@@ -197,7 +197,7 @@ export default async function handler(req, res) {
                 ZENTREVO Travel Co.
               </div>
               <div style="font-size: 11px; color: #78716c; line-height: 1.6;">
-                Nawa City, Rajasthan, India 341509 &bull; +91 86199 28710<br>
+                Sector 49, Gurugram 122018 &bull; +91 86199 28710<br>
                 Official Concierge: <a href="mailto:contact@zentrevo.in" style="color: #b45309; text-decoration: none; font-weight: 600;">contact@zentrevo.in</a>
               </div>
               <div style="font-size: 10px; color: #a8a29e; margin-top: 12px;">
