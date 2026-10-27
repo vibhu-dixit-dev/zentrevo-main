@@ -77,15 +77,9 @@ export default function Footer({ currentTheme, onSelectTheme }) {
                       rel="noopener noreferrer"
                       title={`${social.name} • ${social.handle}`}
                       aria-label={social.name}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border ${
-                        isSapphire
-                          ? 'bg-[#081226] border-slate-800 text-stone-400 hover:text-stone-950 hover:bg-amber-400 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-400/20 hover:scale-110'
-                          : isEmerald
-                            ? 'bg-emerald-950/70 border-emerald-900/60 text-stone-400 hover:text-stone-950 hover:bg-emerald-400 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-400/20 hover:scale-110'
-                            : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-950 hover:bg-white hover:border-white hover:shadow-lg hover:scale-110'
-                      }`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border ${social.brandClass}`}
                     >
-                      <IconComponent className="w-3.5 h-3.5" />
+                      <IconComponent className="w-4 h-4" />
                     </a>
                   );
                 })}
@@ -192,15 +186,15 @@ export default function Footer({ currentTheme, onSelectTheme }) {
                   rel="noopener noreferrer"
                   title={`${social.name}: ${social.handle}`}
                   aria-label={social.name}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-2 transition-all duration-300 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-2 transition-all duration-300 cursor-pointer ${
                     isSapphire
-                      ? 'bg-[#050b18] border-slate-700/80 text-stone-300 hover:border-amber-400 hover:bg-amber-400 hover:text-stone-950 hover:scale-105 hover:shadow-md hover:shadow-amber-400/20'
+                      ? 'bg-[#050b18] border-slate-700/80 text-stone-200'
                       : isEmerald
-                        ? 'bg-emerald-950/80 border-emerald-800/70 text-stone-300 hover:border-emerald-400 hover:bg-emerald-400 hover:text-stone-950 hover:scale-105 hover:shadow-md hover:shadow-emerald-400/20'
-                        : 'bg-stone-900 border-stone-700 text-stone-300 hover:border-stone-400 hover:bg-white hover:text-stone-950 hover:scale-105 hover:shadow-md'
-                  }`}
+                        ? 'bg-emerald-950/80 border-emerald-800/70 text-stone-200'
+                        : 'bg-stone-900 border-stone-700 text-stone-200'
+                  } ${social.pillClass} hover:scale-105 hover:shadow-md`}
                 >
-                  <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                  <IconComponent className={`w-3.5 h-3.5 shrink-0 ${social.iconColor}`} />
                   <span className="text-[11px]">{social.name}</span>
                 </a>
               );
@@ -225,6 +219,7 @@ export default function Footer({ currentTheme, onSelectTheme }) {
             </button>
             <a href="#" className="hover:text-stone-300 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-stone-300 transition-colors">Terms of Service</a>
+            <a href="/admin" className="hover:text-amber-400 transition-colors flex items-center gap-1 opacity-70 hover:opacity-100">Concierge Portal</a>
           </div>
         </div>
       </div>

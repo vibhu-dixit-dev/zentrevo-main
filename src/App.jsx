@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import StatsBar from './components/StatsBar';
@@ -7,16 +7,53 @@ import ExperienceSplit from './components/ExperienceSplit';
 import VideoStorySection from './components/VideoStorySection';
 import BookingInquirySection from './components/BookingInquirySection';
 import DetailModal from './components/DetailModal';
+import JournalModal from './components/JournalModal';
 import Footer from './components/Footer';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import ChatbotWidget from './components/ChatbotWidget';
-import { Compass, Crown } from 'lucide-react';
+import AdminDashboard from './components/AdminDashboard';
+import AdminLogin from './components/AdminLogin';
 
 export default function App() {
+  // Admin Session State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('zentrevo_admin_auth') === 'true';
+    }
+    return false;
+  });
+
+  // Route Detection: Supports /admin route and #admin hash
+  const [currentPath, setCurrentPath] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname || '/';
+    }
+    return '/';
+  });
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname || '/');
+    };
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
+
+  const isAdminRoute = 
+    currentPath.startsWith('/admin') || 
+    (typeof window !== 'undefined' && window.location.hash === '#admin');
+
   // Theme State: 'editorial' (Default) | 'sapphire' (Royal Sapphire & Gold) | 'emerald' (Emerald Luxe)
   const [currentTheme, setCurrentTheme] = useState('editorial');
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'national' | 'international'
+  const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+  const [selectedJournalArticle, setSelectedJournalArticle] = useState(null);
 
   const handleSelectTheme = (themeName) => {
     setCurrentTheme(themeName);
@@ -25,6 +62,11 @@ export default function App() {
   const handleOpenDestination = (destination) => {
     setSelectedDestination(destination);
     setIsDetailModalOpen(true);
+  };
+
+  const handleOpenJournal = (article = null) => {
+    setSelectedJournalArticle(article);
+    setIsJournalModalOpen(true);
   };
 
   const handleScrollToInquiry = () => {
@@ -38,6 +80,50 @@ export default function App() {
     setIsDetailModalOpen(false);
     handleScrollToInquiry();
   };
+
+  const handleInquireFromJournal = (destinationName) => {
+    setIsJournalModalOpen(false);
+    handleScrollToInquiry();
+  };
+
+  // If user navigated to /admin, check authentication
+  if (isAdminRoute) {
+    if (!isAdminAuthenticated) {
+      return (
+        <AdminLogin 
+          onLoginSuccess={() => {
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('zentrevo_admin_auth', 'true');
+            }
+            setIsAdminAuthenticated(true);
+          }}
+          onExit={() => {
+            if (typeof window !== 'undefined') {
+              window.history.pushState({}, '', '/');
+              setCurrentPath('/');
+            }
+          }}
+        />
+      );
+    }
+
+    return (
+      <AdminDashboard 
+        onExit={() => {
+          if (typeof window !== 'undefined') {
+            window.history.pushState({}, '', '/');
+            setCurrentPath('/');
+          }
+        }}
+        onLogout={() => {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('zentrevo_admin_auth');
+          }
+          setIsAdminAuthenticated(false);
+        }}
+      />
+    );
+  }
 
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
@@ -58,6 +144,8 @@ export default function App() {
         currentTheme={currentTheme}
         onSelectTheme={handleSelectTheme}
         onOpenInquiry={handleScrollToInquiry}
+        onSelectRegion={setSelectedRegion}
+        onOpenJournal={handleOpenJournal}
       />
 
       {/* Hero Section */}
@@ -76,6 +164,8 @@ export default function App() {
       <DestinationsGrid 
         currentTheme={currentTheme}
         onSelectDestination={handleOpenDestination}
+        selectedRegion={selectedRegion}
+        onSelectRegion={setSelectedRegion}
       />
 
       {/* Experience & Core Beliefs Split Section */}
@@ -86,7 +176,8 @@ export default function App() {
 
       {/* Video Story Showcase, Testimonials & Journal */}
       <VideoStorySection 
-        currentTheme={currentTheme} 
+        currentTheme={currentTheme}
+        onOpenJournal={handleOpenJournal}
       />
 
       {/* Booking & Inquiry Form */}
@@ -109,65 +200,20 @@ export default function App() {
         currentTheme={currentTheme}
       />
 
+      {/* Interactive Journal & Article Reader Modal */}
+      <JournalModal
+        isOpen={isJournalModalOpen}
+        onClose={() => setIsJournalModalOpen(false)}
+        initialArticle={selectedJournalArticle}
+        currentTheme={currentTheme}
+        onInquireStory={handleInquireFromJournal}
+      />
+
       {/* 1. Floating WhatsApp Quick-Connect Widget (Bottom-Left) */}
       <WhatsAppWidget />
 
       {/* 2. Floating AI Concierge Chatbot Widget (Bottom-Right, Theme-Adaptive) */}
       <ChatbotWidget currentTheme={currentTheme} />
-
-      {/* 3. Centered 3-Theme Switcher Dock (Bottom-Center - Hidden on mobile to prevent overlap with WhatsApp & Chatbot) */}
-      <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-        <div className={`pointer-events-auto p-1.5 rounded-full shadow-2xl border backdrop-blur-xl flex items-center gap-1 transition-all ${
-          isSapphire
-            ? 'bg-[#0c1a38]/95 border-amber-500/40 text-white shadow-blue-950/70'
-            : isEmerald
-              ? 'bg-[#0d2b23]/95 border-emerald-600/50 text-white shadow-emerald-950/60'
-              : 'bg-white/95 border-stone-300 text-stone-900 shadow-stone-300/80'
-        }`}>
-          <div className="hidden sm:block pl-2 pr-1 text-stone-400">
-            <Compass className="w-3.5 h-3.5" />
-          </div>
-
-          {/* Option 1: Editorial Mono (Default) */}
-          <button
-            onClick={() => handleSelectTheme('editorial')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-              isEditorial 
-                ? 'bg-stone-950 text-white shadow-md font-bold' 
-                : 'text-stone-400 hover:text-stone-100'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-stone-300"></span>
-            <span>Editorial</span>
-          </button>
-
-          {/* Option 2: Royal Sapphire & Gold */}
-          <button
-            onClick={() => handleSelectTheme('sapphire')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-              isSapphire 
-                ? 'bg-amber-400 text-stone-950 shadow-md font-bold' 
-                : 'text-stone-400 hover:text-amber-300'
-            }`}
-          >
-            <Crown className="w-3 h-3 text-amber-500" />
-            <span>Sapphire</span>
-          </button>
-
-          {/* Option 3: Emerald Luxe */}
-          <button
-            onClick={() => handleSelectTheme('emerald')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-              isEmerald 
-                ? 'bg-emerald-400 text-stone-950 shadow-md font-bold' 
-                : 'text-stone-400 hover:text-emerald-400'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-            <span>Emerald</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

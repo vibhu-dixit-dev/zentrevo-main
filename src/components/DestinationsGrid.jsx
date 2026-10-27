@@ -1,19 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { destinations } from '../data/travelData';
-import { ArrowUpRight, Star, Clock, Sparkles, Crown } from 'lucide-react';
+import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers } from 'lucide-react';
 
-export default function DestinationsGrid({ currentTheme, onSelectDestination }) {
+export default function DestinationsGrid({ 
+  currentTheme, 
+  onSelectDestination,
+  selectedRegion = 'all',
+  onSelectRegion
+}) {
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
 
   const [activeCategory, setActiveCategory] = useState('All');
+  const [currentRegion, setCurrentRegion] = useState(selectedRegion || 'all');
+
+  useEffect(() => {
+    if (selectedRegion) {
+      setCurrentRegion(selectedRegion);
+    }
+  }, [selectedRegion]);
+
+  const handleRegionChange = (region) => {
+    setCurrentRegion(region);
+    if (onSelectRegion) {
+      onSelectRegion(region);
+    }
+  };
 
   const categories = ['All', 'Luxury Escapes', 'Cultural', 'Trending', 'Alpine Nature'];
 
+  // 1. Filter by Region (National vs International vs All)
+  const regionFiltered = currentRegion === 'all'
+    ? destinations
+    : destinations.filter(d => (d.region || 'international') === currentRegion);
+
+  // 2. Filter by Category
   const filteredDestinations = activeCategory === 'All' 
-    ? destinations 
-    : destinations.filter(d => d.category === activeCategory);
+    ? regionFiltered 
+    : regionFiltered.filter(d => d.category === activeCategory);
 
   return (
     <section id="destinations" className="px-4 sm:px-8 py-16 scroll-mt-24">
@@ -44,6 +69,66 @@ export default function DestinationsGrid({ currentTheme, onSelectDestination }) 
             }`}>
               The Most Amazing Travel Packages Every Traveler Dreams Of.
             </h2>
+
+            {/* Regional Filter Switcher: All / National / International */}
+            <div className={`mt-5 flex items-center gap-1.5 p-1.5 rounded-2xl w-fit border shadow-sm ${
+              isSapphire 
+                ? 'bg-[#091530] border-amber-500/30 text-stone-100'
+                : isEmerald
+                  ? 'bg-[#08221a] border-emerald-800/60 text-stone-100'
+                  : 'bg-white border-stone-200 text-stone-900 shadow-stone-200/50'
+            }`}>
+              <button
+                type="button"
+                onClick={() => handleRegionChange('all')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  currentRegion === 'all'
+                    ? isSapphire
+                      ? 'bg-amber-400 text-stone-950 shadow-sm font-bold'
+                      : isEmerald
+                        ? 'bg-emerald-400 text-stone-950 shadow-sm font-bold'
+                        : 'bg-stone-950 text-white shadow-sm font-bold'
+                    : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All ({destinations.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleRegionChange('national')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  currentRegion === 'national'
+                    ? isSapphire
+                      ? 'bg-amber-400 text-stone-950 shadow-sm font-bold'
+                      : isEmerald
+                        ? 'bg-emerald-400 text-stone-950 shadow-sm font-bold'
+                        : 'bg-stone-950 text-white shadow-sm font-bold'
+                    : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>National (India)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleRegionChange('international')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  currentRegion === 'international'
+                    ? isSapphire
+                      ? 'bg-amber-400 text-stone-950 shadow-sm font-bold'
+                      : isEmerald
+                        ? 'bg-emerald-400 text-stone-950 shadow-sm font-bold'
+                        : 'bg-stone-950 text-white shadow-sm font-bold'
+                    : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
+                }`}
+              >
+                <Globe2 className="w-3.5 h-3.5" />
+                <span>International</span>
+              </button>
+            </div>
           </div>
 
           {/* Category Filter Pills */}

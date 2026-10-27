@@ -1,9 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { Compass, Sparkles, Menu, X, ArrowUpRight, Crown, Sun } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Compass, Sparkles, Menu, X, ArrowUpRight, Crown, Sun, ChevronDown, Globe2, MapPin, Palette, FileCheck } from 'lucide-react';
 
-export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry }) {
+export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onSelectRegion, onOpenJournal }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [destDropdownOpen, setDestDropdownOpen] = useState(false);
+  const [mobileDestOpen, setMobileDestOpen] = useState(false);
+  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+
+  const destDropdownRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
+  const servicesDropdownRef = useRef(null);
+  const servicesHoverTimeoutRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setDestDropdownOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setDestDropdownOpen(false);
+    }, 180);
+  };
+
+  const handleServicesMouseEnter = () => {
+    if (servicesHoverTimeoutRef.current) {
+      clearTimeout(servicesHoverTimeoutRef.current);
+    }
+    setServicesDropdownOpen(true);
+  };
+
+  const handleServicesMouseLeave = () => {
+    servicesHoverTimeoutRef.current = setTimeout(() => {
+      setServicesDropdownOpen(false);
+    }, 180);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      if (servicesHoverTimeoutRef.current) {
+        clearTimeout(servicesHoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -11,6 +57,20 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry }) {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Click outside listener for desktop destination and services dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (destDropdownRef.current && !destDropdownRef.current.contains(e.target)) {
+        setDestDropdownOpen(false);
+      }
+      if (servicesDropdownRef.current && !servicesDropdownRef.current.contains(e.target)) {
+        setServicesDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const isEmerald = currentTheme === 'emerald';
@@ -22,6 +82,18 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry }) {
     if (isEditorial) onSelectTheme('sapphire');
     else if (isSapphire) onSelectTheme('emerald');
     else onSelectTheme('editorial');
+  };
+
+  const handleChooseRegion = (region) => {
+    setDestDropdownOpen(false);
+    setMobileMenuOpen(false);
+    if (onSelectRegion) {
+      onSelectRegion(region);
+    }
+    const el = document.getElementById('destinations');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -66,77 +138,179 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry }) {
 
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-          <a 
-            href="#destinations" 
-            className={`transition-colors ${
-              isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
-            }`}
+          {/* Destinations Dropdown Trigger */}
+          <div 
+            className="relative"
+            ref={destDropdownRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
-            Destinations
-          </a>
-          <a 
-            href="#values" 
-            className={`transition-colors ${
-              isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
-            }`}
+            <button
+              type="button"
+              onClick={() => setDestDropdownOpen((prev) => !prev)}
+              className={`flex items-center gap-1.5 transition-colors cursor-pointer py-1.5 ${
+                isSapphire 
+                  ? 'text-stone-300 hover:text-amber-300' 
+                  : isEmerald 
+                    ? 'text-stone-300 hover:text-emerald-400' 
+                    : 'text-stone-600 hover:text-stone-950'
+              }`}
+            >
+              <span>Destinations</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${destDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu with Seamless Hover Bridge (zero gap) */}
+            {destDropdownOpen && (
+              <div 
+                className="absolute top-full left-0 pt-2 z-50 w-44"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <div 
+                  className={`p-1.5 rounded-2xl shadow-xl border backdrop-blur-xl transition-all duration-200 animate-fadeIn ${
+                    isSapphire
+                      ? 'bg-[#0a152e]/98 border-amber-500/30 text-stone-100 shadow-blue-950/80'
+                      : isEmerald
+                        ? 'bg-[#09221b]/98 border-emerald-800/60 text-stone-100 shadow-emerald-950/80'
+                        : 'bg-white/98 border-stone-200 text-stone-900 shadow-xl shadow-stone-300/60'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleChooseRegion('national')}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
+                      isSapphire
+                        ? 'hover:bg-amber-400/20 hover:text-amber-300 text-stone-200'
+                        : isEmerald
+                          ? 'hover:bg-emerald-400/20 hover:text-emerald-300 text-stone-200'
+                          : 'hover:bg-stone-100 text-stone-800 hover:text-stone-950'
+                    }`}
+                  >
+                    <MapPin className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                    <span>National</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleChooseRegion('international')}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer mt-0.5 ${
+                      isSapphire
+                        ? 'hover:bg-amber-400/20 hover:text-amber-300 text-stone-200'
+                        : isEmerald
+                          ? 'hover:bg-emerald-400/20 hover:text-emerald-300 text-stone-200'
+                          : 'hover:bg-stone-100 text-stone-800 hover:text-stone-950'
+                    }`}
+                  >
+                    <Globe2 className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                    <span>International</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Services Dropdown Trigger */}
+          <div 
+            className="relative"
+            ref={servicesDropdownRef}
+            onMouseEnter={handleServicesMouseEnter}
+            onMouseLeave={handleServicesMouseLeave}
           >
-            Our Values
-          </a>
+            <button
+              type="button"
+              onClick={() => setServicesDropdownOpen((prev) => !prev)}
+              className={`flex items-center gap-1.5 transition-colors cursor-pointer py-1.5 ${
+                isSapphire 
+                  ? 'text-stone-300 hover:text-amber-300' 
+                  : isEmerald 
+                    ? 'text-stone-300 hover:text-emerald-400' 
+                    : 'text-stone-600 hover:text-stone-950'
+              }`}
+            >
+              <span>Services</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${servicesDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu with Seamless Hover Bridge */}
+            {servicesDropdownOpen && (
+              <div 
+                className="absolute top-full left-0 pt-2 z-50 w-44"
+                onMouseEnter={handleServicesMouseEnter}
+                onMouseLeave={handleServicesMouseLeave}
+              >
+                <div 
+                  className={`p-1.5 rounded-2xl shadow-xl border backdrop-blur-xl transition-all duration-200 animate-fadeIn ${
+                    isSapphire
+                      ? 'bg-[#0a152e]/98 border-amber-500/30 text-stone-100 shadow-blue-950/80'
+                      : isEmerald
+                        ? 'bg-[#09221b]/98 border-emerald-800/60 text-stone-100 shadow-emerald-950/80'
+                        : 'bg-white/98 border-stone-200 text-stone-900 shadow-xl shadow-stone-300/60'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setServicesDropdownOpen(false);
+                      if (onOpenInquiry) onOpenInquiry();
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
+                      isSapphire
+                        ? 'hover:bg-amber-400/20 hover:text-amber-300 text-stone-200'
+                        : isEmerald
+                          ? 'hover:bg-emerald-400/20 hover:text-emerald-300 text-stone-200'
+                          : 'hover:bg-stone-100 text-stone-800 hover:text-stone-950'
+                    }`}
+                  >
+                    <FileCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                    <span>Visa</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <a 
             href="#experiences" 
             className={`transition-colors ${
               isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
             }`}
           >
-            Experiences
+            Luxury
           </a>
           <a 
             href="#stories" 
-            className={`transition-colors ${
+            onClick={() => {
+              if (onOpenJournal) onOpenJournal(null);
+            }}
+            className={`transition-colors cursor-pointer ${
               isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
             }`}
           >
-            Stories
-          </a>
-          <a 
-            href="#inquiry" 
-            className={`transition-colors ${
-              isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
-            }`}
-          >
-            Bookings
+            Blogs
           </a>
         </nav>
 
         {/* Actions & Theme Selector */}
         <div className="hidden sm:flex items-center gap-3">
-          {/* Theme Quick Cycle Button */}
+          {/* Theme Quick Cycle Icon Button */}
           <button
             onClick={handleCycleTheme}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 border transition-all duration-300 cursor-pointer ${
+            className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-300 cursor-pointer shadow-sm ${
               isSapphire
-                ? 'bg-[#060e20] border-amber-500/40 text-amber-300 hover:border-amber-400'
+                ? 'bg-[#060e20] border-amber-500/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10'
                 : isEmerald
-                  ? 'bg-emerald-950/60 border-emerald-600/40 text-emerald-300 hover:bg-emerald-900/80 hover:border-emerald-500'
-                  : 'bg-stone-100 border-stone-300 text-stone-700 hover:bg-stone-200 hover:text-stone-900'
+                  ? 'bg-emerald-950/60 border-emerald-600/40 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/50'
+                  : 'bg-stone-100 border-stone-200 text-stone-700 hover:bg-stone-200 hover:text-stone-950'
             }`}
-            title="Cycle Through UI Themes"
+            title={`Active Theme: ${isSapphire ? 'Royal Sapphire & Gold' : isEmerald ? 'Emerald Luxe' : 'Editorial Mono'}. Click to cycle theme.`}
+            aria-label="Toggle Theme"
           >
             {isSapphire ? (
-              <>
-                <Crown className="w-3.5 h-3.5 text-amber-400" />
-                <span>Theme: Royal Sapphire</span>
-              </>
+              <Crown className="w-4 h-4 text-amber-400" />
             ) : isEmerald ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Theme: Emerald Luxe</span>
-              </>
+              <Sparkles className="w-4 h-4 text-emerald-400" />
             ) : (
-              <>
-                <span className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></span>
-                <span>Theme: Editorial Mono</span>
-              </>
+              <Palette className="w-4 h-4 text-stone-800" />
             )}
           </button>
 
@@ -193,11 +367,70 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry }) {
               ? 'bg-[#0d2b23] border-emerald-800 text-stone-100' 
               : 'bg-white border-stone-200 text-stone-900'
         }`}>
-          <div className="flex flex-col gap-4 text-base font-medium">
-            <a href="#destinations" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">Destinations</a>
-            <a href="#values" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">Our Values</a>
-            <a href="#experiences" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">Experiences</a>
-            <a href="#stories" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">Stories</a>
+          <div className="flex flex-col gap-3 text-base font-medium">
+            {/* Destinations with National / International choices */}
+            <div className="border-b border-stone-200/10 pb-2">
+              <button
+                type="button"
+                onClick={() => setMobileDestOpen(!mobileDestOpen)}
+                className="w-full flex items-center justify-between py-1 text-left cursor-pointer"
+              >
+                <span>Destinations</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileDestOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {mobileDestOpen && (
+                <div className="pl-3 pt-2 pb-1 space-y-1.5 flex flex-col">
+                  <button
+                    type="button"
+                    onClick={() => handleChooseRegion('national')}
+                    className="flex items-center gap-2 text-xs opacity-85 hover:opacity-100 text-left cursor-pointer py-1"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>National</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleChooseRegion('international')}
+                    className="flex items-center gap-2 text-xs opacity-85 hover:opacity-100 text-left cursor-pointer py-1"
+                  >
+                    <Globe2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                    <span>International</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Services with Visa dropdown */}
+            <div className="border-b border-stone-200/10 pb-2">
+              <button
+                type="button"
+                onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
+                className="w-full flex items-center justify-between py-1 text-left cursor-pointer"
+              >
+                <span>Services</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {mobileServicesOpen && (
+                <div className="pl-3 pt-2 pb-1 space-y-1.5 flex flex-col">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (onOpenInquiry) onOpenInquiry();
+                    }}
+                    className="flex items-center gap-2 text-xs opacity-85 hover:opacity-100 text-left cursor-pointer py-1"
+                  >
+                    <FileCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Visa</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <a href="#experiences" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">Luxury</a>
+            <a href="#stories" onClick={() => { setMobileMenuOpen(false); if (onOpenJournal) onOpenJournal(null); }} className="py-1 border-b border-stone-200/10">Blogs</a>
             
             {/* Theme selector in mobile drawer */}
             <div className="py-2 flex items-center justify-between border-t border-stone-200/15 pt-3">

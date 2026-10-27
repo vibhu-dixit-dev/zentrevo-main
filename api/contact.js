@@ -1,4 +1,10 @@
 import nodemailer from 'nodemailer';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase Client from environment variables
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 export default async function handler(req, res) {
   // Only accept POST requests
@@ -37,6 +43,31 @@ export default async function handler(req, res) {
     const clientDest = destination ? String(destination).trim() : 'Custom Expedition';
     const clientGuests = guests ? String(guests).trim() : '2 Guests (Couple)';
     const clientMessage = message ? String(message).trim() : 'No additional requests specified.';
+
+    // 2.5 Persist Lead in Supabase Database (if not already inserted by client)
+    if (supabase && !req.body?._supabase_already_saved) {
+      try {
+        const { error: dbError } = await supabase.from('inquiries').insert([
+          {
+            name: clientName,
+            email: clientEmail,
+            phone: clientPhone,
+            destination: clientDest,
+            guests: clientGuests,
+            message: clientMessage,
+            status: 'New Inquiry',
+            newsletter_subscribed: true
+          }
+        ]);
+        if (dbError) {
+          console.warn('⚠️ Supabase Lead insertion notice:', dbError.message);
+        } else {
+          console.log(`✅ Supabase Lead saved successfully for: ${clientEmail}`);
+        }
+      } catch (dbErr) {
+        console.warn('⚠️ Supabase insertion catch block:', dbErr.message);
+      }
+    }
 
     // 3. SMTP Credentials (GoDaddy Secureserver / Titan for contact@zentrevo.in)
     const smtpHost = process.env.SMTP_HOST || 'smtpout.secureserver.net';

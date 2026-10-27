@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, X, Star, Quote, ArrowRight, Volume2, VolumeX, Sparkles, Crown } from 'lucide-react';
 import { testimonials, blogArticles } from '../data/travelData';
 
-export default function VideoStorySection({ currentTheme }) {
+export default function VideoStorySection({ currentTheme, onOpenJournal }) {
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -285,27 +285,29 @@ export default function VideoStorySection({ currentTheme }) {
                 Adventure Thrills and Excitement Await
               </h3>
             </div>
-            <a 
-              href="#inquiry" 
-              className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider hover:underline ${
+            <button 
+              type="button"
+              onClick={() => onOpenJournal && onOpenJournal(null)}
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider hover:underline cursor-pointer transition-all ${
                 isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-400' : 'text-stone-900'
               }`}
             >
               <span>View All Articles</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </a>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {blogArticles.map((article) => (
+            {blogArticles.slice(0, 3).map((article) => (
               <div
                 key={article.id}
-                className={`group rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-xl ${
+                onClick={() => onOpenJournal && onOpenJournal(article)}
+                className={`group rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-xl cursor-pointer ${
                   isSapphire
-                    ? 'bg-[#0c1a38] border-amber-500/30 text-stone-100 hover:border-amber-400/60'
+                    ? 'bg-[#0c1a38] border-amber-500/30 text-stone-100 hover:border-amber-400/60 hover:-translate-y-1'
                     : isEmerald
-                      ? 'bg-[#0d2b23] border-emerald-800/40 text-stone-100'
-                      : 'bg-white border-stone-200 text-stone-900'
+                      ? 'bg-[#0d2b23] border-emerald-800/40 text-stone-100 hover:border-emerald-500/60 hover:-translate-y-1'
+                      : 'bg-white border-stone-200 text-stone-900 hover:border-stone-400 hover:-translate-y-1'
                 }`}
               >
                 <div className="aspect-[16/10] overflow-hidden relative">
