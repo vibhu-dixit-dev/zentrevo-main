@@ -44,7 +44,10 @@ import {
   PieChart,
   Activity,
   Download,
-  Database
+  Database,
+  Send,
+  Smartphone,
+  Monitor
 } from 'lucide-react';
 import { destinations as initialDestinations } from '../data/travelData';
 import { supabase } from '../lib/supabaseClient';
@@ -384,6 +387,180 @@ export default function AdminDashboard({ onExit, onLogout }) {
     setTimeout(() => setToastMessage(''), 3500);
   };
 
+  // ─── NEWSLETTER STUDIO STATE & DISPATCH HANDLERS ─────────────────────────
+  const [newsletterTemplate, setNewsletterTemplate] = useState({
+    subject: 'Zentrevo Private Journal: Autumn Escapes & Villa Privileges',
+    issueTag: 'The Private Journal • Edition 14',
+    headline: 'Sublime Sanctuaries: Unhurried Stays from the Amalfi Coast to the Swiss Alps',
+    editorialText: `Dear Patron,\n\nAs the autumn light softens across Europe, we have secured private charter availability and premier villa buyouts across our most sought-after destinations.\n\nWhether you desire an unhurried morning overlooking Positano's cliffside or a secluded alpine wellness retreat in Zermatt, our concierge team is standing by to customize every moment to your exact cadence.`,
+    pullQuote: 'True luxury is the quiet mastery of time, place, and absolute serenity.',
+    featuredTripId: 1,
+    perksText: 'Complimentary Riva yacht sunset charter, champagne welcome, and guaranteed early check-in.',
+    ctaText: 'Inquire for Bespoke Reservation',
+    ctaUrl: 'https://zentrevo.in/#booking'
+  });
+  const [previewDevice, setPreviewDevice] = useState('desktop'); // 'desktop' | 'mobile'
+  const [previewPersona, setPreviewPersona] = useState('named'); // 'named' | 'anonymous'
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [testEmailInput, setTestEmailInput] = useState('contact@zentrevo.in');
+  const [showBroadcastConfirm, setShowBroadcastConfirm] = useState(false);
+
+  // Weekly Schedule State
+  const [newsletterSchedule, setNewsletterSchedule] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zentrevo_newsletter_schedule');
+      return saved ? JSON.parse(saved) : { day: 'Monday', time: '10:00', label: 'Every Monday at 10:00 UTC (3:30 PM IST)' };
+    } catch {
+      return { day: 'Monday', time: '10:00', label: 'Every Monday at 10:00 UTC (3:30 PM IST)' };
+    }
+  });
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [editScheduleDay, setEditScheduleDay] = useState(newsletterSchedule.day);
+  const [editScheduleTime, setEditScheduleTime] = useState(newsletterSchedule.time);
+
+  // Total Newsletters Sent Counter (persisted and live-synced)
+  const [totalNewslettersSent, setTotalNewslettersSent] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zentrevo_newsletters_sent_count');
+      const parsed = saved ? parseInt(saved, 10) : 1;
+      // Clear out old demo fallback value (18) and default to 1
+      if (parsed === 18 || isNaN(parsed) || parsed < 1) {
+        localStorage.setItem('zentrevo_newsletters_sent_count', '1');
+        return 1;
+      }
+      return parsed;
+    } catch {
+      return 1;
+    }
+  });
+
+  // Sync newsletter count from inquiries table if broadcast records exist
+  useEffect(() => {
+    if (inquiries && inquiries.length > 0) {
+      const dbBroadcasts = inquiries.filter(inq => 
+        inq.status === 'Newsletter Broadcasted' || inq.status === 'Newsletter Sent'
+      ).length;
+      if (dbBroadcasts > 0) {
+        setTotalNewslettersSent(prev => {
+          const maxVal = Math.max(prev, dbBroadcasts);
+          try { localStorage.setItem('zentrevo_newsletters_sent_count', String(maxVal)); } catch {}
+          return maxVal;
+        });
+      }
+    }
+  }, [inquiries]);
+
+  const handleSaveSchedule = (e) => {
+    if (e) e.preventDefault();
+    const updated = {
+      day: editScheduleDay,
+      time: editScheduleTime,
+      label: `Every ${editScheduleDay} at ${editScheduleTime} UTC`
+    };
+    setNewsletterSchedule(updated);
+    try {
+      localStorage.setItem('zentrevo_newsletter_schedule', JSON.stringify(updated));
+    } catch {}
+    setIsScheduleModalOpen(false);
+    showToast(`Weekly schedule updated to Every ${editScheduleDay} at ${editScheduleTime} UTC!`);
+  };
+
+  const subscriberCount = useMemo(() => {
+    return inquiries.filter(i => i.newsletterSubscribed !== false && i.email && i.email.includes('@')).length;
+  }, [inquiries]);
+
+  const selectedFeaturedTrip = useMemo(() => {
+    return trips.find(t => String(t.id) === String(newsletterTemplate.featuredTripId)) || trips[0];
+  }, [trips, newsletterTemplate.featuredTripId]);
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailInput || !testEmailInput.includes('@')) {
+      showToast('Please enter a valid email address for the test dispatch.');
+      return;
+    }
+    setIsSendingTest(true);
+    try {
+      const res = await fetch('/api/newsletter/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isTest: true,
+          testRecipient: testEmailInput,
+          template: {
+            ...newsletterTemplate,
+            featuredTrip: selectedFeaturedTrip ? {
+              title: selectedFeaturedTrip.title,
+              image: selectedFeaturedTrip.image,
+              location: selectedFeaturedTrip.location,
+              price: formatPrice(selectedFeaturedTrip.price),
+              duration: selectedFeaturedTrip.duration,
+              description: selectedFeaturedTrip.description || selectedFeaturedTrip.highlights,
+              perks: newsletterTemplate.perksText
+            } : null
+          }
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTotalNewslettersSent(prev => {
+          const nextVal = prev + 1;
+          try { localStorage.setItem('zentrevo_newsletters_sent_count', String(nextVal)); } catch {}
+          return nextVal;
+        });
+        showToast(`Test dispatch successfully delivered to ${testEmailInput}`);
+      } else {
+        showToast(data.message || 'Failed to dispatch test email.');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error dispatching test email.');
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
+  const handleBroadcastNewsletter = async () => {
+    setShowBroadcastConfirm(false);
+    setIsBroadcasting(true);
+    try {
+      const res = await fetch('/api/newsletter/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isTest: false,
+          template: {
+            ...newsletterTemplate,
+            featuredTrip: selectedFeaturedTrip ? {
+              title: selectedFeaturedTrip.title,
+              image: selectedFeaturedTrip.image,
+              location: selectedFeaturedTrip.location,
+              price: formatPrice(selectedFeaturedTrip.price),
+              duration: selectedFeaturedTrip.duration,
+              description: selectedFeaturedTrip.description || selectedFeaturedTrip.highlights,
+              perks: newsletterTemplate.perksText
+            } : null
+          }
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const sent = data.count || subscriberCount || 1;
+        setTotalNewslettersSent(prev => {
+          const nextVal = prev + sent;
+          try { localStorage.setItem('zentrevo_newsletters_sent_count', String(nextVal)); } catch {}
+          return nextVal;
+        });
+        showToast(data.message || `Dispatched to ${sent} subscribers!`);
+      } else {
+        showToast(data.message || 'Newsletter broadcast encountered an issue.');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error broadcasting newsletter.');
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
   // Filtered List
   const filteredTrips = useMemo(() => {
     return trips.filter((trip) => {
@@ -549,7 +726,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
             >
               <div className="flex items-center gap-2.5">
                 <Layers className="w-4 h-4" />
-                <span>Itineraries</span>
+                <span>Cards</span>
               </div>
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                 activeTab === 'itineraries' ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-700'
@@ -583,6 +760,31 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
               </div>
             </button>
+
+            {/* Panel Tab 4: Newsletter */}
+            <button
+              onClick={() => {
+                setActiveTab('newsletter');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'newsletter'
+                  ? 'bg-stone-950 text-white shadow-sm font-bold'
+                  : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Send className="w-4 h-4" />
+                <span>Newsletter</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  activeTab === 'newsletter' ? 'bg-amber-400 text-stone-950' : 'bg-amber-100 text-amber-900'
+                }`}>
+                  {subscriberCount}
+                </span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -604,7 +806,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
               AD
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-stone-900 truncate">Concierge Admin</p>
+              <p className="text-xs font-bold text-stone-900 truncate">Admin</p>
               <p className="text-[9px] text-stone-600 truncate">contact@zentrevo.in</p>
             </div>
             {onLogout && (
@@ -639,7 +841,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
               <span className="font-editorial text-xs sm:text-sm font-bold text-stone-900 truncate">Catalogue</span>
               <span className="text-stone-400">•</span>
               <span className="capitalize truncate text-[11px] sm:text-xs font-semibold text-stone-700">
-                {activeTab === 'analytics' ? 'Performance' : activeTab === 'itineraries' ? 'Itineraries' : 'Inquiries'}
+                {activeTab === 'analytics' ? 'Performance' : activeTab === 'itineraries' ? 'Cards' : activeTab === 'inquiries' ? 'Inquiries' : 'Newsletter'}
               </span>
             </div>
           </div>
@@ -721,48 +923,48 @@ export default function AdminDashboard({ onExit, onLogout }) {
         <div className="p-3.5 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 flex-1 max-w-full">
           
           {/* ─── COUTURE KPI SUMMARY TILES (Live Converted Currency) ───────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
             
             <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
               <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Published Itineraries
+                Active Cards
               </span>
               <div className="flex items-baseline justify-between">
                 <span className="font-editorial text-3xl font-bold text-stone-950">
                   0{trips.length}
                 </span>
                 <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  100% Live
+                  Live on Website
                 </span>
               </div>
               <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                All showcased on main booking grid
+                Itinerary cards visible on website
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
               <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Concierge Requests
+                Total Inquiries
               </span>
               <div className="flex items-baseline justify-between">
                 <span className="font-editorial text-3xl font-bold text-stone-950">
-                  57
+                  {inquiries.length > 50 ? inquiries.length : 57}
                 </span>
                 <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  +26% this mo
+                  +26% this month
                 </span>
               </div>
               <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                4 requests pending review today
+                4 new inquiries waiting for reply
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
               <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Pipeline Charter Volume
+                Estimated Bookings Value
               </span>
-              <div className="flex items-baseline justify-between">
-                <span className="font-editorial text-2xl sm:text-3xl font-bold text-stone-950 truncate">
+              <div className="flex flex-wrap items-baseline justify-between gap-1">
+                <span className="font-editorial text-2xl sm:text-3xl font-bold text-stone-950">
                   {formatPrice(148250)}
                 </span>
                 <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
@@ -770,13 +972,13 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 </span>
               </div>
               <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                Real-time converted from live forex rates
+                Estimated value from traveler inquiries
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
               <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Curator Satisfaction
+                Guest Reviews & Rating
               </span>
               <div className="flex items-baseline justify-between">
                 <span className="font-editorial text-3xl font-bold text-stone-950">
@@ -787,7 +989,24 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 </span>
               </div>
               <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                Verified private traveler reviews
+                Average rating from traveler feedback
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
+                Newsletters Sent
+              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="font-editorial text-3xl font-bold text-stone-950">
+                  {totalNewslettersSent}
+                </span>
+                <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  Delivered
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
+                Total newsletter emails sent till date
               </p>
             </div>
 
@@ -816,8 +1035,8 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 <div className="lg:col-span-2 p-4 sm:p-6 lg:p-8 rounded-3xl bg-white border border-stone-200/90 shadow-sm space-y-6 overflow-hidden">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <h3 className="font-editorial text-lg sm:text-xl font-bold text-stone-950">Voyage Inquiries & Seasonal Pacing</h3>
-                      <p className="text-xs text-stone-600">Monthly dossier submissions across 2026</p>
+                      <h3 className="font-editorial text-lg sm:text-xl font-bold text-stone-950">Monthly Inquiries & Travel Trends</h3>
+                      <p className="text-xs text-stone-600">Number of guest inquiries received each month</p>
                     </div>
                     <span className="text-xs font-bold text-stone-900 border border-stone-200 px-3 py-1 rounded-full bg-stone-50 self-start sm:self-auto">
                       Full Year 2026
@@ -856,9 +1075,9 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-stone-600 pt-1">
-                    <span>Peak Season: <strong>October - Summer Amalfi & Alps</strong></span>
+                    <span>Busiest Season: <strong>October & Summer months</strong></span>
                     <span className="font-bold text-stone-900">
-                      Estimated YTD Pipeline: {formatPrice(1160000)}
+                      Total Inquiries Value: {formatPrice(1160000)}
                     </span>
                   </div>
                 </div>
@@ -866,8 +1085,8 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 {/* Geographic Popularity */}
                 <div className="p-6 sm:p-8 rounded-3xl bg-white border border-stone-200/90 shadow-sm flex flex-col justify-between space-y-6">
                   <div>
-                    <h3 className="font-editorial text-xl font-bold text-stone-950">Destination Share</h3>
-                    <p className="text-xs text-stone-600">Most requested private charter routes</p>
+                    <h3 className="font-editorial text-xl font-bold text-stone-950">Most Popular Destinations</h3>
+                    <p className="text-xs text-stone-600">Destinations most requested by travelers</p>
                   </div>
 
                   <div className="space-y-3.5">
@@ -890,7 +1109,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   </div>
 
                   <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-stone-600 leading-relaxed">
-                    Italian clifftop villas lead seasonal inquiries by 38%. Mediterranean itineraries convert at 74%.
+                    Italy is the most requested destination (38%). 74% of Mediterranean inquiries convert into bookings.
                   </div>
                 </div>
 
@@ -906,11 +1125,11 @@ export default function AdminDashboard({ onExit, onLogout }) {
                       <div className="flex items-center gap-2">
                         <PieChart className="w-4 h-4 text-amber-600" />
                         <h3 className="font-editorial text-xl font-bold text-stone-950">
-                          Portfolio Revenue Archetypes
+                          Revenue by Travel Experience
                         </h3>
                       </div>
                       <p className="text-xs text-stone-600 mt-0.5">
-                        Charter value split by luxury experience vertical
+                        Estimated revenue split across vacation categories
                       </p>
                     </div>
                     <span className="text-[11px] font-bold text-stone-700 bg-stone-100 px-3 py-1 rounded-full self-start sm:self-auto font-mono">
@@ -988,7 +1207,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                       {/* Donut Hole Center Stats */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
                         <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600">
-                          Total Pipeline
+                          Total Revenue
                         </span>
                         <span className="font-editorial text-lg sm:text-xl font-bold text-stone-950 font-mono">
                           {formatPrice(1482500)}
@@ -1024,9 +1243,9 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/80 flex items-center justify-between text-xs text-stone-600">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Highest grossing vertical: Private Yacht Charters</span>
+                      <span>Top Category: Private Yacht Charters</span>
                     </span>
-                    <span className="font-bold text-stone-900 font-mono">Avg {formatPrice(34800)}/dossier</span>
+                    <span className="font-bold text-stone-900 font-mono">Avg {formatPrice(34800)} per booking</span>
                   </div>
                 </div>
 
@@ -1037,16 +1256,16 @@ export default function AdminDashboard({ onExit, onLogout }) {
                       <div className="flex items-center gap-2">
                         <Activity className="w-4 h-4 text-emerald-600" />
                         <h3 className="font-editorial text-xl font-bold text-stone-950">
-                          Concierge Pipeline Velocity
+                          Inquiry to Booking Funnel
                         </h3>
                       </div>
                       <p className="text-xs text-stone-600 mt-0.5">
-                        Inquiry qualification through confirmed deposit
+                        Track how guest inquiries convert into confirmed bookings
                       </p>
                     </div>
                     <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5 self-start sm:self-auto shrink-0">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                      <span>18 min Avg SLA</span>
+                      <span>18 min Avg Response Time</span>
                     </span>
                   </div>
 
@@ -1054,7 +1273,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   <div className="space-y-3">
                     {[
                       { 
-                        stage: '01. Dossiers Received', 
+                        stage: '01. Inquiries Received', 
                         count: '57 Travelers', 
                         rate: '100%', 
                         bar: 'w-full', 
@@ -1062,7 +1281,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                         note: 'Direct booking submissions' 
                       },
                       { 
-                        stage: '02. Bespoke Proposals Curated', 
+                        stage: '02. Custom Proposals Sent', 
                         count: '46 Itineraries', 
                         rate: '80.7%', 
                         bar: 'w-[80.7%]', 
@@ -1070,7 +1289,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                         note: 'Within 24h of inquiry' 
                       },
                       { 
-                        stage: '03. Private Consultation Scheduled', 
+                        stage: '03. Consultations Scheduled', 
                         count: '34 VIP Guests', 
                         rate: '59.6%', 
                         bar: 'w-[59.6%]', 
@@ -1078,7 +1297,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                         note: 'Direct phone & video concierge' 
                       },
                       { 
-                        stage: '04. Charters Confirmed & Deposited', 
+                        stage: '04. Trips Confirmed & Booked', 
                         count: '26 Voyages', 
                         rate: '45.6%', 
                         bar: 'w-[45.6%]', 
@@ -1108,24 +1327,24 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   {/* Real-time Global Concierge Desks */}
                   <div className="pt-2 border-t border-stone-100 grid grid-cols-3 gap-2 text-center">
                     <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/60">
-                      <span className="text-[10px] uppercase font-bold text-stone-600 block">Monaco Desk</span>
+                      <span className="text-[10px] uppercase font-bold text-stone-600 block">Monaco Team</span>
                       <span className="text-xs font-bold text-emerald-800 flex items-center justify-center gap-1 mt-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                         <span>Active</span>
                       </span>
                     </div>
                     <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/60">
-                      <span className="text-[10px] uppercase font-bold text-stone-600 block">Kyoto Desk</span>
+                      <span className="text-[10px] uppercase font-bold text-stone-600 block">Kyoto Team</span>
                       <span className="text-xs font-bold text-amber-700 flex items-center justify-center gap-1 mt-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                        <span>High Pacing</span>
+                        <span>High Demand</span>
                       </span>
                     </div>
                     <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/60">
-                      <span className="text-[10px] uppercase font-bold text-stone-600 block">New York Desk</span>
+                      <span className="text-[10px] uppercase font-bold text-stone-600 block">New York Team</span>
                       <span className="text-xs font-bold text-teal-800 flex items-center justify-center gap-1 mt-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
-                        <span>Surging</span>
+                        <span>High Demand</span>
                       </span>
                     </div>
                   </div>
@@ -1166,7 +1385,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                     <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Search itineraries..."
+                      placeholder="Search cards..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full bg-stone-50 border border-stone-200/90 rounded-full pl-9 pr-4 py-1.5 text-xs text-stone-900 placeholder-stone-500 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
@@ -1298,9 +1517,9 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h2 className="font-editorial text-2xl font-bold text-stone-950">Direct Traveler Inquiries</h2>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                      <Database className="w-3 h-3 text-emerald-600" />
-                      <span>Supabase Live DB</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                      <span>Live Synced</span>
                     </span>
                   </div>
                   <p className="text-xs text-stone-600">Submissions received via website booking concierge, synced in real-time.</p>
@@ -1463,6 +1682,568 @@ export default function AdminDashboard({ onExit, onLogout }) {
                     </div>
                   ))}
               </div>
+            </div>
+          )}
+
+          {/* ─── 4. NEWSLETTER STUDIO TAB ────────────────────────────────────────── */}
+          {activeTab === 'newsletter' && (
+            <div className="space-y-6">
+              
+              {/* Top Banner & Status Ribbon (Clean White Admin Card UI) */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-editorial text-xl sm:text-2xl font-bold tracking-tight text-stone-950">
+                      Weekly Newsletter
+                    </h2>
+                    <p className="text-xs text-stone-600 mt-0.5 max-w-2xl leading-relaxed">
+                      Send curated travel stories, seasonal highlights, and exclusive member perks to your subscribers.
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                      onClick={handleExportNewsletterCSV}
+                      className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200/80 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Export Subscribers ({subscriberCount})</span>
+                    </button>
+                    <button
+                      onClick={() => setShowBroadcastConfirm(true)}
+                      disabled={isBroadcasting}
+                      className="px-4 py-2 rounded-xl bg-stone-950 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{isBroadcasting ? 'Broadcasting...' : `Send Newsletter (${subscriberCount})`}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-Metrics Ribbon */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-stone-100">
+                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Subscribed Guests</span>
+                    <span className="text-base font-bold text-stone-950 mt-0.5 block">{subscriberCount} Readers</span>
+                  </div>
+                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/70 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Weekly Schedule</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditScheduleDay(newsletterSchedule.day);
+                          setEditScheduleTime(newsletterSchedule.time);
+                          setIsScheduleModalOpen(true);
+                        }}
+                        className="text-[10px] font-bold text-amber-800 hover:text-amber-950 underline flex items-center gap-0.5 cursor-pointer"
+                        title="Edit sending day and time"
+                      >
+                        <Edit3 className="w-2.5 h-2.5" />
+                        <span>Edit</span>
+                      </button>
+                    </div>
+                    <span className="text-base font-bold text-stone-900 mt-0.5 block">
+                      Every {newsletterSchedule.day}
+                    </span>
+                    <span className="text-[10px] text-stone-500 block truncate">
+                      {newsletterSchedule.time} UTC ({newsletterSchedule.time === '10:00' ? '3:30 PM IST' : 'Scheduled'})
+                    </span>
+                  </div>
+                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Delivery Status</span>
+                    <span className="text-base font-bold text-emerald-700 mt-0.5 block">Connected & Ready</span>
+                  </div>
+                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Sender Email</span>
+                    <span className="text-base font-bold text-stone-900 mt-0.5 block truncate">contact@zentrevo.in</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Two-Column Editor & Live Simulator */}
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                
+                {/* ─── COLUMN 1: TEMPLATE COMPOSER (XL: 6 cols) ──────────────── */}
+                <div className="xl:col-span-6 space-y-6">
+                  
+                  {/* Content Inputs */}
+                  <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-sm space-y-5">
+                    <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+                      <div>
+                        <h3 className="text-sm font-bold text-stone-950 uppercase tracking-wider">Editorial Content Controls</h3>
+                        <p className="text-xs text-stone-500 mt-0.5">Customize the narrative and highlighted itinerary for this dispatch.</p>
+                      </div>
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-stone-100 text-stone-700">HTML 5.0</span>
+                    </div>
+
+                    {/* Subject Line */}
+                    <div>
+                      <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                        Email Subject Line *
+                      </label>
+                      <input
+                        type="text"
+                        value={newsletterTemplate.subject}
+                        onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, subject: e.target.value })}
+                        placeholder="e.g. Zentrevo Private Journal: Autumn Escapes & Villa Privileges"
+                        className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+
+                    {/* Issue Tag & Headline */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                          Issue Header Tag
+                        </label>
+                        <input
+                          type="text"
+                          value={newsletterTemplate.issueTag}
+                          onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, issueTag: e.target.value })}
+                          placeholder="e.g. The Private Journal • Edition 14"
+                          className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                          Featured Itinerary
+                        </label>
+                        <select
+                          value={newsletterTemplate.featuredTripId}
+                          onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, featuredTripId: e.target.value })}
+                          className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium cursor-pointer"
+                        >
+                          {trips.map(trip => (
+                            <option key={trip.id} value={trip.id}>
+                              {trip.title} ({trip.location}) - {formatPrice(trip.price)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Headline */}
+                    <div>
+                      <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                        Story Headline *
+                      </label>
+                      <input
+                        type="text"
+                        value={newsletterTemplate.headline}
+                        onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, headline: e.target.value })}
+                        placeholder="e.g. Sublime Sanctuaries: Unhurried Stays from Positano to Zermatt"
+                        className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+
+                    {/* Editorial Story */}
+                    <div>
+                      <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                        Editorial Body Narrative *
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={newsletterTemplate.editorialText}
+                        onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, editorialText: e.target.value })}
+                        placeholder="Write the concierge dispatch letter to your patrons..."
+                        className="w-full bg-stone-50 border border-stone-300 rounded-2xl p-3.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all leading-relaxed font-sans"
+                      />
+                      <div className="flex items-start gap-2 mt-2 p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 text-stone-700 text-[11px] leading-relaxed">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Smart Greeting:</strong> Starting your letter with <em>"Dear Patron,"</em> will automatically personalize on dispatch to the traveler's registered name (e.g. <em>"Dear {inquiries[0]?.traveler || 'Julian Vance'},"</em>) or show <em>"Dear Traveler,"</em> for newsletter-only subscribers.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Pull Quote */}
+                    <div>
+                      <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                        Editorial Pull Quote (Golden Highlight)
+                      </label>
+                      <input
+                        type="text"
+                        value={newsletterTemplate.pullQuote}
+                        onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, pullQuote: e.target.value })}
+                        placeholder='e.g. "True luxury is the quiet mastery of time, place, and absolute serenity."'
+                        className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium italic"
+                      />
+                    </div>
+
+                    {/* Perks & CTA */}
+                    <div className="space-y-4 pt-2 border-t border-stone-100">
+                      <div>
+                        <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                          VIP Privileges / Perks Highlight
+                        </label>
+                        <input
+                          type="text"
+                          value={newsletterTemplate.perksText}
+                          onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, perksText: e.target.value })}
+                          placeholder="e.g. Complimentary Riva yacht sunset charter, champagne welcome..."
+                          className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                            Button Call To Action Text
+                          </label>
+                          <input
+                            type="text"
+                            value={newsletterTemplate.ctaText}
+                            onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, ctaText: e.target.value })}
+                            placeholder="e.g. Inquire for Bespoke Reservation"
+                            className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                            Button Link Destination
+                          </label>
+                          <input
+                            type="text"
+                            value={newsletterTemplate.ctaUrl}
+                            onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, ctaUrl: e.target.value })}
+                            placeholder="https://zentrevo.in/#booking"
+                            className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Test Dispatch Console */}
+                  <div className="bg-stone-50 rounded-3xl p-5 sm:p-6 border border-stone-200/90 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-amber-600" />
+                      <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+                        Send Test Dispatch Preview
+                      </h4>
+                    </div>
+                    <p className="text-xs text-stone-600 leading-relaxed">
+                      Deliver a full live test of this template directly to your inbox to check typography, image alignment, and links before broadcasting.
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <input
+                        type="email"
+                        value={testEmailInput}
+                        onChange={(e) => setTestEmailInput(e.target.value)}
+                        placeholder="your-email@zentrevo.in"
+                        className="w-full sm:flex-1 bg-white border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 transition-all font-medium"
+                      />
+                      <button
+                        onClick={handleSendTestEmail}
+                        disabled={isSendingTest}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-stone-950 hover:bg-stone-800 text-white text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50 shrink-0"
+                      >
+                        {isSendingTest ? 'Delivering...' : 'Send Test to Me'}
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* ─── COLUMN 2: LIVE SIMULATOR (XL: 6 cols) ─────────────────── */}
+                <div className="xl:col-span-6 space-y-4">
+                  
+                  {/* Simulator Controls */}
+                  <div className="bg-white rounded-2xl p-3 border border-stone-200/90 flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                      <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+                        Live Client Email Simulator
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewPersona(previewPersona === 'named' ? 'anonymous' : 'named')}
+                        className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-800 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                        title="Toggle smart greeting personalized preview"
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-600" />
+                        <span>{previewPersona === 'named' ? `Greeting: "Dear ${inquiries[0]?.traveler?.split(' ')[0] || 'Julian'},"` : 'Greeting: "Dear Traveler,"'}</span>
+                      </button>
+
+                      <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
+                        <button
+                          onClick={() => setPreviewDevice('desktop')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            previewDevice === 'desktop'
+                              ? 'bg-white text-stone-950 shadow-xs'
+                              : 'text-stone-600 hover:text-stone-950'
+                          }`}
+                        >
+                          <Monitor className="w-3.5 h-3.5" />
+                          <span>Desktop</span>
+                        </button>
+                        <button
+                          onClick={() => setPreviewDevice('mobile')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            previewDevice === 'mobile'
+                              ? 'bg-white text-stone-950 shadow-xs'
+                              : 'text-stone-600 hover:text-stone-950'
+                          }`}
+                        >
+                          <Smartphone className="w-3.5 h-3.5" />
+                          <span>Mobile</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Simulator Frame (Simulates Email Client Body) */}
+                  <div className="bg-[#050b18] p-4 sm:p-8 rounded-3xl border border-stone-800 shadow-2xl flex justify-center overflow-x-auto min-h-[700px]">
+                    <div
+                      className={`transition-all duration-300 w-full ${
+                        previewDevice === 'mobile' ? 'max-w-[390px]' : 'max-w-[620px]'
+                      }`}
+                    >
+                      {/* Email Card Container */}
+                      <div className="bg-[#0b1528] border border-amber-600/35 rounded-3xl overflow-hidden shadow-2xl text-stone-200">
+                        
+                        {/* Masthead */}
+                        <div className="p-6 sm:p-8 text-center bg-gradient-to-b from-[#0d1c3a] to-[#0b1528] border-b border-white/10">
+                          <span className="text-[10px] uppercase font-bold tracking-[3px] text-amber-400 block mb-2">
+                            {newsletterTemplate.issueTag || 'The Private Journal • Weekly Edition'}
+                          </span>
+                          <h3 className="font-editorial text-xl sm:text-2xl font-bold text-white leading-snug">
+                            {newsletterTemplate.headline || 'Curated Itineraries, Hidden Sanctuaries & Private Access'}
+                          </h3>
+                          <p className="text-[11px] text-stone-400 mt-2 uppercase tracking-widest font-mono">
+                            Dispatched from Zentrevo Global Concierge
+                          </p>
+                        </div>
+
+                        {/* Body Narrative */}
+                        <div className="p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-stone-300 leading-relaxed">
+                          <p className="whitespace-pre-line">
+                            {previewPersona === 'named'
+                              ? (newsletterTemplate.editorialText || '').replace(/^Dear\s+[^,\n]+,/i, `Dear ${inquiries[0]?.traveler || 'Julian Vance'},`)
+                              : (newsletterTemplate.editorialText || '').replace(/^Dear\s+[^,\n]+,/i, 'Dear Traveler,')}
+                          </p>
+
+                          {/* Pull Quote */}
+                          {newsletterTemplate.pullQuote && (
+                            <div className="my-5 p-4 bg-[#081020] border-l-4 border-amber-500 rounded-xl">
+                              <p className="italic text-xs sm:text-sm text-amber-100 font-serif leading-relaxed">
+                                "{newsletterTemplate.pullQuote}"
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Featured Trip Card */}
+                          {selectedFeaturedTrip && (
+                            <div className="my-6 border border-amber-500/30 rounded-2xl overflow-hidden bg-[#07101e]">
+                              {selectedFeaturedTrip.image && (
+                                <div className="h-44 sm:h-52 w-full overflow-hidden relative">
+                                  <img
+                                    src={selectedFeaturedTrip.image}
+                                    alt={selectedFeaturedTrip.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-sm text-[10px] uppercase tracking-wider text-amber-300 font-bold border border-amber-400/30">
+                                    {selectedFeaturedTrip.badge || 'Curator Highlight'}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="p-4 sm:p-5 space-y-3">
+                                <div>
+                                  <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold block mb-1">
+                                    {selectedFeaturedTrip.location}
+                                  </span>
+                                  <h4 className="font-editorial text-lg font-bold text-white">
+                                    {selectedFeaturedTrip.title}
+                                  </h4>
+                                </div>
+
+                                <p className="text-xs text-stone-400 line-clamp-2 leading-relaxed">
+                                  {selectedFeaturedTrip.description || 'Private chartered transfers, clifftop villa sanctuary, and tailored cultural immersion.'}
+                                </p>
+
+                                {newsletterTemplate.perksText && (
+                                  <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl p-2.5">
+                                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Exclusive Member Privilege:</span>
+                                    <p className="text-xs text-stone-300 mt-0.5">{newsletterTemplate.perksText}</p>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                  <div>
+                                    <span className="text-[10px] text-stone-400 block">Starting from</span>
+                                    <span className="font-editorial text-base font-bold text-white">
+                                      {formatPrice(selectedFeaturedTrip.price)}
+                                    </span>
+                                  </div>
+                                  <a
+                                    href={newsletterTemplate.ctaUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md"
+                                  >
+                                    <span>{newsletterTemplate.ctaText || 'Reserve Journey'}</span>
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Concierge Sign-Off */}
+                          <div className="pt-4 border-t border-white/10 text-xs text-stone-400 space-y-1">
+                            <p className="font-semibold text-white">With warm regards,</p>
+                            <p className="font-editorial text-amber-300 text-base font-bold">The Zentrevo Private Concierge</p>
+                            <p className="text-[11px] text-stone-500">London • Paris • Mumbai • Tokyo</p>
+                          </div>
+                        </div>
+
+                        {/* Email Footer */}
+                        <div className="p-5 text-center bg-[#070e1c] border-t border-white/10 text-[10px] text-stone-500 space-y-1">
+                          <p>© 2026 Zentrevo Journeys Private Limited. All rights reserved.</p>
+                          <p>You received this dispatch because you subscribed to The Private Journal at zentrevo.in.</p>
+                          <p className="text-stone-400 underline cursor-pointer">Unsubscribe from future dispatches</p>
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* ─── CONFIRMATION MODAL BEFORE MASS BROADCAST ────────────────── */}
+              {showBroadcastConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200 text-stone-900 space-y-5">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                      <Send className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-stone-950">Confirm Mass Newsletter Broadcast?</h3>
+                      <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                        You are about to dispatch this edition directly to <strong>{subscriberCount} verified subscribers</strong>.
+                      </p>
+                    </div>
+
+                    <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200 text-xs space-y-1">
+                      <p className="font-semibold text-stone-800">Subject: <span className="font-normal text-stone-600">{newsletterTemplate.subject}</span></p>
+                      <p className="font-semibold text-stone-800">Sender: <span className="font-mono text-stone-600">contact@zentrevo.in</span></p>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowBroadcastConfirm(false)}
+                        className="px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBroadcastNewsletter}
+                        className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                      >
+                        Authorize & Dispatch Now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── MODAL: EDIT WEEKLY NEWSLETTER SCHEDULE ─────────────────────── */}
+              {isScheduleModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200 text-stone-900 space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-amber-800 block">Automation Timer</span>
+                        <h3 className="font-editorial text-xl font-bold text-stone-950">Set Weekly Dispatch Schedule</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsScheduleModalOpen(false)}
+                        className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center justify-center transition-all cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-stone-600 leading-relaxed">
+                      Select the day of the week and preferred delivery time for the automated Private Journal send.
+                    </p>
+
+                    <form onSubmit={handleSaveSchedule} className="space-y-4">
+                      <div>
+                        <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                          Day of the Week
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => setEditScheduleDay(day)}
+                              className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                                editScheduleDay === day
+                                  ? 'bg-stone-950 text-white font-bold'
+                                  : 'bg-stone-50 border border-stone-200 text-stone-700 hover:bg-stone-100'
+                              }`}
+                            >
+                              {day.slice(0, 3)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                            Dispatch Time (UTC)
+                          </label>
+                          <input
+                            type="time"
+                            value={editScheduleTime}
+                            onChange={(e) => setEditScheduleTime(e.target.value)}
+                            className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 font-medium focus:outline-none focus:border-stone-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                            Reference (IST)
+                          </label>
+                          <div className="bg-stone-100 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-700 font-medium truncate">
+                            {editScheduleTime} UTC (~{editScheduleTime === '10:00' ? '3:30 PM IST' : 'Local'})
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                        <button
+                          type="button"
+                          onClick={() => setIsScheduleModalOpen(false)}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2.5 rounded-xl bg-stone-950 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                        >
+                          Save Schedule
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 

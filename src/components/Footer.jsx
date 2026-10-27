@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Compass, ArrowRight, Check, Globe, Share2, Mail, Crown, Sparkles } from 'lucide-react';
+import { Compass, ArrowRight, Check, Globe, Share2, Mail, Crown, Sparkles, Loader2 } from 'lucide-react';
 import { SOCIAL_CHANNELS } from '../data/socialChannels';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Footer({ currentTheme, onSelectTheme }) {
   const isEmerald = currentTheme === 'emerald';
@@ -9,12 +10,47 @@ export default function Footer({ currentTheme, onSelectTheme }) {
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (newsletterEmail) {
-      setSubscribed(true);
+    if (!newsletterEmail || !newsletterEmail.includes('@')) return;
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    const cleanEmail = newsletterEmail.trim().toLowerCase();
+
+    // 1. Direct Persist to Supabase Database
+    if (supabase) {
+      try {
+        await supabase.from('inquiries').insert([
+          {
+            name: 'Journal Subscriber',
+            email: cleanEmail,
+            destination: 'The Private Journal Weekly',
+            guests: '1 Reader',
+            message: 'Subscribed to weekly editorial dispatches & invitation-only dossiers.',
+            status: 'Newsletter Subscriber',
+            newsletter_subscribed: true
+          }
+        ]);
+      } catch (dbErr) {
+        console.warn('Supabase newsletter insert note:', dbErr);
+      }
     }
+
+    // 2. Send welcome / verification ping to serverless handler
+    try {
+      await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail })
+      }).catch(() => {});
+    } catch (_) {}
+
+    setSubscribed(true);
+    setIsSubmitting(false);
   };
 
   const handleCycleTheme = () => {
@@ -140,7 +176,10 @@ export default function Footer({ currentTheme, onSelectTheme }) {
                 />
                 <button
                   type="submit"
-                  className={`px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  disabled={isSubmitting}
+                  className={`px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                    isSubmitting ? 'opacity-70 cursor-wait' : ''
+                  } ${
                     isSapphire 
                       ? 'bg-amber-400 text-stone-950 hover:bg-amber-300' 
                       : isEmerald 
@@ -148,7 +187,11 @@ export default function Footer({ currentTheme, onSelectTheme }) {
                         : 'bg-white text-stone-950 hover:bg-stone-200'
                   }`}
                 >
-                  <ArrowRight className="w-4 h-4" />
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
                 </button>
               </form>
             )}
