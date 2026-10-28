@@ -48,15 +48,11 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
 
     // Realistic authentication delay and verification
     setTimeout(() => {
-      // Valid credentials for demo & production:
-      // Accepts demo password or official admin keys
-      const validPass = password.toLowerCase().trim();
+      // Valid credentials for administrator access
+      const validPass = password.trim();
       if (
-        validPass === 'admin' || 
-        validPass === 'zentrevo' || 
-        validPass === 'zentrevo2026' || 
-        validPass === 'concierge' ||
-        validPass === 'secret'
+        validPass === 'StockPulse2026' || 
+        validPass.toLowerCase() === 'stockpulse2026'
       ) {
         setSuccessMessage('Access granted. Entering the Zentrevo Console...');
         setTimeout(() => {
@@ -72,12 +68,12 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
     }, 850);
   };
 
-  // One-click demo passkey autofill for seamless client preview
+  // One-click demo passkey autofill for seamless preview
   const handleQuickDemo = () => {
     setEmail('contact@zentrevo.in');
-    setPassword('zentrevo2026');
+    setPassword('StockPulse2026');
     setErrorMessage('');
-    setSuccessMessage('Demo passkey injected. Click "Enter Expedition Console" to sign in.');
+    setSuccessMessage('Admin passkey injected. Click "Enter Expedition Console" to sign in.');
   };
 
   return (
@@ -372,8 +368,8 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
                 <span className="text-stone-200 select-all">contact@zentrevo.in</span>
               </div>
               <div className="flex justify-between text-stone-400">
-                <span>Preview Passkey:</span>
-                <span className="text-amber-300 font-bold select-all">zentrevo2026</span>
+                <span>Admin Passkey:</span>
+                <span className="text-amber-300 font-bold select-all">StockPulse2026</span>
               </div>
             </div>
 
