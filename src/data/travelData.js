@@ -375,3 +375,78 @@ export const blogArticles = [
     ]
   }
 ];
+
+export const STORAGE_KEY_DESTINATIONS = 'zentrevo_custom_destinations';
+
+export const getActiveDestinations = () => {
+  if (typeof window === 'undefined') return destinations;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_DESTINATIONS);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Unable to load active destinations from localStorage:', e);
+  }
+  return destinations;
+};
+
+export const saveActiveDestinations = (newDestinations) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY_DESTINATIONS, JSON.stringify(newDestinations));
+    window.dispatchEvent(new Event('zentrevo_destinations_updated'));
+  } catch (e) {
+    console.error('Failed to save active destinations:', e);
+  }
+};
+
+export const resetActiveDestinations = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(STORAGE_KEY_DESTINATIONS);
+    window.dispatchEvent(new Event('zentrevo_destinations_updated'));
+  } catch (e) {
+    console.error('Failed to reset active destinations:', e);
+  }
+};
+
+export const getDestinationPrice = (destinationName, extraTrips = []) => {
+  if (!destinationName || destinationName === 'Select Destination') return 2500;
+  
+  const clean = destinationName.toLowerCase().trim();
+  if (clean.includes('journal') || clean.includes('newsletter')) return 0;
+  
+  // 1. Check in extra custom trips or active destinations or defaults
+  const activeTrips = typeof window !== 'undefined' ? getActiveDestinations() : destinations;
+  const allTrips = [...extraTrips, ...activeTrips, ...destinations];
+  const matched = allTrips.find(t => {
+    if (!t) return false;
+    const titleMatch = t.title && (t.title.toLowerCase().includes(clean) || clean.includes(t.title.toLowerCase()));
+    const locMatch = t.location && (clean.includes(t.location.toLowerCase()) || t.location.toLowerCase().includes(clean));
+    return titleMatch || locMatch;
+  });
+
+  if (matched && matched.price) {
+    if (typeof matched.price === 'number') return matched.price;
+    const num = parseInt(String(matched.price).replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(num) && num > 0) return num;
+  }
+
+  // 2. Keyword fallback matching
+  if (clean.includes('kashmir')) return 1720;
+  if (clean.includes('amalfi') || clean.includes('italy')) return 2450;
+  if (clean.includes('kyoto') || clean.includes('japan')) return 3100;
+  if (clean.includes('swiss') || clean.includes('alps') || clean.includes('switzerland')) return 2890;
+  if (clean.includes('cappadocia') || clean.includes('turkey')) return 1750;
+  if (clean.includes('reykjavik') || clean.includes('iceland') || clean.includes('aurora')) return 3400;
+  if (clean.includes('bali') || clean.includes('ubud') || clean.includes('uluwatu')) return 1980;
+  if (clean.includes('udaipur') || clean.includes('mewar')) return 1850;
+  if (clean.includes('ladakh') || clean.includes('nubra')) return 2200;
+  if (clean.includes('kerala')) return 1650;
+
+  return 2500; // Default bespoke voyage baseline
+};

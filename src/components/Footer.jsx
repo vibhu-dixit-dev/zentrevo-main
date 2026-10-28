@@ -21,20 +21,36 @@ export default function Footer({ currentTheme, onSelectTheme }) {
 
     const cleanEmail = newsletterEmail.trim().toLowerCase();
 
-    // 1. Direct Persist to Supabase Database
+    // Local fallback queue so the subscriber is never lost
+    try {
+      const stored = JSON.parse(localStorage.getItem('zentrevo_local_subscribers') || '[]');
+      if (!stored.some(s => s.email === cleanEmail)) {
+        stored.push({
+          email: cleanEmail,
+          name: 'Journal Subscriber',
+          source: 'Website Footer',
+          subscribed_at: new Date().toISOString()
+        });
+        localStorage.setItem('zentrevo_local_subscribers', JSON.stringify(stored));
+      }
+    } catch {}
+
+    // 1. Direct Persist to Supabase dedicated newsletter_subscribers table
     if (supabase) {
       try {
-        await supabase.from('inquiries').insert([
-          {
-            name: 'Journal Subscriber',
-            email: cleanEmail,
-            destination: 'The Private Journal Weekly',
-            guests: '1 Reader',
-            message: 'Subscribed to weekly editorial dispatches & invitation-only dossiers.',
-            status: 'Newsletter Subscriber',
-            newsletter_subscribed: true
-          }
-        ]);
+        const { error: insertErr } = await supabase
+          .from('newsletter_subscribers')
+          .insert([
+            {
+              email: cleanEmail,
+              name: 'Journal Subscriber',
+              source: 'Website Footer'
+            }
+          ]);
+
+        if (insertErr && insertErr.code !== '23505') {
+          console.warn('Supabase newsletter subscriber notice:', insertErr.message || insertErr);
+        }
       } catch (dbErr) {
         console.warn('Supabase newsletter insert note:', dbErr);
       }

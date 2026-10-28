@@ -184,26 +184,51 @@ export default async function handler(req, res) {
     // Case 2: Mass Broadcast to All Active Subscribers in Supabase with Personalized Greeting
     let recipients = [];
     if (supabase) {
-      const { data, error } = await supabase
-        .from('inquiries')
-        .select('email, name')
-        .eq('newsletter_subscribed', true);
+      const emailMap = new Map();
 
-      if (!error && data) {
-        const emailMap = new Map();
-        for (const item of data) {
-          const cleanEmail = String(item.email || '').trim().toLowerCase();
-          if (cleanEmail.includes('@')) {
-            if (!emailMap.has(cleanEmail) || (!emailMap.get(cleanEmail).name && item.name)) {
+      // 1. Fetch from dedicated newsletter_subscribers table
+      try {
+        const { data: subData } = await supabase
+          .from('newsletter_subscribers')
+          .select('email, name')
+          .eq('is_active', true);
+
+        if (subData) {
+          for (const item of subData) {
+            const cleanEmail = String(item.email || '').trim().toLowerCase();
+            if (cleanEmail.includes('@') && !cleanEmail.includes('zentrevo.in')) {
               emailMap.set(cleanEmail, {
                 email: cleanEmail,
-                name: item.name ? String(item.name).trim() : ''
+                name: item.name && item.name !== 'Journal Subscriber' && item.name !== 'Traveler' ? String(item.name).trim() : ''
               });
             }
           }
         }
-        recipients = Array.from(emailMap.values());
-      }
+      } catch (_) {}
+
+      // 2. Also fetch from inquiries table (deduplicated) for any existing opted-in clients
+      try {
+        const { data: inqData } = await supabase
+          .from('inquiries')
+          .select('email, name')
+          .eq('newsletter_subscribed', true);
+
+        if (inqData) {
+          for (const item of inqData) {
+            const cleanEmail = String(item.email || '').trim().toLowerCase();
+            if (cleanEmail.includes('@') && !cleanEmail.includes('zentrevo.in')) {
+              if (!emailMap.has(cleanEmail) || (!emailMap.get(cleanEmail).name && item.name)) {
+                emailMap.set(cleanEmail, {
+                  email: cleanEmail,
+                  name: item.name ? String(item.name).trim() : ''
+                });
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      recipients = Array.from(emailMap.values());
     }
 
     if (recipients.length === 0) {
@@ -246,22 +271,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Log the broadcast in Supabase inquiries table for zero-overhead persistence
-    if (supabase && dispatchedCount > 0) {
-      try {
-        await supabase.from('inquiries').insert([{
-          name: 'Private Journal Dispatch',
-          email: 'newsletter@zentrevo.in',
-          destination: template.subject,
-          message: `Newsletter edition dispatched to ${dispatchedCount} subscriber(s). Subject: ${template.subject}`,
-          status: 'Newsletter Broadcasted',
-          newsletter_subscribed: false
-        }]);
-      } catch (logErr) {
-        console.warn('Supabase broadcast logging note:', logErr.message);
-      }
-    }
-
+    // Dispatched successfully to subscribers
     return res.status(200).json({
       success: true,
       message: `Newsletter successfully dispatched to ${dispatchedCount} subscriber(s).`,

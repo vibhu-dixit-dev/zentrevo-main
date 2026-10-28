@@ -17,29 +17,54 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: false, message: 'Cron skipped: SMTP not configured.' });
     }
 
-    // 1. Fetch all subscribed patrons from Supabase with name & email
+    // 1. Fetch all subscribed patrons from Supabase with name & email (newsletter_subscribers + inquiries deduplicated)
     let recipients = [];
     if (supabase) {
-      const { data } = await supabase
-        .from('inquiries')
-        .select('email, name')
-        .eq('newsletter_subscribed', true);
+      const emailMap = new Map();
 
-      if (data) {
-        const emailMap = new Map();
-        for (const item of data) {
-          const cleanEmail = String(item.email || '').trim().toLowerCase();
-          if (cleanEmail.includes('@')) {
-            if (!emailMap.has(cleanEmail) || (!emailMap.get(cleanEmail).name && item.name)) {
+      // Check dedicated newsletter_subscribers table
+      try {
+        const { data: subData } = await supabase
+          .from('newsletter_subscribers')
+          .select('email, name')
+          .eq('is_active', true);
+
+        if (subData) {
+          for (const item of subData) {
+            const cleanEmail = String(item.email || '').trim().toLowerCase();
+            if (cleanEmail.includes('@') && !cleanEmail.includes('zentrevo.in')) {
               emailMap.set(cleanEmail, {
                 email: cleanEmail,
-                name: item.name ? String(item.name).trim() : ''
+                name: item.name && item.name !== 'Journal Subscriber' && item.name !== 'Traveler' ? String(item.name).trim() : ''
               });
             }
           }
         }
-        recipients = Array.from(emailMap.values());
-      }
+      } catch (_) {}
+
+      // Check inquiries table (deduplicated)
+      try {
+        const { data: inqData } = await supabase
+          .from('inquiries')
+          .select('email, name')
+          .eq('newsletter_subscribed', true);
+
+        if (inqData) {
+          for (const item of inqData) {
+            const cleanEmail = String(item.email || '').trim().toLowerCase();
+            if (cleanEmail.includes('@') && !cleanEmail.includes('zentrevo.in')) {
+              if (!emailMap.has(cleanEmail) || (!emailMap.get(cleanEmail).name && item.name)) {
+                emailMap.set(cleanEmail, {
+                  email: cleanEmail,
+                  name: item.name ? String(item.name).trim() : ''
+                });
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      recipients = Array.from(emailMap.values());
     }
 
     if (recipients.length === 0) {

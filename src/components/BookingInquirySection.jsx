@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight, Loader2, AlertCircle, ShieldCheck, ChevronDown, Check } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { destinations, getActiveDestinations, getDestinationPrice } from '../data/travelData';
 
-export default function BookingInquirySection({ currentTheme }) {
+export default function BookingInquirySection({ currentTheme, preselectedDestination }) {
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -26,14 +27,33 @@ export default function BookingInquirySection({ currentTheme }) {
   const destRef = useRef(null);
   const guestsRef = useRef(null);
 
+  // Sync preselected destination if user clicks "Book This Itinerary" on any card
+  useEffect(() => {
+    if (preselectedDestination) {
+      setFormData(prev => ({
+        ...prev,
+        destination: preselectedDestination
+      }));
+    }
+  }, [preselectedDestination]);
+
+  const [activeDestList, setActiveDestList] = useState(getActiveDestinations);
+
+  useEffect(() => {
+    const handleSync = () => {
+      setActiveDestList(getActiveDestinations());
+    };
+    window.addEventListener('zentrevo_destinations_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('zentrevo_destinations_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
   const destinationOptions = [
     'Select Destination',
-    'Amalfi Coast, Italy',
-    'Kyoto, Japan',
-    'Swiss Alps, Switzerland',
-    'Cappadocia, Turkey',
-    'Aurora Wilderness, Iceland',
-    'Uluwatu & Ubud, Bali',
+    ...activeDestList.map(d => d.title),
     'Custom Multi-Country Expedition'
   ];
 
@@ -76,23 +96,49 @@ export default function BookingInquirySection({ currentTheme }) {
 
     let supabaseSaved = false;
 
+    // Automatically determine exact plan price based on destination choice
+    const planPrice = getDestinationPrice(formData.destination);
+
     // 1. Direct Persist to Supabase Database (if human submission)
     if (!formData._hp_security_check && supabase) {
       try {
-        const { error: sbError } = await supabase.from('inquiries').insert([
-          {
-            name: formData.name.trim(),
-            email: formData.email.trim(),
-            phone: formData.phone?.trim() || '',
-            destination: formData.destination === 'Select Destination' ? 'Custom Expedition' : formData.destination,
-            guests: formData.guests === 'Select Travelers' ? '2 Guests (Couple)' : formData.guests,
-            message: formData.message?.trim() || '',
-            status: 'New Inquiry',
-            newsletter_subscribed: true
-          }
-        ]);
+        const insertPayload = {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone?.trim() || '',
+          destination: formData.destination === 'Select Destination' ? 'Custom Expedition' : formData.destination,
+          guests: formData.guests === 'Select Travelers' ? '2 Guests (Couple)' : formData.guests,
+          message: formData.message?.trim() || '',
+          status: 'New Inquiry',
+          newsletter_subscribed: true,
+          plan_price: planPrice
+        };
+
+        let { error: sbError } = await supabase.from('inquiries').insert([insertPayload]);
+        
+        // Fallback: If plan_price column doesn't exist yet in Supabase schema, retry without it
+        if (sbError && (sbError.message?.includes('plan_price') || sbError.code === 'PGRST204')) {
+          const { plan_price, ...payloadWithoutPrice } = insertPayload;
+          const retry = await supabase.from('inquiries').insert([payloadWithoutPrice]);
+          sbError = retry.error;
+        }
+
         if (!sbError) {
           supabaseSaved = true;
+
+          // Automatically sync email to dedicated newsletter_subscribers table if opted in
+          if (formData.email) {
+            try {
+              const subscriberEmail = formData.email.trim().toLowerCase();
+              await supabase.from('newsletter_subscribers').insert([
+                {
+                  email: subscriberEmail,
+                  name: formData.name.trim() || 'Traveler',
+                  source: 'Booking Inquiry'
+                }
+              ]);
+            } catch (_) {}
+          }
         } else {
           console.warn('Supabase insertion notice:', sbError.message);
         }
@@ -109,7 +155,11 @@ export default function BookingInquirySection({ currentTheme }) {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ ...formData, _supabase_already_saved: supabaseSaved })
+        body: JSON.stringify({ 
+          ...formData, 
+          plan_price: planPrice,
+          _supabase_already_saved: supabaseSaved 
+        })
       });
 
       const data = await response.json().catch(() => ({}));

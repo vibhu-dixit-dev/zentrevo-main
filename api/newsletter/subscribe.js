@@ -18,22 +18,21 @@ export default async function handler(req, res) {
 
     const subscriberEmail = String(email).trim().toLowerCase();
 
-    // 1. Store in Supabase
+    // 1. Store in Supabase dedicated newsletter_subscribers table
     if (supabase) {
       try {
-        await supabase.from('inquiries').insert([
+        const { error: insertErr } = await supabase.from('newsletter_subscribers').insert([
           {
-            name: 'Journal Subscriber',
             email: subscriberEmail,
-            destination: 'The Private Journal Weekly',
-            guests: '1 Reader',
-            message: 'Subscribed via website footer to weekly private journal dispatches.',
-            status: 'Newsletter Subscriber',
-            newsletter_subscribed: true
+            name: 'Journal Subscriber',
+            source: 'Website Footer'
           }
         ]);
+        if (insertErr && insertErr.code !== '23505') {
+          console.warn('Supabase newsletter subscriber insertion notice:', insertErr.message);
+        }
       } catch (dbErr) {
-        console.warn('Supabase subscription notice:', dbErr.message);
+        console.warn('Supabase newsletter subscriber insertion notice:', dbErr.message);
       }
     }
 

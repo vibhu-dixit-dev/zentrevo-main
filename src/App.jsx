@@ -54,6 +54,7 @@ export default function App() {
   const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'national' | 'international'
   const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
   const [selectedJournalArticle, setSelectedJournalArticle] = useState(null);
+  const [preselectedDestination, setPreselectedDestination] = useState('');
 
   const handleSelectTheme = (themeName) => {
     setCurrentTheme(themeName);
@@ -77,11 +78,17 @@ export default function App() {
   };
 
   const handleBookNowFromModal = (dest) => {
+    if (dest) {
+      setPreselectedDestination(dest.title || dest.location || '');
+    }
     setIsDetailModalOpen(false);
     handleScrollToInquiry();
   };
 
   const handleInquireFromJournal = (destinationName) => {
+    if (destinationName) {
+      setPreselectedDestination(destinationName);
+    }
     setIsJournalModalOpen(false);
     handleScrollToInquiry();
   };
@@ -182,7 +189,8 @@ export default function App() {
 
       {/* Booking & Inquiry Form */}
       <BookingInquirySection 
-        currentTheme={currentTheme} 
+        currentTheme={currentTheme}
+        preselectedDestination={preselectedDestination}
       />
 
       {/* Footer */}

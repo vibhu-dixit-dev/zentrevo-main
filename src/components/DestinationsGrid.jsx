@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { destinations } from '../data/travelData';
+import { destinations, getActiveDestinations } from '../data/travelData';
 import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers } from 'lucide-react';
 
 export default function DestinationsGrid({ 
@@ -14,6 +14,19 @@ export default function DestinationsGrid({
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentRegion, setCurrentRegion] = useState(selectedRegion || 'all');
+  const [destinationsList, setDestinationsList] = useState(getActiveDestinations);
+
+  useEffect(() => {
+    const handleSync = () => {
+      setDestinationsList(getActiveDestinations());
+    };
+    window.addEventListener('zentrevo_destinations_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('zentrevo_destinations_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedRegion) {
@@ -30,10 +43,14 @@ export default function DestinationsGrid({
 
   const categories = ['All', 'Luxury Escapes', 'Cultural', 'Trending', 'Alpine Nature'];
 
+  // Counts for Regional Filters
+  const nationalCount = destinationsList.filter(d => (d.region || 'international') === 'national').length;
+  const internationalCount = destinationsList.filter(d => (d.region || 'international') === 'international').length;
+
   // 1. Filter by Region (National vs International vs All)
   const regionFiltered = currentRegion === 'all'
-    ? destinations
-    : destinations.filter(d => (d.region || 'international') === currentRegion);
+    ? destinationsList
+    : destinationsList.filter(d => (d.region || 'international') === currentRegion);
 
   // 2. Filter by Category
   const filteredDestinations = activeCategory === 'All' 
@@ -92,7 +109,7 @@ export default function DestinationsGrid({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>All ({destinations.length})</span>
+                <span>All ({destinationsList.length})</span>
               </button>
 
               <button
@@ -109,7 +126,7 @@ export default function DestinationsGrid({
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5" />
-                <span>National (India)</span>
+                <span>National ({nationalCount})</span>
               </button>
 
               <button
@@ -126,6 +143,7 @@ export default function DestinationsGrid({
                 }`}
               >
                 <Globe2 className="w-3.5 h-3.5" />
+                <span>International ({internationalCount})</span>
                 <span>International</span>
               </button>
             </div>

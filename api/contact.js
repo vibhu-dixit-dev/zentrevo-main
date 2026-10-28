@@ -43,26 +43,34 @@ export default async function handler(req, res) {
     const clientDest = destination ? String(destination).trim() : 'Custom Expedition';
     const clientGuests = guests ? String(guests).trim() : '2 Guests (Couple)';
     const clientMessage = message ? String(message).trim() : 'No additional requests specified.';
+    const planPrice = req.body?.plan_price ? Number(req.body.plan_price) : 2500;
 
     // 2.5 Persist Lead in Supabase Database (if not already inserted by client)
     if (supabase && !req.body?._supabase_already_saved) {
       try {
-        const { error: dbError } = await supabase.from('inquiries').insert([
-          {
-            name: clientName,
-            email: clientEmail,
-            phone: clientPhone,
-            destination: clientDest,
-            guests: clientGuests,
-            message: clientMessage,
-            status: 'New Inquiry',
-            newsletter_subscribed: true
-          }
-        ]);
+        const leadPayload = {
+          name: clientName,
+          email: clientEmail,
+          phone: clientPhone,
+          destination: clientDest,
+          guests: clientGuests,
+          message: clientMessage,
+          status: 'New Inquiry',
+          newsletter_subscribed: true,
+          plan_price: planPrice
+        };
+
+        let { error: dbError } = await supabase.from('inquiries').insert([leadPayload]);
+        if (dbError && (dbError.message?.includes('plan_price') || dbError.code === 'PGRST204')) {
+          const { plan_price, ...payloadWithoutPrice } = leadPayload;
+          const retry = await supabase.from('inquiries').insert([payloadWithoutPrice]);
+          dbError = retry.error;
+        }
+
         if (dbError) {
           console.warn('⚠️ Supabase Lead insertion notice:', dbError.message);
         } else {
-          console.log(`✅ Supabase Lead saved successfully for: ${clientEmail}`);
+          console.log(`✅ Supabase Lead saved successfully for: ${clientEmail} with plan price: $${planPrice}`);
         }
       } catch (dbErr) {
         console.warn('⚠️ Supabase insertion catch block:', dbErr.message);

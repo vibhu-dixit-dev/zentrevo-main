@@ -47,9 +47,10 @@ import {
   Database,
   Send,
   Smartphone,
-  Monitor
+  Monitor,
+  AtSign
 } from 'lucide-react';
-import { destinations as initialDestinations } from '../data/travelData';
+import { destinations as initialDestinations, getActiveDestinations, saveActiveDestinations, resetActiveDestinations, getDestinationPrice } from '../data/travelData';
 import { supabase } from '../lib/supabaseClient';
 
 // Fallback rates if offline or API delay
@@ -71,6 +72,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
   // Navigation State: 'analytics' (Performance Ledger) is first & default
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'itineraries' | 'inquiries'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [chartTimeframe, setChartTimeframe] = useState('monthly'); // 'monthly' (Default) | 'weekly'
 
   // Currency State with Live Forex Rates: Defaults to INR (₹)
   const [currency, setCurrency] = useState('INR'); // 'INR' (Default) | 'USD' | 'EUR' | 'GBP'
@@ -142,8 +144,21 @@ export default function AdminDashboard({ onExit, onLogout }) {
     return `${symbol}${converted.toLocaleString(locale)}`;
   };
 
-  // Itineraries State
-  const [trips, setTrips] = useState(initialDestinations);
+  // Itineraries State (Hydrated from persistent active catalogue)
+  const [trips, setTrips] = useState(getActiveDestinations);
+
+  useEffect(() => {
+    const handleSyncTrips = () => {
+      setTrips(getActiveDestinations());
+    };
+    window.addEventListener('zentrevo_destinations_updated', handleSyncTrips);
+    window.addEventListener('storage', handleSyncTrips);
+    return () => {
+      window.removeEventListener('zentrevo_destinations_updated', handleSyncTrips);
+      window.removeEventListener('storage', handleSyncTrips);
+    };
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -179,12 +194,13 @@ export default function AdminDashboard({ onExit, onLogout }) {
   const emptyForm = {
     title: '',
     location: '',
+    region: 'international',
     badge: 'Luxury Escapes',
     tagColor: 'bg-stone-900 text-white',
     price: '$2,500',
     duration: '7 Days / 6 Nights',
     rating: 4.95,
-    reviews: 120,
+    reviews: 142,
     category: 'Luxury Escapes',
     image: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
     description: '',
@@ -205,60 +221,89 @@ export default function AdminDashboard({ onExit, onLogout }) {
     { title: 'Maldives Overwater Haven', location: 'Maldives', url: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80' }
   ];
 
-  // Initial Demo Ledger (used if database has 0 submissions yet)
-  const DEFAULT_DEMO_INQUIRIES = [
-    {
-      id: 'ZEN-DEMO-01',
-      traveler: 'Lady Eleanor & Julian Vance',
-      email: 'julian.vance@vanceholdings.co.uk',
-      phone: '+44 7911 123456',
-      destination: 'Amalfi Coast & Positano Clifftops',
-      guests: '2 Guests (Couple)',
-      dates: 'Oct 28 - Nov 05, 2026',
-      budgetUsd: 8500,
-      status: 'New Inquiry',
-      time: '12m ago',
-      notes: 'Requested private cliffside villa with helipad transfer and yacht charter.',
-      newsletterSubscribed: true,
-      isDemo: true
-    },
-    {
-      id: 'ZEN-DEMO-02',
-      traveler: 'Dr. Arjun & Priya Sharma',
-      email: 'arjun.sharma@apollohealth.org',
-      phone: '+91 98200 45678',
-      destination: 'Swiss Alpine Glacier Express',
-      guests: '4-6 Family / Private Group',
-      dates: 'Dec 15 - Dec 24, 2026',
-      budgetUsd: 18200,
-      status: 'Proposal Dispatched',
-      time: '2h ago',
-      notes: 'Adjoining suites at Zermatt alpine chalet with private ski guide.',
-      newsletterSubscribed: true,
-      isDemo: true
-    },
-    {
-      id: 'ZEN-DEMO-03',
-      traveler: 'Marcus Sterling',
-      email: 'm.sterling@sterlingcap.com',
-      phone: '+1 212 555 0198',
-      destination: 'Kyoto Zen Gardens & Bamboo Groves',
-      guests: '1 Solo Explorer',
-      dates: 'Nov 10 - Nov 20, 2026',
-      budgetUsd: 6200,
-      status: 'In Consultation',
-      time: '1d ago',
-      notes: 'Private morning tea ceremony and ryokan onsen reservation.',
-      newsletterSubscribed: true,
-      isDemo: true
-    }
-  ];
+  // Live Supabase Leads Ledger with zero-flash cache hydration
+  const [inquiries, setInquiries] = useState(() => {
+    try {
+      const cached = localStorage.getItem('zentrevo_cached_inquiries');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
 
-  // Live Supabase Leads Ledger
-  const [inquiries, setInquiries] = useState(DEFAULT_DEMO_INQUIRIES);
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(() => {
+    try {
+      return !localStorage.getItem('zentrevo_cached_inquiries');
+    } catch {
+      return true;
+    }
+  });
+
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
   const [inquirySearch, setInquirySearch] = useState('');
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState('All');
+
+  // Dedicated Newsletter Subscribers State
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState(() => {
+    try {
+      const cached = localStorage.getItem('zentrevo_cached_subscribers');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Emails Directory State
+  const [emailSearch, setEmailSearch] = useState('');
+  const [emailFilter, setEmailFilter] = useState('All'); // 'All' | 'Newsletter Subscribers' | 'Booking Inquiries'
+  const [isSyncingEmails, setIsSyncingEmails] = useState(false);
+
+  // Interactive Status Dropdown State for Inquiries
+  const [openStatusDropdownId, setOpenStatusDropdownId] = useState(null);
+
+  const STATUS_CONFIG = {
+    'New Inquiry': {
+      bg: 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100',
+      dot: 'bg-amber-500'
+    },
+    'In Consultation': {
+      bg: 'bg-sky-50 text-sky-900 border-sky-300 hover:bg-sky-100',
+      dot: 'bg-sky-500'
+    },
+    'Proposal Dispatched': {
+      bg: 'bg-indigo-50 text-indigo-900 border-indigo-300 hover:bg-indigo-100',
+      dot: 'bg-indigo-500'
+    },
+    'Booking Confirmed': {
+      bg: 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100',
+      dot: 'bg-emerald-500'
+    },
+    'Archived': {
+      bg: 'bg-stone-100 text-stone-700 border-stone-300 hover:bg-stone-200',
+      dot: 'bg-stone-400'
+    }
+  };
+
+  const statusOptions = [
+    'New Inquiry',
+    'In Consultation',
+    'Proposal Dispatched',
+    'Booking Confirmed',
+    'Archived'
+  ];
+
+  // Click outside to close status dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.status-dropdown-container')) {
+        setOpenStatusDropdownId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const formatTimeAgo = (dateStr) => {
     if (!dateStr) return 'Recent';
@@ -287,56 +332,147 @@ export default function AdminDashboard({ onExit, onLogout }) {
 
       if (!error && data) {
         setIsSupabaseConnected(true);
-        if (data.length > 0) {
-          const formatted = data.map((item, idx) => ({
-            id: item.id ? `ZEN-${item.id.slice(0, 8).toUpperCase()}` : `ZEN-LEAD-${idx + 1}`,
-            rawId: item.id,
-            traveler: item.name || 'Valued Guest',
-            email: item.email || '',
-            phone: item.phone || '',
-            destination: item.destination || 'Custom Itinerary',
-            guests: item.guests || '2 Guests',
-            dates: item.created_at ? new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
-            budgetUsd: 12000,
-            status: item.status || 'New Inquiry',
-            time: formatTimeAgo(item.created_at),
-            notes: item.message || 'No additional note provided.',
-            newsletterSubscribed: item.newsletter_subscribed ?? true,
-            isLive: true
-          }));
+
+        // Auto-cleanup legacy broadcast records from inquiries table if any exist
+        const hasBroadcastRecords = data.some(item => 
+          item.status === 'Newsletter Broadcasted' || 
+          item.status === 'Newsletter Sent' || 
+          item.name === 'Private Journal Dispatch'
+        );
+        if (hasBroadcastRecords) {
+          try {
+            await supabase
+              .from('inquiries')
+              .delete()
+              .or('status.eq.Newsletter Broadcasted,status.eq.Newsletter Sent,name.eq.Private Journal Dispatch');
+          } catch (delErr) {
+            console.warn('Auto-cleanup broadcast notice:', delErr);
+          }
+        }
+
+        // Strictly filter to real customer booking inquiries only (exclude any newsletter records)
+        const travelerLeads = data.filter(item => 
+          item.status !== 'Newsletter Broadcasted' &&
+          item.status !== 'Newsletter Sent' &&
+          item.name !== 'Private Journal Dispatch' &&
+          item.email !== 'newsletter@zentrevo.in'
+        );
+
+        if (travelerLeads.length > 0) {
+          const formatted = travelerLeads.map((item, idx) => {
+            const planPrice = (item.plan_price != null && !isNaN(Number(item.plan_price)) && Number(item.plan_price) > 0)
+              ? Number(item.plan_price)
+              : getDestinationPrice(item.destination, trips);
+
+            return {
+              id: item.id ? `ZEN-${item.id.slice(0, 8).toUpperCase()}` : `ZEN-LEAD-${idx + 1}`,
+              rawId: item.id,
+              traveler: item.name || 'Valued Guest',
+              email: item.email || '',
+              phone: item.phone || '',
+              destination: item.destination || 'Custom Itinerary',
+              guests: item.guests || '2 Guests',
+              dates: item.created_at ? new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
+              rawCreatedAt: item.created_at || new Date().toISOString(),
+              planPrice: planPrice,
+              budgetUsd: planPrice,
+              status: item.status || 'New Inquiry',
+              time: formatTimeAgo(item.created_at),
+              notes: item.message || 'No additional note provided.',
+              newsletterSubscribed: item.newsletter_subscribed ?? true,
+              isLive: true
+            };
+          });
           setInquiries(formatted);
+          try { localStorage.setItem('zentrevo_cached_inquiries', JSON.stringify(formatted)); } catch {}
         } else {
           // Connected, table exists, but 0 submissions yet
-          setInquiries(DEFAULT_DEMO_INQUIRIES);
+          setInquiries([]);
+          try { localStorage.setItem('zentrevo_cached_inquiries', JSON.stringify([])); } catch {}
         }
       } else if (error) {
         console.warn('Supabase fetch note:', error.message);
       }
     } catch (err) {
       console.warn('Supabase connection catch:', err);
+    } finally {
+      setIsLoadingInquiries(false);
     }
+  };
+
+  const fetchNewsletterSubscribers = async () => {
+    let subs = [];
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('newsletter_subscribers')
+          .select('*')
+          .order('subscribed_at', { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          subs = data;
+        }
+      } catch (err) {
+        console.warn('Newsletter subscribers fetch note:', err);
+      }
+    }
+
+    // Merge any local subscriber submissions so nothing is lost if RLS policy is pending
+    try {
+      const localSubs = JSON.parse(localStorage.getItem('zentrevo_local_subscribers') || '[]');
+      if (Array.isArray(localSubs) && localSubs.length > 0) {
+        const existingEmails = new Set(subs.map(s => String(s.email || '').trim().toLowerCase()));
+        localSubs.forEach(ls => {
+          if (ls.email && !existingEmails.has(ls.email.trim().toLowerCase())) {
+            subs.push({
+              id: 'local-' + Date.now(),
+              email: ls.email,
+              name: ls.name || 'Journal Subscriber',
+              source: ls.source || 'Website Footer',
+              subscribed_at: ls.subscribed_at || new Date().toISOString()
+            });
+          }
+        });
+      }
+    } catch {}
+
+    setNewsletterSubscribers(subs);
+    try { localStorage.setItem('zentrevo_cached_subscribers', JSON.stringify(subs)); } catch {}
   };
 
   useEffect(() => {
     fetchSupabaseInquiries();
+    fetchNewsletterSubscribers();
 
-    // Setup Supabase Realtime channel to auto-refresh whenever an inquiry is submitted
+    // Setup Supabase Realtime channel to auto-refresh whenever an inquiry or subscriber is submitted
     if (supabase) {
-      const channel = supabase
+      const inquiriesChannel = supabase
         .channel('admin_inquiries_realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'inquiries' }, () => {
           fetchSupabaseInquiries();
         })
         .subscribe();
 
+      const subscribersChannel = supabase
+        .channel('admin_subscribers_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'newsletter_subscribers' }, () => {
+          fetchNewsletterSubscribers();
+        })
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(inquiriesChannel);
+        supabase.removeChannel(subscribersChannel);
       };
     }
   }, []);
 
   const handleUpdateInquiryStatus = async (inquiryId, rawId, newStatus) => {
-    setInquiries(prev => prev.map(inq => (inq.id === inquiryId || inq.rawId === rawId) ? { ...inq, status: newStatus } : inq));
+    setInquiries(prev => {
+      const updated = prev.map(inq => (inq.id === inquiryId || inq.rawId === rawId) ? { ...inq, status: newStatus } : inq);
+      try { localStorage.setItem('zentrevo_cached_inquiries', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
     showToast(`Status updated to "${newStatus}"`);
     if (rawId && supabase) {
       try {
@@ -349,7 +485,11 @@ export default function AdminDashboard({ onExit, onLogout }) {
 
   const handleDeleteInquiry = async (inquiryId, rawId) => {
     if (!window.confirm('Are you sure you want to remove this inquiry?')) return;
-    setInquiries(prev => prev.filter(inq => inq.id !== inquiryId && inq.rawId !== rawId));
+    setInquiries(prev => {
+      const updated = prev.filter(inq => inq.id !== inquiryId && inq.rawId !== rawId);
+      try { localStorage.setItem('zentrevo_cached_inquiries', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
     showToast('Inquiry removed');
     if (rawId && supabase) {
       try {
@@ -359,6 +499,216 @@ export default function AdminDashboard({ onExit, onLogout }) {
       }
     }
   };
+
+  // Dynamic Weekly Inquiries Metrics
+  const inquiryMetrics = useMemo(() => {
+    const total = inquiries.length;
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+
+    let thisWeek = 0;
+    let pastWeek = 0;
+
+    inquiries.forEach((inq) => {
+      const timeMs = inq.rawCreatedAt ? new Date(inq.rawCreatedAt).getTime() : (now - 1000 * 60 * 60);
+      const diff = now - timeMs;
+      if (diff <= oneWeekMs && diff >= 0) {
+        thisWeek++;
+      } else if (diff <= twoWeeksMs && diff > oneWeekMs) {
+        pastWeek++;
+      }
+    });
+
+    let percentText = '+0% this week';
+    let isPositive = true;
+
+    if (pastWeek === 0) {
+      if (thisWeek > 0) {
+        percentText = `+100% this week`;
+        isPositive = true;
+      } else {
+        percentText = `0% this week`;
+        isPositive = true;
+      }
+    } else {
+      const pct = Math.round(((thisWeek - pastWeek) / pastWeek) * 100);
+      percentText = `${pct >= 0 ? '+' : ''}${pct}% this week`;
+      isPositive = pct >= 0;
+    }
+
+    const pending = inquiries.filter(i => i.status === 'New Inquiry').length;
+    const pendingText = pending === 0
+      ? 'All inquiries responded to'
+      : `${pending} new ${pending === 1 ? 'inquiry' : 'inquiries'} waiting for reply`;
+
+    return {
+      total,
+      percentText,
+      isPositive,
+      pendingText
+    };
+  }, [inquiries]);
+
+  // Dynamic Bookings Value Metrics (sum of all inquiry plan prices)
+  const bookingMetrics = useMemo(() => {
+    if (!inquiries || inquiries.length === 0) {
+      return { totalValue: 0, avgValue: 0, totalGuests: 0 };
+    }
+
+    let totalValue = 0;
+    let totalGuests = 0;
+
+    inquiries.forEach((inq) => {
+      const price = inq.planPrice || inq.budgetUsd || 0;
+      totalValue += price;
+
+      const guestsMatch = String(inq.guests || '').match(/\d+/);
+      const guestNum = guestsMatch ? parseInt(guestsMatch[0], 10) : 1;
+      totalGuests += (guestNum > 0 ? guestNum : 1);
+    });
+
+    const avgValue = totalGuests > 0 ? Math.round(totalValue / totalGuests) : totalValue;
+
+    return {
+      totalValue,
+      avgValue,
+      totalGuests
+    };
+  }, [inquiries]);
+
+  // Dynamic breakdown of realized revenue from inquiries with 'Booking Confirmed' status
+  const confirmedRevenueBreakdown = useMemo(() => {
+    const confirmed = (inquiries || []).filter(inq => {
+      const s = String(inq.status || '').toLowerCase().trim();
+      return s === 'booking confirmed' || s === 'confirmed';
+    });
+
+    let totalRevenue = 0;
+    const destMap = {};
+
+    confirmed.forEach(inq => {
+      const dest = inq.destination && inq.destination !== 'Select Destination' 
+        ? inq.destination 
+        : 'Bespoke Private Journey';
+      const price = (inq.planPrice != null && !isNaN(inq.planPrice) && Number(inq.planPrice) > 0)
+        ? Number(inq.planPrice)
+        : getDestinationPrice(dest, trips);
+
+      totalRevenue += price;
+
+      if (!destMap[dest]) {
+        destMap[dest] = {
+          destination: dest,
+          revenue: 0,
+          count: 0
+        };
+      }
+      destMap[dest].revenue += price;
+      destMap[dest].count += 1;
+    });
+
+    const sorted = Object.values(destMap).sort((a, b) => b.revenue - a.revenue);
+
+    const items = sorted.map(item => {
+      const percentage = totalRevenue > 0 ? Math.round((item.revenue / totalRevenue) * 100) : 0;
+      return {
+        ...item,
+        percentage
+      };
+    });
+
+    return {
+      totalRevenue,
+      totalCount: confirmed.length,
+      items,
+      topDestination: items[0] || null
+    };
+  }, [inquiries, trips]);
+
+  // Dynamic Inquiries Trend Chart Data (Monthly vs Weekly)
+  const chartTrendData = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+
+    if (chartTimeframe === 'monthly') {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = monthNames.map((name, index) => ({
+        label: name,
+        fullLabel: `${name} ${currentYear}`,
+        monthIndex: index,
+        count: 0,
+        value: 0
+      }));
+
+      (inquiries || []).forEach(inq => {
+        const d = inq.rawCreatedAt ? new Date(inq.rawCreatedAt) : new Date();
+        const m = d.getMonth();
+        const val = Number(inq.planPrice || inq.budgetUsd || 0);
+        if (m >= 0 && m < 12) {
+          months[m].count += 1;
+          months[m].value += val;
+        }
+      });
+
+      const maxCount = Math.max(...months.map(m => m.count), 1);
+      const busiest = [...months].filter(m => m.count > 0).sort((a, b) => b.count - a.count)[0] || null;
+
+      return {
+        data: months,
+        maxCount,
+        busiest,
+        isWeekly: false
+      };
+    } else {
+      // Weekly timeframe: Recent 8 weeks ending on current day
+      const weeks = [];
+      const now = new Date();
+      const currentDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+      for (let i = 7; i >= 0; i--) {
+        const end = new Date(currentDay.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+        const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000);
+        start.setHours(0, 0, 0, 0);
+
+        const formatShort = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const label = i === 0 ? 'This Wk' : i === 1 ? 'Last Wk' : `Wk -${i}`;
+        const rangeText = `${formatShort(start)} - ${formatShort(end)}`;
+
+        weeks.push({
+          label,
+          rangeText,
+          startTime: start.getTime(),
+          endTime: end.getTime(),
+          count: 0,
+          value: 0
+        });
+      }
+
+      (inquiries || []).forEach(inq => {
+        const time = inq.rawCreatedAt ? new Date(inq.rawCreatedAt).getTime() : Date.now();
+        const val = Number(inq.planPrice || inq.budgetUsd || 0);
+
+        const targetWeek = weeks.find(w => time >= w.startTime && time <= w.endTime);
+        if (targetWeek) {
+          targetWeek.count += 1;
+          targetWeek.value += val;
+        } else if (time > weeks[weeks.length - 1].endTime) {
+          weeks[weeks.length - 1].count += 1;
+          weeks[weeks.length - 1].value += val;
+        }
+      });
+
+      const maxCount = Math.max(...weeks.map(w => w.count), 1);
+      const busiest = [...weeks].filter(w => w.count > 0).sort((a, b) => b.count - a.count)[0] || null;
+
+      return {
+        data: weeks,
+        maxCount,
+        busiest,
+        isWeekly: true
+      };
+    }
+  }, [inquiries, chartTimeframe]);
 
   const handleExportNewsletterCSV = () => {
     const subscribers = inquiries.filter(inq => inq.newsletterSubscribed !== false);
@@ -466,9 +816,142 @@ export default function AdminDashboard({ onExit, onLogout }) {
     showToast(`Weekly schedule updated to Every ${editScheduleDay} at ${editScheduleTime} UTC!`);
   };
 
+  // Unified Directory of all Client Emails (Newsletter Subscribers + Inquiries Deduplicated)
+  const unifiedEmails = useMemo(() => {
+    const map = new Map();
+
+    // 1. Ingest all booking inquiries
+    inquiries.forEach((inq) => {
+      const cleanEmail = String(inq.email || '').trim().toLowerCase();
+      if (!cleanEmail || !cleanEmail.includes('@') || cleanEmail.includes('zentrevo.in')) return;
+
+      map.set(cleanEmail, {
+        email: cleanEmail,
+        name: inq.traveler || 'Valued Guest',
+        phone: inq.phone || '',
+        destination: inq.destination || 'Custom Itinerary',
+        planPrice: inq.planPrice || inq.budgetUsd || 0,
+        isInquiry: true,
+        isSubscriber: inq.newsletterSubscribed !== false,
+        source: inq.newsletterSubscribed !== false ? 'Client & Subscriber' : 'Booking Inquiry',
+        date: inq.dates || inq.time || 'Recent',
+        status: inq.status || 'Active Client',
+        inquiryId: inq.id
+      });
+    });
+
+    // 2. Ingest dedicated newsletter subscribers
+    newsletterSubscribers.forEach((sub) => {
+      const cleanEmail = String(sub.email || '').trim().toLowerCase();
+      if (!cleanEmail || !cleanEmail.includes('@') || cleanEmail.includes('zentrevo.in')) return;
+
+      if (map.has(cleanEmail)) {
+        const existing = map.get(cleanEmail);
+        existing.isSubscriber = true;
+        existing.source = 'Client & Subscriber';
+        if (sub.name && sub.name !== 'Journal Subscriber' && sub.name !== 'Traveler' && (!existing.name || existing.name === 'Valued Guest')) {
+          existing.name = sub.name;
+        }
+      } else {
+        map.set(cleanEmail, {
+          email: cleanEmail,
+          name: sub.name || 'Journal Subscriber',
+          phone: '',
+          destination: 'The Private Journal',
+          planPrice: 0,
+          isInquiry: false,
+          isSubscriber: true,
+          source: sub.source || 'Newsletter Subscriber',
+          date: sub.subscribed_at ? new Date(sub.subscribed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
+          status: sub.is_active !== false ? 'Active Subscriber' : 'Unsubscribed',
+          inquiryId: null
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [inquiries, newsletterSubscribers]);
+
   const subscriberCount = useMemo(() => {
-    return inquiries.filter(i => i.newsletterSubscribed !== false && i.email && i.email.includes('@')).length;
-  }, [inquiries]);
+    return unifiedEmails.filter(u => u.isSubscriber).length;
+  }, [unifiedEmails]);
+
+  // Copy missing inquiries emails into newsletter_subscribers table if they don't already exist
+  const handleSyncInquiriesToNewsletter = async () => {
+    if (!supabase) {
+      showToast('Supabase connection not active');
+      return;
+    }
+    setIsSyncingEmails(true);
+    try {
+      // 1. Fetch current emails already in newsletter_subscribers
+      const { data: existingSubs } = await supabase
+        .from('newsletter_subscribers')
+        .select('email');
+
+      const existingSet = new Set((existingSubs || []).map(s => String(s.email || '').trim().toLowerCase()));
+
+      // 2. Filter inquiries that are NOT in existingSet
+      const toInsert = [];
+      inquiries.forEach(inq => {
+        const em = String(inq.email || '').trim().toLowerCase();
+        if (em && em.includes('@') && !em.includes('zentrevo.in') && !existingSet.has(em)) {
+          existingSet.add(em);
+          toInsert.push({
+            email: em,
+            name: inq.traveler || 'Traveler',
+            source: 'Inquiry Sync'
+          });
+        }
+      });
+
+      if (toInsert.length === 0) {
+        showToast('All client emails already exist in newsletter table');
+        setIsSyncingEmails(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert(toInsert);
+
+      if (!error) {
+        showToast(`Copied ${toInsert.length} new ${toInsert.length === 1 ? 'client email' : 'client emails'} to newsletter`);
+        await fetchNewsletterSubscribers();
+      } else {
+        showToast(`Sync note: ${error.message}`);
+      }
+    } catch (err) {
+      console.warn('Sync error:', err);
+      showToast('Could not sync to newsletter table');
+    } finally {
+      setIsSyncingEmails(false);
+    }
+  };
+
+  const handleExportUnifiedEmailsCSV = () => {
+    const headers = ['Email Address', 'Name', 'Phone', 'Source', 'Newsletter Subscribed', 'Target Destination', 'Plan Price USD', 'Status', 'Date Joined'];
+    const rows = unifiedEmails.map(u => [
+      `"${u.email}"`,
+      `"${u.name}"`,
+      `"${u.phone || ''}"`,
+      `"${u.source}"`,
+      `"${u.isSubscriber ? 'Yes' : 'No'}"`,
+      `"${u.destination}"`,
+      `"${u.planPrice}"`,
+      `"${u.status}"`,
+      `"${u.date}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `zentrevo_clients_and_subscribers_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported complete clients directory CSV');
+  };
 
   const selectedFeaturedTrip = useMemo(() => {
     return trips.find(t => String(t.id) === String(newsletterTemplate.featuredTripId)) || trips[0];
@@ -588,18 +1071,19 @@ export default function AdminDashboard({ onExit, onLogout }) {
     setModalMode('edit');
     setEditingTripId(trip.id);
     setFormData({
-      title: trip.title,
-      location: trip.location,
+      title: trip.title || '',
+      location: trip.location || '',
+      region: trip.region || 'international',
       badge: trip.badge || 'Luxury Escapes',
       tagColor: trip.tagColor || 'bg-stone-900 text-white',
-      price: trip.price,
-      duration: trip.duration,
-      rating: trip.rating,
-      reviews: trip.reviews,
+      price: trip.price || '$2,500',
+      duration: trip.duration || '7 Days / 6 Nights',
+      rating: trip.rating !== undefined ? trip.rating : 4.95,
+      reviews: trip.reviews !== undefined ? trip.reviews : 120,
       category: trip.category || 'Luxury Escapes',
-      image: trip.image,
-      description: trip.description,
-      highlights: Array.isArray(trip.highlights) ? trip.highlights.join(', ') : trip.highlights,
+      image: trip.image || '',
+      description: trip.description || '',
+      highlights: Array.isArray(trip.highlights) ? trip.highlights.join(', ') : (trip.highlights || ''),
       status: trip.status || 'Live'
     });
     setIsModalOpen(true);
@@ -611,20 +1095,32 @@ export default function AdminDashboard({ onExit, onLogout }) {
       ? formData.highlights.split(',').map(s => s.trim()).filter(Boolean)
       : formData.highlights;
 
+    const parsedRating = parseFloat(formData.rating) || 4.95;
+    const parsedReviews = parseInt(formData.reviews, 10) || 0;
+
+    let updatedTrips;
     if (modalMode === 'add') {
       const newTrip = {
         ...formData,
         id: Date.now(),
+        rating: parsedRating,
+        reviews: parsedReviews,
         highlights: highlightsList
       };
-      setTrips([newTrip, ...trips]);
+      updatedTrips = [newTrip, ...trips];
+      setTrips(updatedTrips);
+      saveActiveDestinations(updatedTrips);
       showToast(`Created & published "${formData.title}"`);
     } else {
-      setTrips(trips.map(t => t.id === editingTripId ? {
+      updatedTrips = trips.map(t => t.id === editingTripId ? {
         ...t,
         ...formData,
+        rating: parsedRating,
+        reviews: parsedReviews,
         highlights: highlightsList
-      } : t));
+      } : t);
+      setTrips(updatedTrips);
+      saveActiveDestinations(updatedTrips);
       showToast(`Updated "${formData.title}"`);
     }
     setIsModalOpen(false);
@@ -632,7 +1128,9 @@ export default function AdminDashboard({ onExit, onLogout }) {
 
   const handleDeleteTrip = (id, title) => {
     if (window.confirm(`Are you sure you want to remove "${title}" from the public catalogue?`)) {
-      setTrips(trips.filter(t => t.id !== id));
+      const updatedTrips = trips.filter(t => t.id !== id);
+      setTrips(updatedTrips);
+      saveActiveDestinations(updatedTrips);
       showToast(`Removed "${title}"`);
     }
   };
@@ -643,8 +1141,18 @@ export default function AdminDashboard({ onExit, onLogout }) {
       id: Date.now(),
       title: `${trip.title} (Bespoke Edition)`
     };
-    setTrips([copy, ...trips]);
+    const updatedTrips = [copy, ...trips];
+    setTrips(updatedTrips);
+    saveActiveDestinations(updatedTrips);
     showToast(`Duplicated "${trip.title}"`);
+  };
+
+  const handleResetTrips = () => {
+    if (window.confirm('Reset all itinerary cards to original curated catalog defaults? Any custom cards will be cleared.')) {
+      resetActiveDestinations();
+      setTrips(initialDestinations);
+      showToast('Restored default itinerary cards');
+    }
   };
 
   return (
@@ -755,7 +1263,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === 'inquiries' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-800'
                 }`}>
-                  {inquiries.length}
+                  {isLoadingInquiries && inquiries.length === 0 ? '·' : inquiries.length}
                 </span>
                 <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
               </div>
@@ -782,6 +1290,31 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   activeTab === 'newsletter' ? 'bg-amber-400 text-stone-950' : 'bg-amber-100 text-amber-900'
                 }`}>
                   {subscriberCount}
+                </span>
+              </div>
+            </button>
+
+            {/* Panel Tab 5: Emails */}
+            <button
+              onClick={() => {
+                setActiveTab('emails');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'emails'
+                  ? 'bg-stone-950 text-white shadow-sm font-bold'
+                  : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <AtSign className="w-4 h-4" />
+                <span>Emails</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  activeTab === 'emails' ? 'bg-amber-400 text-stone-950' : 'bg-stone-100 text-stone-700'
+                }`}>
+                  {unifiedEmails.length}
                 </span>
               </div>
             </button>
@@ -931,7 +1464,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
               </span>
               <div className="flex items-baseline justify-between">
                 <span className="font-editorial text-3xl font-bold text-stone-950">
-                  0{trips.length}
+                  {trips.length}
                 </span>
                 <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                   Live on Website
@@ -948,14 +1481,22 @@ export default function AdminDashboard({ onExit, onLogout }) {
               </span>
               <div className="flex items-baseline justify-between">
                 <span className="font-editorial text-3xl font-bold text-stone-950">
-                  {inquiries.length > 50 ? inquiries.length : 57}
+                  {isLoadingInquiries && inquiries.length === 0 ? (
+                    <span className="inline-block w-8 h-8 rounded-lg bg-stone-100 animate-pulse" />
+                  ) : (
+                    inquiryMetrics.total
+                  )}
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  +26% this month
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                  inquiryMetrics.isPositive
+                    ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                    : 'text-amber-800 bg-amber-50 border-amber-200'
+                }`}>
+                  {isLoadingInquiries && inquiries.length === 0 ? 'Loading...' : inquiryMetrics.percentText}
                 </span>
               </div>
               <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                4 new inquiries waiting for reply
+                {isLoadingInquiries && inquiries.length === 0 ? 'Syncing inquiries...' : inquiryMetrics.pendingText}
               </p>
             </div>
 
@@ -965,14 +1506,22 @@ export default function AdminDashboard({ onExit, onLogout }) {
               </span>
               <div className="flex flex-wrap items-baseline justify-between gap-1">
                 <span className="font-editorial text-2xl sm:text-3xl font-bold text-stone-950">
-                  {formatPrice(148250)}
+                  {isLoadingInquiries && inquiries.length === 0 ? (
+                    <span className="inline-block w-24 h-8 rounded-lg bg-stone-100 animate-pulse" />
+                  ) : (
+                    formatPrice(bookingMetrics.totalValue)
+                  )}
                 </span>
                 <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
-                  Avg {formatPrice(2760)}/guest
+                  Avg {isLoadingInquiries && inquiries.length === 0 ? '...' : formatPrice(bookingMetrics.avgValue)}/guest
                 </span>
               </div>
               <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                Estimated value from traveler inquiries
+                {isLoadingInquiries && inquiries.length === 0 ? (
+                  'Calculating live bookings...'
+                ) : (
+                  `Estimated value from ${inquiries.length} ${inquiries.length === 1 ? 'inquiry' : 'inquiries'}`
+                )}
               </p>
             </div>
 
@@ -1029,87 +1578,189 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 </div>
               </div>
 
+              
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Monthly Inquiry Volume Bar Chart */}
+                {/* Monthly / Weekly Inquiry Volume Bar Chart */}
                 <div className="lg:col-span-2 p-4 sm:p-6 lg:p-8 rounded-3xl bg-white border border-stone-200/90 shadow-sm space-y-6 overflow-hidden">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h3 className="font-editorial text-lg sm:text-xl font-bold text-stone-950">Monthly Inquiries & Travel Trends</h3>
-                      <p className="text-xs text-stone-600">Number of guest inquiries received each month</p>
+                      <h3 className="font-editorial text-lg sm:text-xl font-bold text-stone-950">
+                        {chartTimeframe === 'monthly' ? 'Monthly Inquiries & Travel Trends' : 'Weekly Inquiries & Travel Trends'}
+                      </h3>
+                      <p className="text-xs text-stone-600">
+                        {chartTimeframe === 'monthly' 
+                          ? 'Number of guest inquiries received each month (2026)' 
+                          : 'Number of guest inquiries received each week (Recent Weeks)'}
+                      </p>
                     </div>
-                    <span className="text-xs font-bold text-stone-900 border border-stone-200 px-3 py-1 rounded-full bg-stone-50 self-start sm:self-auto">
-                      Full Year 2026
-                    </span>
+
+                    {/* Monthly vs Weekly Filter Switcher (Default: Monthly) */}
+                    <div className="flex items-center gap-1 p-1 rounded-full bg-stone-100 border border-stone-200/90 self-start sm:self-auto shrink-0 shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setChartTimeframe('monthly')}
+                        className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                          chartTimeframe === 'monthly'
+                            ? 'bg-stone-950 text-white font-bold shadow-xs'
+                            : 'text-stone-600 hover:text-stone-950'
+                        }`}
+                      >
+                        Monthly
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChartTimeframe('weekly')}
+                        className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                          chartTimeframe === 'weekly'
+                            ? 'bg-stone-950 text-white font-bold shadow-xs'
+                            : 'text-stone-600 hover:text-stone-950'
+                        }`}
+                      >
+                        Weekly
+                      </button>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto pb-2 no-scrollbar scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    <div className="h-60 min-w-[420px] flex items-end justify-between gap-2 pt-8 px-2 border-b border-stone-200">
-                      {[
-                        { month: 'Jan', val: 45 },
-                        { month: 'Feb', val: 58 },
-                        { month: 'Mar', val: 80 },
-                        { month: 'Apr', val: 65 },
-                        { month: 'May', val: 92 },
-                        { month: 'Jun', val: 120 },
-                        { month: 'Jul', val: 110 },
-                        { month: 'Aug', val: 95 },
-                        { month: 'Sep', val: 85 },
-                        { month: 'Oct', val: 130 },
-                        { month: 'Nov', val: 75 },
-                        { month: 'Dec', val: 105 }
-                      ].map((item, idx) => (
-                        <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
-                          {/* Hover Tooltip in Live Selected Currency */}
-                          <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-stone-900 text-white px-2 py-0.5 rounded text-[10px] whitespace-nowrap pointer-events-none z-20 font-mono">
-                            {formatPrice(item.val * 1000)}
+                    <div className="h-60 min-w-[420px] flex items-end justify-between gap-2 pt-10 px-2 border-b border-stone-200">
+                      {chartTrendData.data.map((item, idx) => {
+                        const hasData = item.count > 0;
+                        const heightPx = hasData
+                          ? Math.max(Math.round((item.count / chartTrendData.maxCount) * 150), 28)
+                          : 4;
+
+                        return (
+                          <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
+                            {/* Hover Tooltip in Live Selected Currency */}
+                            <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-stone-900 text-white px-2.5 py-1 rounded-lg text-[10px] whitespace-nowrap pointer-events-none z-30 font-medium shadow-xl flex items-center gap-1.5 border border-stone-800">
+                              <span className="font-bold">{item.count} {item.count === 1 ? 'inquiry' : 'inquiries'}</span>
+                              {hasData && (
+                                <>
+                                  <span className="text-stone-500">•</span>
+                                  <span className="text-amber-400 font-mono font-bold">{formatPrice(item.value)}</span>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Inquiries Count Number above active bar */}
+                            {hasData && (
+                              <span className="text-[10px] font-bold text-stone-900 mb-0.5 animate-in fade-in">
+                                {item.count}
+                              </span>
+                            )}
+
+                            {/* The Bar */}
+                            <div 
+                              className={`w-full max-w-[28px] rounded-t-lg transition-all duration-500 ${
+                                hasData 
+                                  ? 'bg-stone-950 group-hover:bg-amber-600 shadow-sm' 
+                                  : 'bg-stone-200/80 group-hover:bg-stone-300'
+                              }`}
+                              style={{ height: `${heightPx}px` }}
+                            />
+                            
+                            {/* Label below bar */}
+                            <span 
+                              className={`text-[10px] font-medium transition-colors ${
+                                hasData ? 'text-stone-900 font-bold' : 'text-stone-500'
+                              }`} 
+                              title={item.rangeText || item.fullLabel || item.label}
+                            >
+                              {item.label}
+                            </span>
                           </div>
-                          <div 
-                            className="w-full max-w-[26px] rounded-t-lg bg-stone-900 group-hover:bg-amber-600 transition-all"
-                            style={{ height: `${(item.val / 130) * 170}px` }}
-                          />
-                          <span className="text-[10px] text-stone-600 font-medium">{item.month}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-stone-600 pt-1">
-                    <span>Busiest Season: <strong>October & Summer months</strong></span>
+                    <span>
+                      Busiest {chartTimeframe === 'monthly' ? 'Month' : 'Week'}:{' '}
+                      <strong className="text-stone-900 font-semibold">
+                        {chartTrendData.busiest 
+                          ? `${chartTrendData.busiest.label} (${chartTrendData.busiest.count} ${chartTrendData.busiest.count === 1 ? 'inquiry' : 'inquiries'})` 
+                          : 'Awaiting incoming inquiries'}
+                      </strong>
+                    </span>
                     <span className="font-bold text-stone-900">
-                      Total Inquiries Value: {formatPrice(1160000)}
+                      Total Inquiries Value: {formatPrice(bookingMetrics.totalValue)}
                     </span>
                   </div>
                 </div>
 
-                {/* Geographic Popularity */}
+                {/* Geographic Popularity: Confirmed Bookings Revenue Breakdown */}
                 <div className="p-6 sm:p-8 rounded-3xl bg-white border border-stone-200/90 shadow-sm flex flex-col justify-between space-y-6">
-                  <div>
-                    <h3 className="font-editorial text-xl font-bold text-stone-950">Most Popular Destinations</h3>
-                    <p className="text-xs text-stone-600">Destinations most requested by travelers</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-editorial text-xl font-bold text-stone-950">Most Popular Destinations</h3>
+                      <p className="text-xs text-stone-600">Breakdown of confirmed booking revenue by destination plan</p>
+                    </div>
+                    {confirmedRevenueBreakdown.totalRevenue > 0 && (
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Confirmed Total</span>
+                        <span className="font-editorial text-lg font-bold text-emerald-800">
+                          {formatPrice(confirmedRevenueBreakdown.totalRevenue)}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="space-y-3.5">
-                    {[
-                      { dest: 'Amalfi Coast, Italy', share: '38%', bar: 'w-[38%]' },
-                      { dest: 'Kyoto Temples, Japan', share: '27%', bar: 'w-[27%]' },
-                      { dest: 'Swiss Alpine Glacier', share: '20%', bar: 'w-[20%]' },
-                      { dest: 'Bali & Wilderness', share: '15%', bar: 'w-[15%]' }
-                    ].map((d, i) => (
-                      <div key={i} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-stone-900">{d.dest}</span>
-                          <span className="font-mono text-stone-600 font-bold">{d.share}</span>
+                  {confirmedRevenueBreakdown.items.length > 0 ? (
+                    <div className="space-y-4">
+                      {confirmedRevenueBreakdown.items.map((d, i) => (
+                        <div key={i} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <span className="font-semibold text-stone-900 truncate" title={d.destination}>
+                                {d.destination}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-stone-100 text-stone-600 font-medium shrink-0">
+                                {d.count} {d.count === 1 ? 'booking' : 'bookings'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              <span className="font-editorial text-sm font-bold text-stone-950">
+                                {formatPrice(d.revenue)}
+                              </span>
+                              <span className="font-mono text-[11px] text-stone-500 font-bold w-9 text-right">
+                                {d.percentage}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-stone-900 rounded-full transition-all duration-500" 
+                              style={{ width: `${Math.max(d.percentage, 4)}%` }} 
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
-                          <div className={`h-full bg-stone-900 rounded-full ${d.bar}`} />
-                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-7 px-4 text-center rounded-2xl bg-stone-50 border border-dashed border-stone-200">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-2 border border-emerald-100">
+                        <CheckCircle2 className="w-5 h-5" />
                       </div>
-                    ))}
-                  </div>
+                      <p className="text-xs font-bold text-stone-900">No Confirmed Bookings Yet</p>
+                      <p className="text-[11px] text-stone-500 max-w-xs mx-auto mt-1 leading-relaxed">
+                        Revenue only counts inquiries with status <strong className="text-emerald-800 bg-emerald-100/70 px-1 py-0.5 rounded font-semibold">Booking Confirmed</strong>. Change an inquiry status to view its live financial breakdown.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-stone-600 leading-relaxed">
-                    Italy is the most requested destination (38%). 74% of Mediterranean inquiries convert into bookings.
+                    {confirmedRevenueBreakdown.topDestination ? (
+                      <>
+                        <strong className="text-stone-900 font-semibold">{confirmedRevenueBreakdown.topDestination.destination}</strong> generates the highest confirmed revenue with <strong className="text-stone-900 font-semibold">{formatPrice(confirmedRevenueBreakdown.topDestination.revenue)}</strong> ({confirmedRevenueBreakdown.topDestination.percentage}% of all confirmed bookings across {confirmedRevenueBreakdown.topDestination.count} {confirmedRevenueBreakdown.topDestination.count === 1 ? 'client journey' : 'client journeys'}).
+                      </>
+                    ) : (
+                      <>
+                        Total confirmed bookings: <strong className="text-stone-900 font-semibold">{formatPrice(0)}</strong>. Once client inquiries are marked as <span className="font-semibold text-emerald-800">Booking Confirmed</span> in the Inquiries tab, their respective plan revenue and popularity share are allocated here in real time.
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -1274,7 +1925,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                     {[
                       { 
                         stage: '01. Inquiries Received', 
-                        count: '57 Travelers', 
+                        count: `${inquiries.length} ${inquiries.length === 1 ? 'Traveler' : 'Travelers'}`, 
                         rate: '100%', 
                         bar: 'w-full', 
                         bg: 'bg-stone-950 text-white',
@@ -1395,6 +2046,15 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   <span className="text-xs text-stone-500 font-medium whitespace-nowrap hidden xl:inline">
                     Showing <strong className="text-stone-900">{filteredTrips.length}</strong> of {trips.length}
                   </span>
+
+                  <button
+                    onClick={handleResetTrips}
+                    title="Restore catalog to original defaults"
+                    className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                  >
+                    <RefreshCw className="w-3 h-3 text-stone-500" />
+                    <span>Reset Defaults</span>
+                  </button>
 
                   <button
                     onClick={handleOpenAdd}
@@ -1550,6 +2210,8 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 </div>
               </div>
 
+              
+
               {/* Inquiries Filter & Search Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-200/80">
                 <div className="relative flex-1 max-w-md">
@@ -1581,10 +2243,16 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 </div>
               </div>
 
+              
+
               {/* Inquiries Cards Grid */}
               <div className="grid grid-cols-1 gap-4">
                 {inquiries
                   .filter((inq) => {
+                    const isNotBroadcast = inq.status !== 'Newsletter Broadcasted' && 
+                      inq.status !== 'Newsletter Sent' && 
+                      inq.traveler !== 'Private Journal Dispatch' &&
+                      inq.email !== 'newsletter@zentrevo.in';
                     const q = inquirySearch.toLowerCase().trim();
                     const matchesSearch = !q ||
                       inq.traveler?.toLowerCase().includes(q) ||
@@ -1592,7 +2260,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                       inq.destination?.toLowerCase().includes(q) ||
                       inq.id?.toLowerCase().includes(q);
                     const matchesStatus = inquiryStatusFilter === 'All' || inq.status === inquiryStatusFilter;
-                    return matchesSearch && matchesStatus;
+                    return isNotBroadcast && matchesSearch && matchesStatus;
                   })
                   .map((inq) => (
                     <div key={inq.id} className="p-6 rounded-3xl bg-white border border-stone-200/90 shadow-sm space-y-4 hover:border-stone-400/80 transition-all">
@@ -1601,25 +2269,51 @@ export default function AdminDashboard({ onExit, onLogout }) {
                           <span className="font-mono text-xs text-stone-600 font-semibold">{inq.id}</span>
                           <h3 className="font-editorial text-lg font-bold text-stone-950">{inq.traveler}</h3>
                           
-                          {/* Live DB indicator vs Demo indicator */}
-                          {inq.isLive && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              Live Lead
-                            </span>
-                          )}
+                          {/* Smooth Luxury Status Dropdown */}
+                          <div className="relative status-dropdown-container">
+                            <button
+                              type="button"
+                              onClick={() => setOpenStatusDropdownId(openStatusDropdownId === inq.id ? null : inq.id)}
+                              className={`px-3 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                                STATUS_CONFIG[inq.status]?.bg || 'bg-amber-50 text-amber-900 border-amber-300'
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[inq.status]?.dot || 'bg-amber-500'}`} />
+                              <span>{inq.status}</span>
+                              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${openStatusDropdownId === inq.id ? 'rotate-180' : ''}`} />
+                            </button>
 
-                          {/* Quick Interactive Status Dropdown */}
-                          <select
-                            value={inq.status}
-                            onChange={(e) => handleUpdateInquiryStatus(inq.id, inq.rawId, e.target.value)}
-                            className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 cursor-pointer focus:outline-none"
-                          >
-                            <option value="New Inquiry">New Inquiry</option>
-                            <option value="In Consultation">In Consultation</option>
-                            <option value="Proposal Dispatched">Proposal Dispatched</option>
-                            <option value="Booking Confirmed">Booking Confirmed</option>
-                            <option value="Archived">Archived</option>
-                          </select>
+                            {/* Floating Smooth Animated Dropdown Menu */}
+                            {openStatusDropdownId === inq.id && (
+                              <div className="absolute left-0 top-full mt-1.5 w-48 rounded-2xl bg-white border border-stone-200/90 shadow-2xl p-1.5 z-40 animate-in fade-in zoom-in-95 duration-150 origin-top-left">
+                                <div className="space-y-0.5">
+                                  {statusOptions.map((st) => {
+                                    const isSelected = inq.status === st;
+                                    const conf = STATUS_CONFIG[st];
+                                    return (
+                                      <button
+                                        key={st}
+                                        type="button"
+                                        onClick={() => {
+                                          handleUpdateInquiryStatus(inq.id, inq.rawId, st);
+                                          setOpenStatusDropdownId(null);
+                                        }}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                                          isSelected ? 'bg-stone-950 text-white font-bold' : 'text-stone-800 hover:bg-stone-100 font-medium'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-amber-400' : conf?.dot || 'bg-stone-400'}`} />
+                                          <span>{st}</span>
+                                        </div>
+                                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -1635,18 +2329,24 @@ export default function AdminDashboard({ onExit, onLogout }) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 text-xs">
                         <div>
                           <span className="text-stone-500 block text-[10px] uppercase font-bold">Target Voyage</span>
-                          <span className="font-semibold text-stone-900">{inq.destination}</span>
+                          <span className="font-semibold text-stone-900 truncate block">{inq.destination}</span>
                         </div>
                         <div>
                           <span className="text-stone-500 block text-[10px] uppercase font-bold">Party / Dates</span>
                           <span className="text-stone-700">{inq.guests} • {inq.dates}</span>
                         </div>
                         <div>
+                          <span className="text-stone-500 block text-[10px] uppercase font-bold">Plan Value</span>
+                          <span className="font-bold text-amber-900 font-mono text-xs bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/70 inline-block mt-0.5">
+                            {formatPrice(inq.planPrice || inq.budgetUsd)}
+                          </span>
+                        </div>
+                        <div>
                           <span className="text-stone-500 block text-[10px] uppercase font-bold">Email</span>
-                          <span className="text-stone-700 font-mono text-[11px]">{inq.email}</span>
+                          <span className="text-stone-700 font-mono text-[11px] truncate block">{inq.email}</span>
                         </div>
                         <div>
                           <span className="text-stone-500 block text-[10px] uppercase font-bold">Newsletter Status</span>
@@ -1696,9 +2396,6 @@ export default function AdminDashboard({ onExit, onLogout }) {
                     <h2 className="font-editorial text-xl sm:text-2xl font-bold tracking-tight text-stone-950">
                       Weekly Newsletter
                     </h2>
-                    <p className="text-xs text-stone-600 mt-0.5 max-w-2xl leading-relaxed">
-                      Send curated travel stories, seasonal highlights, and exclusive member perks to your subscribers.
-                    </p>
                   </div>
 
                   {/* Action Buttons */}
@@ -1722,7 +2419,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                 </div>
 
                 {/* Sub-Metrics Ribbon */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-stone-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-stone-100">
                   <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
                     <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Subscribed Guests</span>
                     <span className="text-base font-bold text-stone-950 mt-0.5 block">{subscriberCount} Readers</span>
@@ -1751,16 +2448,10 @@ export default function AdminDashboard({ onExit, onLogout }) {
                       {newsletterSchedule.time} UTC ({newsletterSchedule.time === '10:00' ? '3:30 PM IST' : 'Scheduled'})
                     </span>
                   </div>
-                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
-                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Delivery Status</span>
-                    <span className="text-base font-bold text-emerald-700 mt-0.5 block">Connected & Ready</span>
-                  </div>
-                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/70">
-                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Sender Email</span>
-                    <span className="text-base font-bold text-stone-900 mt-0.5 block truncate">contact@zentrevo.in</span>
-                  </div>
                 </div>
               </div>
+
+              
 
               {/* Two-Column Editor & Live Simulator */}
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -2247,6 +2938,204 @@ export default function AdminDashboard({ onExit, onLogout }) {
             </div>
           )}
 
+          {/* ─── TAB 5: CLIENTS & SUBSCRIBERS EMAILS DIRECTORY ────────────────────── */}
+          {activeTab === 'emails' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              
+              {/* Top Banner Card */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-editorial text-xl sm:text-2xl font-bold tracking-tight text-stone-950">
+                      Clients & Subscribers Directory
+                    </h2>
+                    <p className="text-xs text-stone-600 mt-1 max-w-2xl">
+                      Master directory of all traveler inquiries and newsletter subscribers.
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleExportUnifiedEmailsCSV}
+                      className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200/80 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Export All CSV ({unifiedEmails.length})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSyncInquiriesToNewsletter}
+                      disabled={isSyncingEmails}
+                      className="px-4 py-2 rounded-xl bg-stone-950 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                      title="Copy any inquiry emails that don't exist in the newsletter table"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncingEmails ? 'animate-spin' : ''}`} />
+                      <span>{isSyncingEmails ? 'Syncing...' : 'Sync Inquiries to Newsletter'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-Metrics Ribbon */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-stone-100">
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Total Unique Emails</span>
+                    <span className="font-editorial text-2xl font-bold text-stone-950 mt-0.5 block">{unifiedEmails.length}</span>
+                  </div>
+
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Newsletter Subscribers</span>
+                    <span className="font-editorial text-2xl font-bold text-emerald-800 mt-0.5 block">
+                      {unifiedEmails.filter(u => u.isSubscriber).length}
+                    </span>
+                  </div>
+
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Booking Inquiries</span>
+                    <span className="font-editorial text-2xl font-bold text-sky-800 mt-0.5 block">
+                      {unifiedEmails.filter(u => u.isInquiry).length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              
+
+              {/* Search & Filter Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-200/80">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by email, client name, voyage..."
+                    value={emailSearch}
+                    onChange={(e) => setEmailSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white border border-stone-200 text-stone-900 focus:outline-none focus:border-stone-800"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
+                  {['All', 'Newsletter Subscribers', 'Booking Inquiries'].map((filterOption) => (
+                    <button
+                      key={filterOption}
+                      type="button"
+                      onClick={() => setEmailFilter(filterOption)}
+                      className={`px-3 py-1 rounded-lg font-medium whitespace-nowrap transition-all cursor-pointer ${
+                        emailFilter === filterOption
+                          ? 'bg-stone-950 text-white font-bold'
+                          : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-100'
+                      }`}
+                    >
+                      {filterOption}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              
+
+              {/* Emails List */}
+              <div className="grid grid-cols-1 gap-3">
+                {unifiedEmails
+                  .filter((item) => {
+                    const q = emailSearch.toLowerCase().trim();
+                    const matchesSearch = !q ||
+                      item.email.toLowerCase().includes(q) ||
+                      item.name.toLowerCase().includes(q) ||
+                      item.destination.toLowerCase().includes(q);
+
+                    let matchesFilter = true;
+                    if (emailFilter === 'Newsletter Subscribers') matchesFilter = item.isSubscriber;
+                    else if (emailFilter === 'Booking Inquiries') matchesFilter = item.isInquiry;
+
+                    return matchesSearch && matchesFilter;
+                  })
+                  .map((item, idx) => (
+                    <div
+                      key={item.email + idx}
+                      className="p-4 sm:p-5 rounded-2xl bg-white border border-stone-200/90 shadow-2xs hover:border-stone-400/80 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        {/* Avatar */}
+                        <div className="w-10 h-10 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center font-editorial font-bold text-stone-800 shrink-0 text-sm">
+                          {item.name ? item.name.charAt(0).toUpperCase() : item.email.charAt(0).toUpperCase()}
+                        </div>
+
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-editorial font-bold text-stone-950 text-base truncate">
+                              {item.name}
+                            </h4>
+
+                            {/* Source Pills */}
+                            {item.source === 'Client & Subscriber' ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">
+                                Client & Subscriber
+                              </span>
+                            ) : item.isInquiry ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-900 border border-sky-300">
+                                Booking Inquiry
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-900 border border-emerald-300">
+                                Newsletter Subscriber
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs text-stone-600 flex-wrap">
+                            <span className="font-mono text-stone-800 font-medium">{item.email}</span>
+                            {item.phone && <span>• {item.phone}</span>}
+                            {item.destination && item.destination !== 'The Private Journal' && (
+                              <span className="text-stone-500">• {item.destination}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Meta & Actions */}
+                      <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+                        <span className="text-[11px] text-stone-500 font-mono hidden sm:inline mr-2">
+                          {item.date}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(item.email);
+                            showToast(`Copied ${item.email}`);
+                          }}
+                          className="px-3 py-1.5 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                          title="Copy email address"
+                        >
+                          <Copy className="w-3 h-3 text-stone-400" />
+                          <span>Copy</span>
+                        </button>
+
+                        <a
+                          href={`mailto:${item.email}?subject=Zentrevo%20Concierge`}
+                          className="px-3 py-1.5 rounded-xl bg-stone-950 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
+                        >
+                          <Mail className="w-3 h-3" />
+                          <span>Email</span>
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+
+                {unifiedEmails.length === 0 && (
+                  <div className="p-12 text-center rounded-3xl bg-white border border-stone-200/90 space-y-3">
+                    <AtSign className="w-8 h-8 text-stone-400 mx-auto" />
+                    <h3 className="font-editorial text-lg font-bold text-stone-900">No Emails Recorded Yet</h3>
+                    <p className="text-xs text-stone-500">Client booking inquiries and newsletter subscribers will appear here automatically.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -2305,6 +3194,8 @@ export default function AdminDashboard({ onExit, onLogout }) {
                   />
                 </div>
               </div>
+
+              
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -2380,6 +3271,64 @@ export default function AdminDashboard({ onExit, onLogout }) {
                       })}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              
+
+                            {/* Ratings, Reviews & Territory Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-stone-50/80 p-4 rounded-2xl border border-stone-200/80">
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                    <span>Rating (1.00 - 5.00) *</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1.0"
+                    max="5.0"
+                    required
+                    value={formData.rating}
+                    onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                    placeholder="e.g. 4.95"
+                    className="w-full bg-white border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 transition-all font-semibold"
+                  />
+                  <span className="text-[10px] text-stone-500 mt-1 block">Visible on card star badge</span>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-stone-600" />
+                    <span>Reviews Count *</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={formData.reviews}
+                    onChange={(e) => setFormData({ ...formData, reviews: e.target.value })}
+                    placeholder="e.g. 142"
+                    className="w-full bg-white border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 transition-all font-semibold"
+                  />
+                  <span className="text-[10px] text-stone-500 mt-1 block">Verified traveler reviews count</span>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                    <Globe2 className="w-3.5 h-3.5 text-stone-600" />
+                    <span>Territory Filter *</span>
+                  </label>
+                  <select
+                    value={formData.region || 'international'}
+                    onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                    className="w-full bg-white border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 transition-all font-semibold cursor-pointer"
+                  >
+                    <option value="international">International</option>
+                    <option value="national">National (India)</option>
+                  </select>
+                  <span className="text-[10px] text-stone-500 mt-1 block">Powers National/International switch</span>
                 </div>
               </div>
 
