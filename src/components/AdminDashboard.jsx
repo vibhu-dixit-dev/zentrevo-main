@@ -68,11 +68,20 @@ const CURRENCY_SYMBOLS = {
   GBP: '£'
 };
 
-export default function AdminDashboard({ onExit, onLogout }) {
-  // Navigation State: 'analytics' (Performance Ledger) is first & default
-  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'itineraries' | 'inquiries'
+export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', userEmail = 'contact@zentrevo.in' }) {
+  const isSalesRole = userRole === 'sales';
+
+  // Navigation State: 'emails' for sales, 'analytics' (Performance Ledger) is default for admin
+  const [activeTab, setActiveTab] = useState(() => (isSalesRole ? 'emails' : 'analytics'));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chartTimeframe, setChartTimeframe] = useState('monthly'); // 'monthly' (Default) | 'weekly'
+
+  // Enforce sales role locking to emails directory
+  useEffect(() => {
+    if (isSalesRole && activeTab !== 'emails') {
+      setActiveTab('emails');
+    }
+  }, [isSalesRole, activeTab]);
 
   // Currency State with Live Forex Rates: Defaults to INR (₹)
   const [currency, setCurrency] = useState('INR'); // 'INR' (Default) | 'USD' | 'EUR' | 'GBP'
@@ -1195,106 +1204,110 @@ export default function AdminDashboard({ onExit, onLogout }) {
             </button>
           </div>
 
-          {/* Navigation Panel: "Performance Ledger" is #1 and default active */}
+          {/* Navigation Panel */}
           <div className="space-y-1.5">
             <p className="text-[10px] uppercase font-bold tracking-widest text-stone-600 px-2.5 mb-2">
-              Management Suite
+              {isSalesRole ? 'Sales Portal' : 'Management Suite'}
             </p>
 
-            {/* Panel Tab 1: Performance Ledger (Default) */}
-            <button
-              onClick={() => {
-                setActiveTab('analytics');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'analytics'
-                  ? 'bg-stone-950 text-white shadow-sm font-bold'
-                  : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <TrendingUp className="w-4 h-4" />
-                <span>Performance</span>
-              </div>
-              <span className={`w-2 h-2 rounded-full ${activeTab === 'analytics' ? 'bg-amber-400' : 'bg-stone-300'}`}></span>
-            </button>
+            {!isSalesRole && (
+              <>
+                {/* Panel Tab 1: Performance Ledger (Default for Admin) */}
+                <button
+                  onClick={() => {
+                    setActiveTab('analytics');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'analytics'
+                      ? 'bg-stone-950 text-white shadow-sm font-bold'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <TrendingUp className="w-4 h-4" />
+                    <span>Performance</span>
+                  </div>
+                  <span className={`w-2 h-2 rounded-full ${activeTab === 'analytics' ? 'bg-amber-400' : 'bg-stone-300'}`}></span>
+                </button>
 
-            {/* Panel Tab 2: Itinerary Cards */}
-            <button
-              onClick={() => {
-                setActiveTab('itineraries');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'itineraries'
-                  ? 'bg-stone-950 text-white shadow-sm font-bold'
-                  : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Layers className="w-4 h-4" />
-                <span>Cards</span>
-              </div>
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                activeTab === 'itineraries' ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-700'
-              }`}>
-                {trips.length}
-              </span>
-            </button>
+                {/* Panel Tab 2: Itinerary Cards */}
+                <button
+                  onClick={() => {
+                    setActiveTab('itineraries');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'itineraries'
+                      ? 'bg-stone-950 text-white shadow-sm font-bold'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Layers className="w-4 h-4" />
+                    <span>Cards</span>
+                  </div>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === 'itineraries' ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-700'
+                  }`}>
+                    {trips.length}
+                  </span>
+                </button>
 
-            {/* Panel Tab 3: Guest Inquiries */}
-            <button
-              onClick={() => {
-                setActiveTab('inquiries');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'inquiries'
-                  ? 'bg-stone-950 text-white shadow-sm font-bold'
-                  : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Mail className="w-4 h-4" />
-                <span>Inquiries</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  activeTab === 'inquiries' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-800'
-                }`}>
-                  {isLoadingInquiries && inquiries.length === 0 ? '·' : inquiries.length}
-                </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-              </div>
-            </button>
+                {/* Panel Tab 3: Guest Inquiries */}
+                <button
+                  onClick={() => {
+                    setActiveTab('inquiries');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'inquiries'
+                      ? 'bg-stone-950 text-white shadow-sm font-bold'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Mail className="w-4 h-4" />
+                    <span>Inquiries</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeTab === 'inquiries' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-800'
+                    }`}>
+                      {isLoadingInquiries && inquiries.length === 0 ? '·' : inquiries.length}
+                    </span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                  </div>
+                </button>
 
-            {/* Panel Tab 4: Newsletter */}
-            <button
-              onClick={() => {
-                setActiveTab('newsletter');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'newsletter'
-                  ? 'bg-stone-950 text-white shadow-sm font-bold'
-                  : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Send className="w-4 h-4" />
-                <span>Newsletter</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  activeTab === 'newsletter' ? 'bg-amber-400 text-stone-950' : 'bg-amber-100 text-amber-900'
-                }`}>
-                  {subscriberCount}
-                </span>
-              </div>
-            </button>
+                {/* Panel Tab 4: Newsletter */}
+                <button
+                  onClick={() => {
+                    setActiveTab('newsletter');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'newsletter'
+                      ? 'bg-stone-950 text-white shadow-sm font-bold'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Send className="w-4 h-4" />
+                    <span>Newsletter</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeTab === 'newsletter' ? 'bg-amber-400 text-stone-950' : 'bg-amber-100 text-amber-900'
+                    }`}>
+                      {subscriberCount}
+                    </span>
+                  </div>
+                </button>
+              </>
+            )}
 
-            {/* Panel Tab 5: Emails */}
+            {/* Panel Tab 5: Emails (Accessible to Sales & Admin) */}
             <button
               onClick={() => {
                 setActiveTab('emails');
@@ -1321,7 +1334,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
           </div>
         </div>
 
-        {/* Bottom Actions: Public Site Link & Admin Info */}
+        {/* Bottom Actions: Public Site Link & Role Info */}
         <div className="pt-4 border-t border-stone-100 space-y-2.5">
           <button
             onClick={onExit}
@@ -1335,12 +1348,25 @@ export default function AdminDashboard({ onExit, onLogout }) {
           </button>
 
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-stone-50 border border-stone-100">
-            <div className="w-7 h-7 rounded-lg bg-stone-950 text-white font-bold flex items-center justify-center text-[10px]">
-              AD
+            <div className={`w-7 h-7 rounded-lg font-bold flex items-center justify-center text-[10px] ${
+              isSalesRole ? 'bg-amber-400 text-stone-950 font-black' : 'bg-stone-950 text-white'
+            }`}>
+              {isSalesRole ? 'SL' : 'AD'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-stone-900 truncate">Admin</p>
-              <p className="text-[9px] text-stone-600 truncate">contact@zentrevo.in</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-bold text-stone-900 truncate">
+                  {isSalesRole ? 'Sales Team' : 'Admin'}
+                </p>
+                {isSalesRole && (
+                  <span className="text-[9px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.2 rounded">
+                    Sales
+                  </span>
+                )}
+              </div>
+              <p className="text-[9px] text-stone-600 truncate">
+                {userEmail || (isSalesRole ? 'sales@zentrevo.in' : 'contact@zentrevo.in')}
+              </p>
             </div>
             {onLogout && (
               <button
@@ -1371,10 +1397,22 @@ export default function AdminDashboard({ onExit, onLogout }) {
               <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-stone-500 font-medium min-w-0">
-              <span className="font-editorial text-xs sm:text-sm font-bold text-stone-900 truncate">Catalogue</span>
+              <span className="font-editorial text-xs sm:text-sm font-bold text-stone-900 truncate">
+                {isSalesRole ? 'Sales Desk' : 'Catalogue'}
+              </span>
               <span className="text-stone-400">•</span>
               <span className="capitalize truncate text-[11px] sm:text-xs font-semibold text-stone-700">
-                {activeTab === 'analytics' ? 'Performance' : activeTab === 'itineraries' ? 'Cards' : activeTab === 'inquiries' ? 'Inquiries' : 'Newsletter'}
+                {isSalesRole 
+                  ? 'Clients & Leads Directory' 
+                  : activeTab === 'analytics' 
+                    ? 'Performance' 
+                    : activeTab === 'itineraries' 
+                      ? 'Cards' 
+                      : activeTab === 'inquiries' 
+                        ? 'Inquiries' 
+                        : activeTab === 'emails' 
+                          ? 'Emails' 
+                          : 'Newsletter'}
               </span>
             </div>
           </div>
@@ -1455,114 +1493,116 @@ export default function AdminDashboard({ onExit, onLogout }) {
         {/* Dynamic Workspace Body */}
         <div className="p-3.5 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 flex-1 max-w-full">
           
-          {/* ─── COUTURE KPI SUMMARY TILES (Live Converted Currency) ───────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-            
-            <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Active Cards
-              </span>
-              <div className="flex items-baseline justify-between">
-                <span className="font-editorial text-3xl font-bold text-stone-950">
-                  {trips.length}
+          {/* ─── COUTURE KPI SUMMARY TILES (Live Converted Currency - Hidden for Sales Role) ───────────── */}
+          {!isSalesRole && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+              
+              <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
+                  Active Cards
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Live on Website
-                </span>
+                <div className="flex items-baseline justify-between">
+                  <span className="font-editorial text-3xl font-bold text-stone-950">
+                    {trips.length}
+                  </span>
+                  <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Live on Website
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
+                  Itinerary cards visible on website
+                </p>
               </div>
-              <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                Itinerary cards visible on website
-              </p>
-            </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Total Inquiries
-              </span>
-              <div className="flex items-baseline justify-between">
-                <span className="font-editorial text-3xl font-bold text-stone-950">
+              <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
+                  Total Inquiries
+                </span>
+                <div className="flex items-baseline justify-between">
+                  <span className="font-editorial text-3xl font-bold text-stone-950">
+                    {isLoadingInquiries && inquiries.length === 0 ? (
+                      <span className="inline-block w-8 h-8 rounded-lg bg-stone-100 animate-pulse" />
+                    ) : (
+                      inquiryMetrics.total
+                    )}
+                  </span>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                    inquiryMetrics.isPositive
+                      ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                      : 'text-amber-800 bg-amber-50 border-amber-200'
+                  }`}>
+                    {isLoadingInquiries && inquiries.length === 0 ? 'Loading...' : inquiryMetrics.percentText}
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
+                  {isLoadingInquiries && inquiries.length === 0 ? 'Syncing inquiries...' : inquiryMetrics.pendingText}
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
+                  Estimated Bookings Value
+                </span>
+                <div className="flex flex-wrap items-baseline justify-between gap-1">
+                  <span className="font-editorial text-2xl sm:text-3xl font-bold text-stone-950">
+                    {isLoadingInquiries && inquiries.length === 0 ? (
+                      <span className="inline-block w-24 h-8 rounded-lg bg-stone-100 animate-pulse" />
+                    ) : (
+                      formatPrice(bookingMetrics.totalValue)
+                    )}
+                  </span>
+                  <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
+                    Avg {isLoadingInquiries && inquiries.length === 0 ? '...' : formatPrice(bookingMetrics.avgValue)}/guest
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
                   {isLoadingInquiries && inquiries.length === 0 ? (
-                    <span className="inline-block w-8 h-8 rounded-lg bg-stone-100 animate-pulse" />
+                    'Calculating live bookings...'
                   ) : (
-                    inquiryMetrics.total
+                    `Estimated value from ${inquiries.length} ${inquiries.length === 1 ? 'inquiry' : 'inquiries'}`
                   )}
-                </span>
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-                  inquiryMetrics.isPositive
-                    ? 'text-emerald-800 bg-emerald-50 border-emerald-200'
-                    : 'text-amber-800 bg-amber-50 border-amber-200'
-                }`}>
-                  {isLoadingInquiries && inquiries.length === 0 ? 'Loading...' : inquiryMetrics.percentText}
-                </span>
+                </p>
               </div>
-              <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                {isLoadingInquiries && inquiries.length === 0 ? 'Syncing inquiries...' : inquiryMetrics.pendingText}
-              </p>
-            </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Estimated Bookings Value
-              </span>
-              <div className="flex flex-wrap items-baseline justify-between gap-1">
-                <span className="font-editorial text-2xl sm:text-3xl font-bold text-stone-950">
-                  {isLoadingInquiries && inquiries.length === 0 ? (
-                    <span className="inline-block w-24 h-8 rounded-lg bg-stone-100 animate-pulse" />
-                  ) : (
-                    formatPrice(bookingMetrics.totalValue)
-                  )}
+              <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
+                  Guest Reviews & Rating
                 </span>
-                <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
-                  Avg {isLoadingInquiries && inquiries.length === 0 ? '...' : formatPrice(bookingMetrics.avgValue)}/guest
-                </span>
+                <div className="flex items-baseline justify-between">
+                  <span className="font-editorial text-3xl font-bold text-stone-950">
+                    4.95 ★
+                  </span>
+                  <span className="text-[11px] font-semibold text-stone-700 bg-stone-100 px-2 py-0.5 rounded-full">
+                    1,200+ Reviews
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
+                  Average rating from traveler feedback
+                </p>
               </div>
-              <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                {isLoadingInquiries && inquiries.length === 0 ? (
-                  'Calculating live bookings...'
-                ) : (
-                  `Estimated value from ${inquiries.length} ${inquiries.length === 1 ? 'inquiry' : 'inquiries'}`
-                )}
-              </p>
-            </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Guest Reviews & Rating
-              </span>
-              <div className="flex items-baseline justify-between">
-                <span className="font-editorial text-3xl font-bold text-stone-950">
-                  4.95 ★
+              <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
+                  Newsletters Sent
                 </span>
-                <span className="text-[11px] font-semibold text-stone-700 bg-stone-100 px-2 py-0.5 rounded-full">
-                  1,200+ Reviews
-                </span>
+                <div className="flex items-baseline justify-between">
+                  <span className="font-editorial text-3xl font-bold text-stone-950">
+                    {totalNewslettersSent}
+                  </span>
+                  <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    Delivered
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
+                  Total newsletter emails sent till date
+                </p>
               </div>
-              <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                Average rating from traveler feedback
-              </p>
-            </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
-                Newsletters Sent
-              </span>
-              <div className="flex items-baseline justify-between">
-                <span className="font-editorial text-3xl font-bold text-stone-950">
-                  {totalNewslettersSent}
-                </span>
-                <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  Delivered
-                </span>
-              </div>
-              <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
-                Total newsletter emails sent till date
-              </p>
             </div>
-
-          </div>
+          )}
 
           {/* ─── TAB 1: PERFORMANCE LEDGER (DEFAULT ACTIVE VIEW) ──────────────── */}
-          {activeTab === 'analytics' && (
+          {activeTab === 'analytics' && !isSalesRole && (
             <div className="space-y-6">
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200/80 pb-3">
@@ -2006,7 +2046,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
           )}
 
           {/* ─── TAB 2: ITINERARY CARDS (WITH LIVE CURRENCY CONVERSION) ────────── */}
-          {activeTab === 'itineraries' && (
+          {activeTab === 'itineraries' && !isSalesRole && (
             <div className="space-y-6">
               
               {/* Filter & Action Bar */}
@@ -2170,7 +2210,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
           )}
 
           {/* ─── TAB 3: GUEST INQUIRIES DOSSIER (SUPABASE LIVE + NEWSLETTER) ──────── */}
-          {activeTab === 'inquiries' && (
+          {activeTab === 'inquiries' && !isSalesRole && (
             <div className="space-y-6">
               {/* Header with Live DB indicator and Export Button */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2386,7 +2426,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
           )}
 
           {/* ─── 4. NEWSLETTER STUDIO TAB ────────────────────────────────────────── */}
-          {activeTab === 'newsletter' && (
+          {activeTab === 'newsletter' && !isSalesRole && (
             <div className="space-y-6">
               
               {/* Top Banner & Status Ribbon (Clean White Admin Card UI) */}

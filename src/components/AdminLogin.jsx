@@ -10,33 +10,29 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   AlertCircle, 
-  KeyRound, 
   Globe2,
-  ExternalLink,
-  HelpCircle,
-  X
+  ExternalLink
 } from 'lucide-react';
 import DreamscapeCanvas from './DreamscapeCanvas';
 
 export default function AdminLogin({ onLoginSuccess, onExit }) {
-  const [email, setEmail] = useState('contact@zentrevo.in');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [brandHovered, setBrandHovered] = useState(false);
 
-  // Authenticate Admin Form
+  // Authenticate Form
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
     if (!email.trim()) {
-      setErrorMessage('Please enter your administrator email.');
+      setErrorMessage('Please enter your work email.');
       return;
     }
     if (!password) {
@@ -48,32 +44,34 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
 
     // Realistic authentication delay and verification
     setTimeout(() => {
-      // Valid credentials for administrator access
       const validPass = password.trim();
-      if (
-        validPass === 'StockPulse2026' || 
-        validPass.toLowerCase() === 'stockpulse2026'
-      ) {
-        setSuccessMessage('Access granted. Entering the Zentrevo Console...');
-        setTimeout(() => {
-          setIsLoading(false);
-          if (onLoginSuccess) {
-            onLoginSuccess({ email, rememberMe });
-          }
-        }, 650);
+      const normalizedEmail = email.trim().toLowerCase();
+
+      let detectedRole = 'admin';
+      if (validPass === 'A3E591D5@admin') {
+        // If email is explicitly a sales email, treat as sales, otherwise full admin
+        detectedRole = normalizedEmail.includes('sales') ? 'sales' : 'admin';
+      } else if (validPass === 'A3E591D5@sales') {
+        detectedRole = 'sales';
       } else {
         setIsLoading(false);
         setErrorMessage('Invalid access credentials. Please verify your secret key.');
+        return;
       }
-    }, 850);
-  };
 
-  // One-click demo passkey autofill for seamless preview
-  const handleQuickDemo = () => {
-    setEmail('contact@zentrevo.in');
-    setPassword('StockPulse2026');
-    setErrorMessage('');
-    setSuccessMessage('Admin passkey injected. Click "Enter Expedition Console" to sign in.');
+      setSuccessMessage(
+        detectedRole === 'sales'
+          ? 'Sales access granted. Opening Client Directory...'
+          : 'Administrator access granted. Entering the Zentrevo Console...'
+      );
+
+      setTimeout(() => {
+        setIsLoading(false);
+        if (onLoginSuccess) {
+          onLoginSuccess({ email: normalizedEmail, role: detectedRole, rememberMe });
+        }
+      }, 650);
+    }, 850);
   };
 
   return (
@@ -171,20 +169,9 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
 
           {/* Form Header */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-teal-400 font-semibold">
-                Private Admin Gateway
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsHelpModalOpen(true)}
-                className="text-stone-400 hover:text-stone-200 text-xs flex items-center gap-1 transition-colors cursor-pointer"
-                title="View access assistance"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>Help</span>
-              </button>
-            </div>
+            <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-teal-400 font-semibold block">
+              Private Admin Gateway
+            </span>
 
             <h2 className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-white">
               Welcome back
@@ -215,7 +202,7 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
                 htmlFor="admin-email" 
                 className="block text-xs font-medium text-stone-300 tracking-wide"
               >
-                Administrator Email
+                Account Email (Admin or Sales)
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
@@ -237,21 +224,12 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
 
             {/* Secret Access Key / Password */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label 
-                  htmlFor="admin-password" 
-                  className="block text-xs font-medium text-stone-300 tracking-wide"
-                >
-                  Secret Access Key
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsHelpModalOpen(true)}
-                  className="text-[11px] text-amber-300/80 hover:text-amber-200 transition-colors cursor-pointer"
-                >
-                  Forgot key?
-                </button>
-              </div>
+              <label 
+                htmlFor="admin-password" 
+                className="block text-xs font-medium text-stone-300 tracking-wide"
+              >
+                Secret Access Key
+              </label>
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
@@ -333,59 +311,10 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
         {/* Security & Encryption Certification */}
         <div className="pt-4 pb-2 border-t border-white/5 flex items-center justify-center gap-2 text-[10px] text-stone-500 font-mono w-full">
           <ShieldCheck className="w-3.5 h-3.5 text-teal-400/80" />
-          <span>256-Bit TLS Protected Administrative Gateway</span>
+          <span>256-Bit TLS Protected Gateway</span>
         </div>
 
       </section>
-
-      {/* ─────────────────────────────────────────────────────────────────────────
-          EMERGENCY CONCIERGE HELP MODAL
-      ────────────────────────────────────────────────────────────────────────── */}
-      {isHelpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-sm rounded-2xl bg-stone-900 border border-stone-700/80 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-amber-300 font-mono text-xs uppercase tracking-wider">
-                <KeyRound className="w-4 h-4" />
-                <span>Concierge Key Recovery</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsHelpModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-stone-300 leading-relaxed font-light">
-              For administrative access recovery or emergency dossier unlocks, contact the Zentrevo Concierge technical desk:
-            </p>
-
-            <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2 text-xs font-mono">
-              <div className="flex justify-between text-stone-400">
-                <span>Official Contact:</span>
-                <span className="text-stone-200 select-all">contact@zentrevo.in</span>
-              </div>
-              <div className="flex justify-between text-stone-400">
-                <span>Admin Passkey:</span>
-                <span className="text-amber-300 font-bold select-all">StockPulse2026</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                handleQuickDemo();
-                setIsHelpModalOpen(false);
-              }}
-              className="w-full py-2.5 rounded-xl bg-amber-400 text-stone-950 font-bold text-xs uppercase tracking-wider hover:bg-amber-300 transition-colors cursor-pointer"
-            >
-              Autofill & Close
-            </button>
-          </div>
-        </div>
-      )}
 
     </div>
   );

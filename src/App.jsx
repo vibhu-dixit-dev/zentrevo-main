@@ -38,6 +38,20 @@ export default function App() {
     return false;
   });
 
+  const [userRole, setUserRole] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('zentrevo_user_role') || 'admin';
+    }
+    return 'admin';
+  });
+
+  const [userEmail, setUserEmail] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('zentrevo_user_email') || 'contact@zentrevo.in';
+    }
+    return 'contact@zentrevo.in';
+  });
+
   // Route Detection: Supports /admin route, legal pages, and standard routes
   const [currentPath, setCurrentPath] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -378,10 +392,14 @@ export default function App() {
     if (!isAdminAuthenticated) {
       return (
         <AdminLogin 
-          onLoginSuccess={() => {
+          onLoginSuccess={({ email, role }) => {
             if (typeof window !== 'undefined') {
               sessionStorage.setItem('zentrevo_admin_auth', 'true');
+              sessionStorage.setItem('zentrevo_user_role', role || 'admin');
+              sessionStorage.setItem('zentrevo_user_email', email || 'contact@zentrevo.in');
             }
+            setUserRole(role || 'admin');
+            setUserEmail(email || 'contact@zentrevo.in');
             setIsAdminAuthenticated(true);
           }}
           onExit={() => {
@@ -396,6 +414,8 @@ export default function App() {
 
     return (
       <AdminDashboard 
+        userRole={userRole}
+        userEmail={userEmail}
         onExit={() => {
           if (typeof window !== 'undefined') {
             window.history.pushState({}, '', '/');
@@ -405,8 +425,12 @@ export default function App() {
         onLogout={() => {
           if (typeof window !== 'undefined') {
             sessionStorage.removeItem('zentrevo_admin_auth');
+            sessionStorage.removeItem('zentrevo_user_role');
+            sessionStorage.removeItem('zentrevo_user_email');
           }
           setIsAdminAuthenticated(false);
+          setUserRole('admin');
+          setUserEmail('contact@zentrevo.in');
         }}
       />
     );
