@@ -96,13 +96,15 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-[4/4]">
                   <img
                     src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80"
-                    alt="Traveler standing on ocean lookout"
+                    alt="Zentrevo custom travel planner coordinating bespoke international voyages from India"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                 </div>
 
-                {/* Floating "25 Years Of Experience" Badge */}
+                {/* Floating "WhatsApp Support" Badge */}
                 <div className={`absolute -bottom-6 -right-4 sm:right-6 p-5 rounded-2xl shadow-2xl border flex items-center gap-4 ${
                   isSapphire
                     ? 'bg-[#050b18] border-amber-400/50 text-white'
@@ -110,12 +112,12 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                       ? 'bg-[#061813] border-emerald-500/40 text-white'
                       : 'bg-stone-950 text-white border-stone-800'
                 }`}>
-                  <div className={`text-3xl sm:text-4xl font-extrabold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>
-                    25
+                  <div className={`text-2xl sm:text-3xl font-extrabold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    24/7
                   </div>
                   <div className="text-xs font-semibold leading-tight uppercase tracking-wider">
-                    Years Of <br />
-                    <span className="text-stone-400 font-normal">Excellence</span>
+                    WhatsApp <br />
+                    <span className="text-stone-400 font-normal">Support</span>
                   </div>
                 </div>
               </div>

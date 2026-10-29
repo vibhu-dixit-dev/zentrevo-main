@@ -17,13 +17,15 @@ import {
   Filter
 } from 'lucide-react';
 import { blogArticles } from '../data/travelData';
+import { getBlogSlug } from '../lib/seoRoutes';
 
 export default function JournalModal({ 
   isOpen, 
   onClose, 
   initialArticle = null, 
   currentTheme = 'editorial',
-  onInquireStory
+  onInquireStory,
+  onArticleChange
 }) {
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
@@ -34,7 +36,7 @@ export default function JournalModal({
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Sync initialArticle whenever modal opens
+  // Sync initialArticle whenever modal opens or initialArticle changes
   useEffect(() => {
     if (isOpen) {
       setActiveArticle(initialArticle);
@@ -42,6 +44,14 @@ export default function JournalModal({
       setSelectedCategory('All');
     }
   }, [isOpen, initialArticle]);
+
+  // Handle article change and notify parent route listener
+  const handleSelectArticle = (article) => {
+    setActiveArticle(article);
+    if (onArticleChange) {
+      onArticleChange(article);
+    }
+  };
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -79,9 +89,11 @@ export default function JournalModal({
 
   if (!isOpen) return null;
 
-  // Handle Share link
+  // Handle Share link with clean canonical URL
   const handleShare = (article) => {
-    const url = window.location.href.split('#')[0] + `#story-${article.id}`;
+    const slug = getBlogSlug(article);
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.zentrevo.in';
+    const url = `${origin}/journal/${slug}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url);
       setCopiedLink(true);
@@ -119,7 +131,7 @@ export default function JournalModal({
             {activeArticle ? (
               <button
                 type="button"
-                onClick={() => setActiveArticle(null)}
+                onClick={() => handleSelectArticle(null)}
                 className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider py-1.5 px-3 rounded-full border transition-all cursor-pointer ${
                   isSapphire
                     ? 'border-amber-500/40 hover:bg-amber-400/20 text-amber-300'
@@ -197,7 +209,9 @@ export default function JournalModal({
               <div className="relative aspect-[21/9] sm:aspect-[24/9] w-full overflow-hidden">
                 <img 
                   src={activeArticle.image} 
-                  alt={activeArticle.title}
+                  alt={activeArticle.imageAlt || `${activeArticle.title} - Zentrevo Journal Story`}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent"></div>
@@ -245,7 +259,9 @@ export default function JournalModal({
                   }`}>
                     <img 
                       src={activeArticle.author.avatar} 
-                      alt={activeArticle.author.name}
+                      alt={`${activeArticle.author.name} - ${activeArticle.author.role}`}
+                      loading="lazy"
+                      decoding="async"
                       className="w-10 h-10 rounded-full object-cover border border-amber-400/40" 
                     />
                     <div>
@@ -342,7 +358,7 @@ export default function JournalModal({
                   {prevArticle ? (
                     <button
                       type="button"
-                      onClick={() => setActiveArticle(prevArticle)}
+                      onClick={() => handleSelectArticle(prevArticle)}
                       className="flex items-center gap-2 text-xs font-semibold opacity-80 hover:opacity-100 transition-opacity text-left cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
@@ -356,7 +372,7 @@ export default function JournalModal({
                   {nextArticle ? (
                     <button
                       type="button"
-                      onClick={() => setActiveArticle(nextArticle)}
+                      onClick={() => handleSelectArticle(nextArticle)}
                       className="flex items-center gap-2 text-xs font-semibold opacity-80 hover:opacity-100 transition-opacity text-right cursor-pointer"
                     >
                       <div className="truncate max-w-[150px] sm:max-w-[220px]">
@@ -454,7 +470,7 @@ export default function JournalModal({
                   {filteredArticles.map((article) => (
                     <div
                       key={article.id}
-                      onClick={() => setActiveArticle(article)}
+                      onClick={() => handleSelectArticle(article)}
                       className={`group rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-xl flex flex-col cursor-pointer ${
                         isSapphire
                           ? 'bg-[#081226]/80 border-amber-500/25 text-stone-100 hover:border-amber-400/60 hover:-translate-y-0.5'
@@ -466,7 +482,9 @@ export default function JournalModal({
                       <div className="aspect-[16/10] overflow-hidden relative">
                         <img
                           src={article.image}
-                          alt={article.title}
+                          alt={article.imageAlt || `${article.title} - Zentrevo Journal`}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                         <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[9.5px] font-semibold text-white uppercase tracking-wider">

@@ -1,7 +1,12 @@
-import React, { useEffect } from 'react';
-import { X, Check, Star, Clock, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Check, Star, Clock, ShieldCheck, ArrowRight, Sparkles, Share2 } from 'lucide-react';
+import { getDestinationSlug } from '../lib/seoRoutes';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function DetailModal({ destination, isOpen, onClose, onBookNow, currentTheme }) {
+  const { formatPrice } = useCurrency();
+  const [copiedLink, setCopiedLink] = useState(false);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
@@ -20,6 +25,17 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
 
+  const handleShare = () => {
+    const slug = getDestinationSlug(destination);
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.zentrevo.in';
+    const url = `${origin}/destinations/${slug}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-6 animate-in fade-in duration-200"
@@ -35,14 +51,36 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
               : 'bg-white border-stone-200 text-stone-900 shadow-2xl'
         }`}
       >
-        {/* Floating Top-Right Close Button - Always visible regardless of scroll */}
-        <button
-          onClick={onClose}
-          aria-label="Close modal"
-          className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 cursor-pointer shadow-lg border border-white/10"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Floating Top-Right Controls */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          {/* Share Direct Route Link */}
+          <button
+            onClick={handleShare}
+            aria-label="Share route link"
+            title="Copy shareable link"
+            className="w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 cursor-pointer shadow-lg border border-white/10 relative"
+          >
+            {copiedLink ? (
+              <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+            ) : (
+              <Share2 className="w-4 h-4" />
+            )}
+            {copiedLink && (
+              <span className="absolute -bottom-8 right-0 bg-stone-950 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
+                Link Copied!
+              </span>
+            )}
+          </button>
+
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            className="w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 cursor-pointer shadow-lg border border-white/10"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* Modal Scrollable Body: Header Image + Full Itinerary Content scroll together smoothly */}
         <div className="overflow-y-auto flex-1 overscroll-contain">
@@ -50,7 +88,9 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
           <div className="relative h-64 sm:h-80 w-full overflow-hidden shrink-0">
             <img
               src={destination.image}
-              alt={destination.title}
+              alt={destination.imageAlt || `${destination.title} - ${destination.location} itinerary | Zentrevo`}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/20" />
@@ -79,7 +119,7 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
                 </span>
               </div>
               <div className="text-2xl font-bold tracking-tight">
-                {destination.price}
+                {formatPrice(destination.price)}
                 <span className="text-xs font-normal opacity-70"> / guest</span>
               </div>
             </div>

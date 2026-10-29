@@ -3,7 +3,7 @@ import { Compass, ArrowRight, Check, Globe, Share2, Mail, Crown, Sparkles, Loade
 import { SOCIAL_CHANNELS } from '../data/socialChannels';
 import { supabase } from '../lib/supabaseClient';
 
-export default function Footer({ currentTheme, onSelectTheme }) {
+export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -12,6 +12,17 @@ export default function Footer({ currentTheme, onSelectTheme }) {
   const [subscribed, setSubscribed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  const handleLinkClick = (path) => (e) => {
+    e.preventDefault();
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -161,8 +172,17 @@ export default function Footer({ currentTheme, onSelectTheme }) {
               <li><a href="#values" className="hover:text-amber-400 transition-colors">Our Core Beliefs</a></li>
               <li><a href="#experiences" className="hover:text-amber-400 transition-colors">Why Choose Us</a></li>
               <li><a href="#stories" className="hover:text-amber-400 transition-colors">Stories & Journals</a></li>
+              <li><a href="#faq" className="hover:text-amber-400 transition-colors">FAQ & Support</a></li>
               <li><a href="#inquiry" className="hover:text-amber-400 transition-colors">Private Concierge</a></li>
-              <li><a href="#" className="hover:text-amber-400 transition-colors">Careers & Partners</a></li>
+              <li>
+                <a 
+                  href="/cancellation-and-refund" 
+                  onClick={handleLinkClick('/cancellation-and-refund')} 
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  Cancellation & Refund
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -267,7 +287,7 @@ export default function Footer({ currentTheme, onSelectTheme }) {
             © {new Date().getFullYear()} ZENTREVO Travel Co. All rights reserved.
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <button
               onClick={handleCycleTheme}
               className="text-stone-400 hover:text-amber-400 text-xs flex items-center gap-1.5 cursor-pointer"
@@ -276,8 +296,27 @@ export default function Footer({ currentTheme, onSelectTheme }) {
               <span className="font-semibold text-white uppercase">{currentTheme}</span>
               <span className="underline ml-1">Switch</span>
             </button>
-            <a href="#" className="hover:text-stone-300 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-stone-300 transition-colors">Terms of Service</a>
+            <a 
+              href="/privacy-policy" 
+              onClick={handleLinkClick('/privacy-policy')}
+              className="hover:text-amber-400 transition-colors"
+            >
+              Privacy Policy
+            </a>
+            <a 
+              href="/terms-of-service" 
+              onClick={handleLinkClick('/terms-of-service')}
+              className="hover:text-amber-400 transition-colors"
+            >
+              Terms of Service
+            </a>
+            <a 
+              href="/cancellation-and-refund" 
+              onClick={handleLinkClick('/cancellation-and-refund')}
+              className="hover:text-amber-400 transition-colors"
+            >
+              Cancellation & Refund
+            </a>
             <a href="/admin" className="hover:text-amber-400 transition-colors flex items-center gap-1 opacity-70 hover:opacity-100">Concierge Portal</a>
           </div>
         </div>

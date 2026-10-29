@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { destinations, getActiveDestinations } from '../data/travelData';
 import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function DestinationsGrid({ 
   currentTheme, 
@@ -8,6 +9,7 @@ export default function DestinationsGrid({
   selectedRegion = 'all',
   onSelectRegion
 }) {
+  const { formatPrice } = useCurrency();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -188,11 +190,16 @@ export default function DestinationsGrid({
                     : 'bg-white border-stone-200 text-stone-900 shadow-stone-200/50'
               }`}
             >
-              {/* Image Frame */}
-              <div className="relative aspect-[4/3] overflow-hidden">
+              {/* Image Frame - Clickable to open route */}
+              <div 
+                onClick={() => onSelectDestination(item)}
+                className="relative aspect-[4/3] overflow-hidden cursor-pointer"
+              >
                 <img
                   src={item.image}
-                  alt={item.title}
+                  alt={item.imageAlt || `${item.title} - ${item.location} tour for Indian travelers | Zentrevo`}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 
@@ -229,12 +236,15 @@ export default function DestinationsGrid({
                       {item.badge}
                     </span>
                     <span className="text-lg font-bold">
-                      {item.price}
+                      {formatPrice(item.price)}
                       <span className={`text-xs font-normal ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-400'}`}> / guest</span>
                     </span>
                   </div>
 
-                  <h3 className={`${isEditorial ? 'font-editorial font-medium' : 'font-sans font-bold'} text-xl mb-3 leading-snug group-hover:text-amber-400 transition-colors`}>
+                  <h3 
+                    onClick={() => onSelectDestination(item)}
+                    className={`${isEditorial ? 'font-editorial font-medium' : 'font-sans font-bold'} text-xl mb-3 leading-snug group-hover:text-amber-400 transition-colors cursor-pointer`}
+                  >
                     {item.title}
                   </h3>
 

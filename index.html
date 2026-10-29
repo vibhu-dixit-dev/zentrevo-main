@@ -4,10 +4,110 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ZENTREVO — Curated Travel & Journeys</title>
+    
+    <!-- Primary SEO Meta Tags (from Client Specification) -->
+    <title>Zentrevo | Trips Planned by People, Not Templates</title>
+    <meta name="description" content="Share your dates and budget. A real planner builds your trip, guides your visa and stays on WhatsApp until you're home. Quote in 24 hours." />
+    <meta name="keywords" content="trips from india, custom travel planner, bali trip from india, japan trip from india, switzerland tour from india, visa guidance india, bespoke travel planner" />
+    <meta name="author" content="Zentrevo" />
+    <link rel="canonical" href="https://www.zentrevo.in/" />
+
+    <!-- Open Graph / Facebook / WhatsApp Preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.zentrevo.in/" />
+    <meta property="og:title" content="Zentrevo | Trips Planned by People, Not Templates" />
+    <meta property="og:description" content="Share your dates and budget. A real planner builds your trip, guides your visa and stays on WhatsApp until you're home. Quote in 24 hours." />
+    <meta property="og:image" content="https://www.zentrevo.in/images/og-home.jpg" />
+    <meta property="og:site_name" content="Zentrevo" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.zentrevo.in/" />
+    <meta name="twitter:title" content="Zentrevo | Trips Planned by People, Not Templates" />
+    <meta name="twitter:description" content="Share your dates and budget. A real planner builds your trip, guides your visa and stays on WhatsApp until you're home. Quote in 24 hours." />
+    <meta name="twitter:image" content="https://www.zentrevo.in/images/og-home.jpg" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Structured Data (JSON-LD) - TravelAgency Schema from Client Specification -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TravelAgency",
+      "name": "Zentrevo",
+      "url": "https://www.zentrevo.in/",
+      "email": "contact@zentrevo.in",
+      "telephone": "+91-XXXXXXXXXX",
+      "areaServed": "IN",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Sector 49",
+        "addressLocality": "Gurugram",
+        "addressRegion": "Haryana",
+        "postalCode": "122018",
+        "addressCountry": "IN"
+      },
+      "sameAs": [
+        "https://www.instagram.com/zentrevo_travel",
+        "https://www.linkedin.com/company/zentrevo",
+        "https://www.facebook.com/profile.php?id=61592436556939"
+      ]
+    }
+    </script>
+
+    <!-- Structured Data (JSON-LD) - FAQPage Schema for Rich Search Accordions -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How does Zentrevo plan custom trips from India?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Tell us when, where, and how you like to travel. A real travel planner builds your trip, itemizes clear prices with no surprises, guides your visa step-by-step, and stays with you on WhatsApp until you're safely home. You receive your tailored itinerary and quote within 24 hours."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do you guarantee visa approval for Indian passport holders?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Visa guidance and document support are provided in good faith. The embassy decides approval. We help with document checklists, appointment scheduling, and confirmed travel vouchers, but never promise or guarantee visa issuance."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Are prices in Indian Rupees (₹) and what is included?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, our trip plans from India are priced in Indian Rupees (₹) per person. Each itinerary clearly itemizes accommodations, private transfers, daily breakfasts, curated excursions, and on-ground concierge support with zero hidden charges."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which destinations does Zentrevo specialize in?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We curate custom trips from India for Bali, Japan, Switzerland, Italy, Turkey, and Kerala, alongside domestic high-altitude expeditions in Ladakh, Mewar royal retreats in Udaipur, and Kashmir cedar houseboats."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is Zentrevo's cancellation and refund policy?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Cancellations made 30 or more days prior to travel receive up to an 85% to 90% refund (minus committed third-party flight and hotel non-recoverable booking costs). Approved refunds are returned within 7 to 10 business days."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-stone-100 text-stone-900 antialiased selection:bg-amber-500 selection:text-white">
     <div id="root"></div>

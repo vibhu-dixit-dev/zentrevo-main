@@ -742,7 +742,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
     subject: 'Zentrevo Private Journal: Autumn Escapes & Villa Privileges',
     issueTag: 'The Private Journal • Edition 14',
     headline: 'Sublime Sanctuaries: Unhurried Stays from the Amalfi Coast to the Swiss Alps',
-    editorialText: `Dear Patron,\n\nAs the autumn light softens across Europe, we have secured private charter availability and premier villa buyouts across our most sought-after destinations.\n\nWhether you desire an unhurried morning overlooking Positano's cliffside or a secluded alpine wellness retreat in Zermatt, our concierge team is standing by to customize every moment to your exact cadence.`,
+    editorialText: `Dear Traveller,\n\nAs the autumn light softens across Europe, we have secured private charter availability and premier villa buyouts across our most sought-after destinations.\n\nWhether you desire an unhurried morning overlooking Positano's cliffside or a secluded alpine wellness retreat in Zermatt, our concierge team is standing by to customize every moment to your exact cadence.`,
     pullQuote: 'True luxury is the quiet mastery of time, place, and absolute serenity.',
     featuredTripId: 1,
     perksText: 'Complimentary Riva yacht sunset charter, champagne welcome, and guaranteed early check-in.',
@@ -2538,13 +2538,13 @@ export default function AdminDashboard({ onExit, onLogout }) {
                         rows={5}
                         value={newsletterTemplate.editorialText}
                         onChange={(e) => setNewsletterTemplate({ ...newsletterTemplate, editorialText: e.target.value })}
-                        placeholder="Write the concierge dispatch letter to your patrons..."
+                        placeholder="Write the concierge dispatch letter to your travellers..."
                         className="w-full bg-stone-50 border border-stone-300 rounded-2xl p-3.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all leading-relaxed font-sans"
                       />
                       <div className="flex items-start gap-2 mt-2 p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 text-stone-700 text-[11px] leading-relaxed">
                         <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                         <span>
-                          <strong>Smart Greeting:</strong> Starting your letter with <em>"Dear Patron,"</em> will automatically personalize on dispatch to the traveler's registered name (e.g. <em>"Dear {inquiries[0]?.traveler || 'Julian Vance'},"</em>) or show <em>"Dear Traveler,"</em> for newsletter-only subscribers.
+                          <strong>Smart Greeting:</strong> Starting your letter with <em>"Dear Traveller,"</em> (or <em>"Dear Patron,"</em>) will automatically personalize on dispatch to the traveler's registered name (e.g. <em>"Dear {inquiries[0]?.traveler || 'Julian Vance'},"</em>) or show <em>"Dear Traveller,"</em> if the name is not present in the database.
                         </span>
                       </div>
                     </div>
@@ -2659,7 +2659,7 @@ export default function AdminDashboard({ onExit, onLogout }) {
                         title="Toggle smart greeting personalized preview"
                       >
                         <Sparkles className="w-3 h-3 text-amber-600" />
-                        <span>{previewPersona === 'named' ? `Greeting: "Dear ${inquiries[0]?.traveler?.split(' ')[0] || 'Julian'},"` : 'Greeting: "Dear Traveler,"'}</span>
+                        <span>{previewPersona === 'named' && inquiries[0]?.traveler ? `Greeting: "Dear ${inquiries[0].traveler.split(' ')[0]},"` : 'Greeting: "Dear Traveller,"'}</span>
                       </button>
 
                       <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
@@ -2715,9 +2715,9 @@ export default function AdminDashboard({ onExit, onLogout }) {
                         {/* Body Narrative */}
                         <div className="p-6 sm:p-8 space-y-5 text-xs sm:text-sm text-stone-300 leading-relaxed">
                           <p className="whitespace-pre-line">
-                            {previewPersona === 'named'
-                              ? (newsletterTemplate.editorialText || '').replace(/^Dear\s+[^,\n]+,/i, `Dear ${inquiries[0]?.traveler || 'Julian Vance'},`)
-                              : (newsletterTemplate.editorialText || '').replace(/^Dear\s+[^,\n]+,/i, 'Dear Traveler,')}
+                            {previewPersona === 'named' && inquiries[0]?.traveler
+                              ? (newsletterTemplate.editorialText || '').replace(/^Dear\s+[^,\n]+,/i, `Dear ${inquiries[0].traveler},`)
+                              : (newsletterTemplate.editorialText || '').replace(/^Dear\s+[^,\n]+,/i, 'Dear Traveller,')}
                           </p>
 
                           {/* Pull Quote */}

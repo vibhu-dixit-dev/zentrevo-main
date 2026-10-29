@@ -93,7 +93,9 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
               <div className="absolute inset-0 bg-gradient-to-b from-[#060e20]/75 via-[#0b1733]/60 to-[#040813]/85 z-10" />
               <img 
                 src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=80" 
-                alt="Deep ocean and mountain grandeur" 
+                alt="Zentrevo luxury tropical coast and ocean voyage for Indian travelers" 
+                fetchPriority="high"
+                decoding="async"
                 className="w-full h-full object-cover opacity-55 filter saturate-130 contrast-110"
               />
               {/* Constellation navigation lines */}
@@ -110,7 +112,9 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
               <div className="absolute inset-0 bg-gradient-to-b from-[#0a241d]/75 via-[#0d2b23]/60 to-[#061813]/85 z-10" />
               <img 
                 src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2000&q=80" 
-                alt="Mountain scenic atmosphere" 
+                alt="Zentrevo alpine expedition and scenic mountain panorama" 
+                fetchPriority="high"
+                decoding="async"
                 className="w-full h-full object-cover opacity-55 filter saturate-135 contrast-115"
               />
               <svg className="absolute inset-0 w-full h-full z-10 opacity-25 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
@@ -123,7 +127,9 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
               <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/55 to-stone-100/65 z-10" />
               <img 
                 src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80" 
-                alt="Misty mountain landscape" 
+                alt="Zentrevo bespoke valley and mountain landscape itinerary" 
+                fetchPriority="high"
+                decoding="async"
                 className="w-full h-full object-cover opacity-45 filter grayscale contrast-105"
               />
             </div>
@@ -162,11 +168,11 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                   : 'bg-white/80 border-stone-200 text-stone-800'
             }`}>
               <div className="flex -space-x-2">
-                <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Traveler" />
-                <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Traveler" />
-                <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" alt="Traveler" />
+                <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Zentrevo traveler" loading="lazy" decoding="async" />
+                <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Zentrevo traveler" loading="lazy" decoding="async" />
+                <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" alt="Zentrevo traveler" loading="lazy" decoding="async" />
               </div>
-              <span className="font-semibold">20k+ High-Trust Adventurers</span>
+              <span className="font-semibold">One Planner • One WhatsApp Chat</span>
             </div>
           </div>
 

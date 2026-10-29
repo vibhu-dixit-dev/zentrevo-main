@@ -35,7 +35,7 @@ export default async function handler(req, res) {
             if (cleanEmail.includes('@') && !cleanEmail.includes('zentrevo.in')) {
               emailMap.set(cleanEmail, {
                 email: cleanEmail,
-                name: item.name && item.name !== 'Journal Subscriber' && item.name !== 'Traveler' ? String(item.name).trim() : ''
+                name: item.name && item.name !== 'Journal Subscriber' && item.name !== 'Traveler' && item.name !== 'Traveller' && item.name.toLowerCase() !== 'patron' ? String(item.name).trim() : ''
               });
             }
           }
@@ -118,9 +118,9 @@ export default async function handler(req, res) {
     for (const recipient of recipients) {
       try {
         const rawName = recipient.name;
-        const greeting = (rawName && rawName.toLowerCase() !== 'valued guest')
+        const greeting = (rawName && rawName.toLowerCase() !== 'valued guest' && rawName.toLowerCase() !== 'patron')
           ? `Dear ${rawName},`
-          : `Dear Traveler,`;
+          : `Dear Traveller,`;
 
         await transporter.sendMail({
           from: `"Zentrevo Private Journal" <${smtpUser}>`,

@@ -208,7 +208,9 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
               <div className="flex items-center gap-4">
                 <img
                   src={activeReview.avatar}
-                  alt={activeReview.author}
+                  alt={`${activeReview.author} - Verified Zentrevo Traveler Review`}
+                  loading="lazy"
+                  decoding="async"
                   className={`w-12 h-12 rounded-full object-cover ring-2 ${
                     isSapphire ? 'ring-amber-400' : isEmerald ? 'ring-emerald-400' : 'ring-stone-900'
                   }`}
@@ -313,7 +315,9 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
                 <div className="aspect-[16/10] overflow-hidden relative">
                   <img
                     src={article.image}
-                    alt={article.title}
+                    alt={article.imageAlt || `${article.title} - Zentrevo Journal`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-semibold text-white uppercase">

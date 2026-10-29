@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Compass, Sparkles, Menu, X, ArrowUpRight, Crown, Sun, ChevronDown, Globe2, MapPin, Palette, FileCheck } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
 
-export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onSelectRegion, onOpenJournal }) {
+export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onSelectRegion, onOpenJournal, onOpenVisa }) {
+  const { currency, symbol, toggleCurrency, setCurrency } = useCurrency();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [destDropdownOpen, setDestDropdownOpen] = useState(false);
@@ -251,7 +253,8 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     type="button"
                     onClick={() => {
                       setServicesDropdownOpen(false);
-                      if (onOpenInquiry) onOpenInquiry();
+                      if (onOpenVisa) onOpenVisa();
+                      else if (onOpenInquiry) onOpenInquiry();
                     }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
                       isSapphire
@@ -291,7 +294,25 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
         </nav>
 
         {/* Actions & Theme Selector */}
-        <div className="hidden sm:flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-2.5">
+          {/* Currency Switcher Pill (₹ INR | $ USD) */}
+          <button
+            type="button"
+            onClick={toggleCurrency}
+            className={`h-9 px-3 rounded-full flex items-center gap-1.5 border text-xs font-semibold tracking-wide transition-all duration-300 cursor-pointer shadow-xs ${
+              isSapphire
+                ? 'bg-[#060e20] border-amber-500/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10'
+                : isEmerald
+                  ? 'bg-emerald-950/60 border-emerald-600/40 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/50'
+                  : 'bg-stone-100 border-stone-200 text-stone-800 hover:bg-stone-200'
+            }`}
+            title={`Active Currency: ${currency} (${currency === 'INR' ? 'Indian Rupee' : 'US Dollar'}). Click to switch.`}
+            aria-label="Toggle Currency"
+          >
+            <span className="font-bold text-sm leading-none">{symbol}</span>
+            <span className="text-[11px] font-bold tracking-wider">{currency}</span>
+          </button>
+
           {/* Theme Quick Cycle Icon Button */}
           <button
             onClick={handleCycleTheme}
@@ -340,9 +361,22 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
 
         {/* Mobile Menu Toggle */}
         <div className="flex sm:hidden items-center gap-2">
+          {/* Quick Currency Toggle in Mobile Header */}
+          <button
+            type="button"
+            onClick={toggleCurrency}
+            className={`px-2 py-1 rounded-full border text-xs font-bold flex items-center gap-0.5 cursor-pointer ${
+              isSapphire ? 'border-amber-500/40 text-amber-300' : isEmerald ? 'border-emerald-700 text-emerald-300' : 'border-stone-300 text-stone-800'
+            }`}
+            title="Toggle Currency"
+          >
+            <span>{symbol}</span>
+            <span className="text-[10px]">{currency}</span>
+          </button>
+
           <button
             onClick={handleCycleTheme}
-            className={`p-2 rounded-full border text-xs ${
+            className={`p-2 rounded-full border text-xs cursor-pointer ${
               isSapphire ? 'border-amber-500/40 text-amber-300' : isEmerald ? 'border-emerald-700 text-emerald-300' : 'border-stone-300 text-stone-700'
             }`}
             title="Toggle Theme"
@@ -351,7 +385,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={`p-2 rounded-lg ${isSapphire || isEmerald ? 'text-stone-200' : 'text-stone-800'}`}
+            className={`p-2 rounded-lg cursor-pointer ${isSapphire || isEmerald ? 'text-stone-200' : 'text-stone-800'}`}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -418,7 +452,8 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     type="button"
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      if (onOpenInquiry) onOpenInquiry();
+                      if (onOpenVisa) onOpenVisa();
+                      else if (onOpenInquiry) onOpenInquiry();
                     }}
                     className="flex items-center gap-2 text-xs opacity-85 hover:opacity-100 text-left cursor-pointer py-1"
                   >
@@ -432,6 +467,31 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
             <a href="#experiences" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">Luxury</a>
             <a href="#stories" onClick={() => { setMobileMenuOpen(false); if (onOpenJournal) onOpenJournal(null); }} className="py-1 border-b border-stone-200/10">Blogs</a>
             
+            {/* Currency selector in mobile drawer */}
+            <div className="py-2 flex items-center justify-between border-t border-stone-200/15 pt-3">
+              <span className="text-xs uppercase text-stone-400 font-bold">Currency</span>
+              <div className="flex gap-1.5">
+                <button 
+                  onClick={() => setCurrency('INR')}
+                  className={`px-3 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-all ${
+                    currency === 'INR' 
+                      ? isSapphire ? 'bg-amber-400 text-stone-950 font-extrabold' : isEmerald ? 'bg-emerald-400 text-stone-950 font-extrabold' : 'bg-stone-950 text-white font-extrabold'
+                      : isSapphire ? 'bg-slate-800 text-stone-300' : isEmerald ? 'bg-emerald-950 text-stone-300' : 'bg-stone-100 text-stone-700'
+                  }`}>
+                  ₹ INR
+                </button>
+                <button 
+                  onClick={() => setCurrency('USD')}
+                  className={`px-3 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-all ${
+                    currency === 'USD' 
+                      ? isSapphire ? 'bg-amber-400 text-stone-950 font-extrabold' : isEmerald ? 'bg-emerald-400 text-stone-950 font-extrabold' : 'bg-stone-950 text-white font-extrabold'
+                      : isSapphire ? 'bg-slate-800 text-stone-300' : isEmerald ? 'bg-emerald-950 text-stone-300' : 'bg-stone-100 text-stone-700'
+                  }`}>
+                  $ USD
+                </button>
+              </div>
+            </div>
+
             {/* Theme selector in mobile drawer */}
             <div className="py-2 flex items-center justify-between border-t border-stone-200/15 pt-3">
               <span className="text-xs uppercase text-stone-400 font-bold">Theme</span>

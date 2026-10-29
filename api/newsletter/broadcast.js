@@ -156,7 +156,7 @@ export default async function handler(req, res) {
       const target = testRecipient || 'contact@zentrevo.in';
       const testGreeting = target.toLowerCase().includes('contact@zentrevo.in')
         ? 'Dear Concierge Admin,'
-        : 'Dear Traveler,';
+        : 'Dear Traveller,';
 
       let testBody = template.editorialText || '';
       if (/^Dear\s+[^,\n]+,/i.test(testBody)) {
@@ -199,7 +199,7 @@ export default async function handler(req, res) {
             if (cleanEmail.includes('@') && !cleanEmail.includes('zentrevo.in')) {
               emailMap.set(cleanEmail, {
                 email: cleanEmail,
-                name: item.name && item.name !== 'Journal Subscriber' && item.name !== 'Traveler' ? String(item.name).trim() : ''
+                name: item.name && item.name !== 'Journal Subscriber' && item.name !== 'Traveler' && item.name !== 'Traveller' && item.name.toLowerCase() !== 'patron' ? String(item.name).trim() : ''
               });
             }
           }
@@ -241,10 +241,10 @@ export default async function handler(req, res) {
     for (const recipient of recipients) {
       try {
         const rawName = recipient.name;
-        // Greeting logic: if name is available and not generic "Valued Guest", use "Dear [Name],", else "Dear Traveler,"
-        const greeting = (rawName && rawName.toLowerCase() !== 'valued guest')
+        // Greeting logic: if name is available and not generic "Valued Guest" or "Patron", use "Dear [Name],", else "Dear Traveller,"
+        const greeting = (rawName && rawName.toLowerCase() !== 'valued guest' && rawName.toLowerCase() !== 'patron')
           ? `Dear ${rawName},`
-          : `Dear Traveler,`;
+          : `Dear Traveller,`;
 
         let personalizedBody = template.editorialText || '';
         if (/^Dear\s+[^,\n]+,/i.test(personalizedBody)) {

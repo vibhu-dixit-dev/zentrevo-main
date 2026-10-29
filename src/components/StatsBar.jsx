@@ -54,10 +54,10 @@ export default function StatsBar({ currentTheme }) {
           </div>
         </div>
 
-        {/* Partner Logos Strip */}
+        {/* Service Standards Strip */}
         <div className="mt-10 pt-4 flex flex-col items-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-6">
-            Trusted by Leaders & Industry Partners
+            Our Core Promises • Trips Planned by People, Not Templates
           </p>
           <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
             {partnerLogos.map((p, i) => (

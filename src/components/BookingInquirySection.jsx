@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight, Loader2, AlertCircle, ShieldCheck, ChevronDown, Check } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { destinations, getActiveDestinations, getDestinationPrice } from '../data/travelData';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function BookingInquirySection({ currentTheme, preselectedDestination }) {
+  const { currency, formatPrice } = useCurrency();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -158,6 +160,8 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
         body: JSON.stringify({ 
           ...formData, 
           plan_price: planPrice,
+          currency: currency,
+          plan_price_formatted: planPrice ? formatPrice(planPrice) : '',
           _supabase_already_saved: supabaseSaved 
         })
       });
