@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Compass, ArrowRight, Check, Globe, Share2, Mail, Crown, Sparkles, Loader2 } from 'lucide-react';
 import { SOCIAL_CHANNELS } from '../data/socialChannels';
 import { supabase } from '../lib/supabaseClient';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
+  const { t } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -115,19 +117,19 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
             </div>
             
             <p className="text-xs sm:text-sm text-stone-400 max-w-sm leading-relaxed">
-              Curating private, architectural, and culturally immersive journeys for discerning travelers across 48 countries worldwide.
+              {t('footer.aboutDesc', 'Curating private, architectural, and culturally immersive journeys for discerning travelers across 48 countries worldwide.')}
             </p>
 
             <div className="text-xs text-stone-400 space-y-1 pt-1">
-              <p><span className="text-stone-300 font-semibold">Headquarters:</span> Sector 49, Gurugram 122018</p>
-              <p><span className="text-stone-300 font-semibold">Email:</span> <a href="mailto:contact@zentrevo.in" className="hover:text-amber-400 underline">contact@zentrevo.in</a></p>
-              <p><span className="text-stone-300 font-semibold">Phone:</span> <a href="tel:+918619928710" className="hover:text-amber-400">+91 86199 28710</a></p>
+              <p><span className="text-stone-300 font-semibold">{t('footer.hqLabel', 'Headquarters:')}</span> Sector 49, Gurugram 122018</p>
+              <p><span className="text-stone-300 font-semibold">{t('footer.emailLabel', 'Email:')}</span> <a href="mailto:contact@zentrevo.in" className="hover:text-amber-400 underline">contact@zentrevo.in</a></p>
+              <p><span className="text-stone-300 font-semibold">{t('footer.phoneLabel', 'Phone:')}</span> <a href="tel:+918619928710" className="hover:text-amber-400">+91 86199 28710</a></p>
             </div>
 
             {/* Official Social Media Channels */}
             <div className="pt-2">
               <span className="text-[10px] uppercase font-bold tracking-widest text-stone-400 block mb-2.5">
-                Official Channels
+                {t('footer.officialChannels', 'Official Channels')}
               </span>
               <div className="flex flex-wrap items-center gap-2">
                 {SOCIAL_CHANNELS.map((social) => {
@@ -153,7 +155,7 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
           {/* Nav Links */}
           <div className="lg:col-span-2 space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-              Expeditions
+              {t('footer.colExpeditions', 'Expeditions')}
             </h4>
             <ul className="space-y-2.5 text-xs text-stone-400">
               <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Amalfi Coast, Italy</a></li>
@@ -166,21 +168,21 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
 
           <div className="lg:col-span-2 space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-              Company
+              {t('footer.colCompany', 'Company')}
             </h4>
             <ul className="space-y-2.5 text-xs text-stone-400">
-              <li><a href="#values" className="hover:text-amber-400 transition-colors">Our Core Beliefs</a></li>
-              <li><a href="#experiences" className="hover:text-amber-400 transition-colors">Why Choose Us</a></li>
-              <li><a href="#stories" className="hover:text-amber-400 transition-colors">Stories & Journals</a></li>
-              <li><a href="#faq" className="hover:text-amber-400 transition-colors">FAQ & Support</a></li>
-              <li><a href="#inquiry" className="hover:text-amber-400 transition-colors">Private Concierge</a></li>
+              <li><a href="#values" className="hover:text-amber-400 transition-colors">{t('footer.linkBeliefs', 'Our Core Beliefs')}</a></li>
+              <li><a href="#experiences" className="hover:text-amber-400 transition-colors">{t('footer.linkWhyChoose', 'Why Choose Us')}</a></li>
+              <li><a href="#stories" className="hover:text-amber-400 transition-colors">{t('footer.linkStories', 'Stories & Journals')}</a></li>
+              <li><a href="#faq" className="hover:text-amber-400 transition-colors">{t('footer.linkFaq', 'FAQ & Support')}</a></li>
+              <li><a href="#inquiry" className="hover:text-amber-400 transition-colors">{t('footer.linkConcierge', 'Private Concierge')}</a></li>
               <li>
                 <a 
                   href="/cancellation-and-refund" 
                   onClick={handleLinkClick('/cancellation-and-refund')} 
                   className="hover:text-amber-400 transition-colors"
                 >
-                  Cancellation & Refund
+                  {t('footer.linkRefund', 'Cancellation & Refund')}
                 </a>
               </li>
             </ul>
@@ -189,16 +191,16 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
           {/* Newsletter Box */}
           <div className="lg:col-span-4 space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-              The Private Journal
+              {t('footer.journalHeading', 'The Private Journal')}
             </h4>
             <p className="text-xs text-stone-400 leading-relaxed">
-              Receive exclusive invitation-only itinerary dossiers and seasonal destination dispatches once a month.
+              {t('footer.journalDesc', 'Receive exclusive invitation-only itinerary dossiers and seasonal destination dispatches once a month.')}
             </p>
 
             {subscribed ? (
               <div className="flex items-center gap-2 p-3 rounded-2xl bg-slate-900 border border-amber-500/50 text-amber-300 text-xs">
                 <Check className="w-4 h-4 text-amber-400" />
-                <span>You're subscribed to the Private Journal.</span>
+                <span>{t('footer.newsletterSuccess', "You're subscribed to the Private Journal.")}</span>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="flex gap-2">
@@ -207,13 +209,13 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
                   required
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder={t('footer.newsletterPlaceholder', 'Enter your email')}
                   className="bg-stone-800/80 border border-stone-700 text-xs px-4 py-2.5 rounded-full text-white focus:outline-none focus:border-amber-400 flex-1"
                 />
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                  className={`px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                     isSubmitting ? 'opacity-70 cursor-wait' : ''
                   } ${
                     isSapphire 
@@ -222,11 +224,15 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
                         ? 'bg-emerald-400 text-stone-950 hover:bg-emerald-300' 
                         : 'bg-white text-stone-950 hover:bg-stone-200'
                   }`}
+                  aria-label="Subscribe to newsletter"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <ArrowRight className="w-4 h-4" />
+                    <>
+                      <span>{t('footer.newsletterBtn', 'Subscribe')}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </>
                   )}
                 </button>
               </form>
@@ -301,21 +307,21 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
               onClick={handleLinkClick('/privacy-policy')}
               className="hover:text-amber-400 transition-colors"
             >
-              Privacy Policy
+              {t('footer.privacyPolicy')}
             </a>
             <a 
               href="/terms-of-service" 
               onClick={handleLinkClick('/terms-of-service')}
               className="hover:text-amber-400 transition-colors"
             >
-              Terms of Service
+              {t('footer.termsOfService')}
             </a>
             <a 
               href="/cancellation-and-refund" 
               onClick={handleLinkClick('/cancellation-and-refund')}
               className="hover:text-amber-400 transition-colors"
             >
-              Cancellation & Refund
+              {t('footer.cancellationPolicy')}
             </a>
             <a href="/admin" className="hover:text-amber-400 transition-colors flex items-center gap-1 opacity-70 hover:opacity-100">Concierge Portal</a>
           </div>

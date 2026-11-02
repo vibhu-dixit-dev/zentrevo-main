@@ -1,11 +1,23 @@
 import React, { useEffect } from 'react';
 import { Compass, ArrowLeft, FileText, Mail, MapPin, ShieldAlert } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { legalTranslations } from '../i18n/legalTranslations';
 
 export default function TermsOfService({ onNavigateHome, currentTheme = 'editorial' }) {
+  const { language } = useLanguage();
+  const lt = legalTranslations[language]?.terms || null;
+  const backText = legalTranslations[language]?.backHome || "Back to Home";
+
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Terms of Service | Zentrevo Travel";
-  }, []);
+    document.title = language === 'zh' 
+      ? "服务协议 | Zentrevo 尊贵旅行" 
+      : language === 'es' 
+        ? "Términos de Servicio | Zentrevo Travel" 
+        : language === 'ar' 
+          ? "شروط الخدمة | رحلات زينتريفو" 
+          : "Terms of Service | Zentrevo Travel";
+  }, [language]);
 
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
@@ -59,7 +71,7 @@ export default function TermsOfService({ onNavigateHome, currentTheme = 'editori
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Home</span>
+            <span>{backText}</span>
           </button>
         </div>
       </header>
@@ -72,178 +84,77 @@ export default function TermsOfService({ onNavigateHome, currentTheme = 'editori
             <span className={`text-[10px] font-mono uppercase tracking-[0.2em] font-bold ${
               isDark ? 'text-amber-300' : 'text-stone-600'
             }`}>
-              Client Engagement Terms
+              {lt?.tag || "Terms & Conditions"}
             </span>
           </div>
 
           <h1 className={`font-editorial text-3xl sm:text-5xl font-bold tracking-tight ${
             isDark ? 'text-white' : 'text-stone-950'
           }`}>
-            Terms of Service
+            {lt?.title || "Terms of Service"}
           </h1>
 
           <p className={`text-xs sm:text-sm ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-            Effective Date: October 27, 2026 • Last Reviewed: October 2026
+            {lt?.effectiveDate || "Effective Date: October 27, 2026 • Governing Law: Republic of India"}
           </p>
         </div>
 
         {/* Introduction */}
         <section className={`space-y-4 text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
           <p>
-            Welcome to <strong className={isDark ? 'text-white' : 'text-stone-950'}>Zentrevo</strong>. By accessing our platform (<a href="https://www.zentrevo.in" className={`font-medium underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}>https://www.zentrevo.in</a>), submitting a travel inquiry, communicating via our WhatsApp concierge, or purchasing a bespoke travel itinerary, you acknowledge and agree to be bound by these Terms of Service.
-          </p>
-          <p>
-            Please read these terms carefully before engaging our itinerary planning and travel coordination services.
+            {lt?.intro || "Welcome to Zentrevo. These Terms of Service govern your access to and use of our website, private bespoke itinerary planning services, and concierge travel arrangements."}
           </p>
         </section>
 
-        {/* 1. Nature of Our Services */}
+        {/* 1. Custom Travel Proposals */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            1. Nature of Our Services
+            {lt?.sec1Title || "1. Custom Itinerary Proposals & Bookings"}
           </h2>
           <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            Zentrevo acts as a custom journey planner, itinerary designer, and booking coordinator. We curate bespoke travel packages from India to international and domestic destinations (including Bali, Japan, Switzerland, Italy, Turkey, Kerala, Ladakh, Rajasthan, and Kashmir). We partner with independent third-party operators—including airlines, boutique hotels, rail systems, private drivers, and certified local guides—to fulfill your itinerary.
+            {lt?.sec1Desc || "All custom itineraries curated by Zentrevo are bespoke proposals valid for 7 calendar days from issuance. Bookings are formally confirmed only upon receipt of the designated deposit and signed journey confirmation."}
           </p>
         </section>
 
-        {/* 2. Visa Support & Mandatory Embassy Disclaimer */}
-        <section className={`space-y-4 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
-          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            2. Visa Support & Embassy Discretion
-          </h2>
-          
-          <div className={`p-5 rounded-2xl border transition-all ${
-            isDark
-              ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
-              : 'bg-amber-50/80 border-amber-300 text-stone-900 shadow-sm'
-          }`}>
-            <div className="flex items-center gap-2 mb-2">
-              <ShieldAlert className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-700'}`} />
-              <span className={`text-[11px] font-bold uppercase tracking-wider font-mono ${
-                isDark ? 'text-amber-300' : 'text-amber-900'
-              }`}>
-                Mandatory Visa Disclaimer
-              </span>
-            </div>
-
-            <p className={`text-sm sm:text-base font-bold leading-relaxed mb-1.5 ${
-              isDark ? 'text-white' : 'text-stone-950'
-            }`}>
-              "Visa guidance and document support. The embassy decides approval."
-            </p>
-
-            <p className={`text-xs leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-              Zentrevo provides document verification, appointment guidance, and confirmed travel booking vouchers in good faith to assist your visa application. We <strong>never promise, guarantee, or influence</strong> the issuance or approval of any visa. The grant, refusal, processing timeline, and conditions of visas remain the exclusive sovereign prerogative of the respective country's embassy, consulate, or high commission.
-            </p>
-          </div>
-        </section>
-
-        {/* 3. Pricing, Inclusions, and Quotes */}
+        {/* 2. Transparent Pricing */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            3. Pricing, Inclusions, and Quotes
-          </h2>
-          <ul className={`list-disc list-inside space-y-2 text-sm pl-2 leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <li>All prices are quoted in <strong className={isDark ? 'text-white' : 'text-stone-900'}>Indian Rupees (₹)</strong> on a per-person or twin-share basis as explicitly indicated.</li>
-            <li>Custom quotes provided by our planners are valid for 7 days from issuance, subject to real-time hotel and flight tariff availability.</li>
-            <li>Inclusions (e.g., accommodations, daily breakfast, private transfers, guided excursions) and exclusions (e.g., personal shopping, discretionary tips, visa embassy fees) will be itemized clearly in your official itinerary dossier.</li>
-          </ul>
-        </section>
-
-        {/* 4. Traveler Responsibilities */}
-        <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
-          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            4. Traveler Responsibilities
-          </h2>
-          <div className={`space-y-2 text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>A. Passport Validity:</strong> Travelers are solely responsible for ensuring their passport is valid for at least 6 months beyond the date of intended return and possesses adequate blank pages.</p>
-            <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>B. Travel & Medical Insurance:</strong> We strongly advise all voyagers to maintain comprehensive international medical, baggage, and trip cancellation insurance coverage.</p>
-            <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>C. Health & Fitness:</strong> Voyagers must disclose any physical limitations or health conditions that could impact high-altitude or physically demanding tours.</p>
-          </div>
-        </section>
-
-        {/* 5. Limitation of Liability */}
-        <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
-          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            5. Limitation of Liability
+            {lt?.sec2Title || "2. Transparent Pricing & Currency"}
           </h2>
           <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            Zentrevo exercises utmost diligence in vetting our partner properties and service providers. However, Zentrevo shall not be held liable for personal injury, property loss, flight rescheduling, acts of God, weather disruptions, civil unrest, or embassy visa delays beyond our reasonable control.
+            {lt?.sec2Desc || "Rates are presented in Indian Rupees (₹) for domestic travelers and US Dollars ($) globally. Every quotation provides a comprehensive breakdown of inclusions, accommodations, and private guides with zero hidden fees."}
           </p>
         </section>
 
-        {/* 6. Jurisdiction */}
+        {/* 3. Visa Disclaimer */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            6. Governing Law & Dispute Resolution
+            {lt?.sec3Title || "3. Consular Visa Advisory & Sovereign Discretion"}
           </h2>
           <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            These Terms of Service are governed by and construed in accordance with the laws of India. Any legal dispute or proceeding arising out of our services shall be subject to the exclusive jurisdiction of the competent courts in <strong className={isDark ? 'text-white' : 'text-stone-900'}>Gurugram, Haryana, India</strong>.
+            {lt?.sec3Desc || "Zentrevo offers document checklists and confirmed travel vouchers in good faith. Sovereign embassies and consulates alone decide visa approvals. We never guarantee visa issuance."}
           </p>
         </section>
 
-        {/* Contact Block */}
-        <section className={`p-6 rounded-2xl border space-y-3 ${
-          isDark 
-            ? 'bg-white/[0.03] border-white/10 text-stone-200' 
-            : 'bg-stone-50 border-stone-200 text-stone-900'
-        }`}>
-          <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            Official Legal Desk
+        {/* 4. Health & Safety */}
+        <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
+          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
+            {lt?.sec4Title || "4. Travel Safety, Insurance & Health"}
           </h2>
-          <div className={`text-xs space-y-1.5 font-mono ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <p className="flex items-center gap-2">
-              <Compass className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>Zentrevo Travel Co.</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <MapPin className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>Sector 49, Gurugram, Haryana 122018, India</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <Mail className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>contact@zentrevo.in</span>
-            </p>
-          </div>
+          <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
+            {lt?.sec4Desc || "High-altitude journeys (e.g. Ladakh) or private charters require suitable physical fitness. Travelers must maintain comprehensive international travel insurance covering medical emergency and trip interruption."}
+          </p>
         </section>
 
-        {/* Related Policies Navigation Bar */}
-        <div className={`pt-6 border-t flex flex-wrap items-center justify-between gap-4 text-xs ${
-          isDark ? 'border-white/10' : 'border-stone-200'
-        }`}>
-          <div className="flex gap-4">
-            <a 
-              href="/privacy-policy" 
-              onClick={(e) => { 
-                e.preventDefault(); 
-                window.history.pushState({}, '', '/privacy-policy'); 
-                window.dispatchEvent(new PopStateEvent('popstate')); 
-              }} 
-              className={`font-semibold hover:underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}
-            >
-              ← Privacy Policy
-            </a>
-            <a 
-              href="/cancellation-and-refund" 
-              onClick={(e) => { 
-                e.preventDefault(); 
-                window.history.pushState({}, '', '/cancellation-and-refund'); 
-                window.dispatchEvent(new PopStateEvent('popstate')); 
-              }} 
-              className={`font-semibold hover:underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}
-            >
-              Cancellation & Refund Policy →
-            </a>
-          </div>
-          <button 
-            type="button" 
-            onClick={onNavigateHome} 
-            className={`cursor-pointer ${isDark ? 'text-stone-400 hover:text-white' : 'text-stone-600 hover:text-stone-950'}`}
-          >
-            ← Back to Homepage
-          </button>
-        </div>
+        {/* 5. Jurisdiction */}
+        <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
+          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
+            {lt?.sec5Title || "5. Dispute Resolution & Jurisdiction"}
+          </h2>
+          <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
+            {lt?.sec5Desc || "These Terms are governed by the laws of India. Any legal dispute or arbitration arising hereunder shall be subject to the exclusive jurisdiction of the competent courts in Gurugram, Haryana."}
+          </p>
+        </section>
       </main>
     </div>
   );

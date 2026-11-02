@@ -1,11 +1,23 @@
 import React, { useEffect } from 'react';
 import { Compass, ArrowLeft, ShieldCheck, Mail, MapPin } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { legalTranslations } from '../i18n/legalTranslations';
 
 export default function PrivacyPolicy({ onNavigateHome, currentTheme = 'editorial' }) {
+  const { language } = useLanguage();
+  const lt = legalTranslations[language]?.privacy || null;
+  const backText = legalTranslations[language]?.backHome || "Back to Home";
+
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Privacy Policy | Zentrevo Travel";
-  }, []);
+    document.title = language === 'zh' 
+      ? "隐私政策 | Zentrevo 尊贵旅行" 
+      : language === 'es' 
+        ? "Política de Privacidad | Zentrevo Travel" 
+        : language === 'ar' 
+          ? "سياسة الخصوصية | رحلات زينتريفو" 
+          : "Privacy Policy | Zentrevo Travel";
+  }, [language]);
 
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
@@ -59,7 +71,7 @@ export default function PrivacyPolicy({ onNavigateHome, currentTheme = 'editoria
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Home</span>
+            <span>{backText}</span>
           </button>
         </div>
       </header>
@@ -72,153 +84,122 @@ export default function PrivacyPolicy({ onNavigateHome, currentTheme = 'editoria
             <span className={`text-[10px] font-mono uppercase tracking-[0.2em] font-bold ${
               isDark ? 'text-amber-300' : 'text-stone-600'
             }`}>
-              Legal & Privacy Disclosure
+              {lt?.tag || "Legal & Privacy Disclosure"}
             </span>
           </div>
 
           <h1 className={`font-editorial text-3xl sm:text-5xl font-bold tracking-tight ${
             isDark ? 'text-white' : 'text-stone-950'
           }`}>
-            Privacy Policy
+            {lt?.title || "Privacy Policy"}
           </h1>
 
           <p className={`text-xs sm:text-sm ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-            Effective Date: October 27, 2026 • Last Reviewed: October 2026
+            {lt?.effectiveDate || "Effective Date: October 27, 2026 • Last Reviewed: October 2026"}
           </p>
         </div>
 
         {/* Introduction */}
         <section className={`space-y-4 text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
           <p>
-            At <strong className={isDark ? 'text-white' : 'text-stone-950'}>Zentrevo</strong> ("we", "us", or "our"), safeguarding your personal information is fundamental to our concierge craft. We operate the website <a href="https://www.zentrevo.in" className={`font-medium underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}>https://www.zentrevo.in</a> and coordinate private, custom travel itineraries from India to international and domestic destinations.
+            {lt?.intro1 ? lt.intro1 : (
+              <>At <strong className={isDark ? 'text-white' : 'text-stone-950'}>Zentrevo</strong> ("we", "us", or "our"), safeguarding your personal information is fundamental to our concierge craft. We operate the website <a href="https://www.zentrevo.in" className={`font-medium underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}>https://www.zentrevo.in</a> and coordinate private, custom travel itineraries from India to international and domestic destinations.</>
+            )}
           </p>
           <p>
-            This Privacy Policy outlines how we collect, handle, protect, and process personal information when you browse our website, submit travel inquiries, subscribe to our Private Journal, or book bespoke travel journeys with our concierge team.
+            {lt?.intro2 || "This Privacy Policy outlines how we collect, handle, protect, and process personal information when you browse our website, submit travel inquiries, subscribe to our Private Journal, or book bespoke travel journeys with our concierge team."}
           </p>
         </section>
 
         {/* 1. Information We Collect */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            <span>1. Information We Collect</span>
+            <span>{lt?.sec1Title || "1. Information We Collect"}</span>
           </h2>
           <div className={`space-y-3 text-sm leading-relaxed pl-2 ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>A. Travel Inquiries & Booking Dossiers:</strong> When you submit an itinerary inquiry or confirm a journey, we collect your name, email address, phone/WhatsApp number, preferred travel dates, destination desires, guest count, and estimated budget.</p>
-            <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>B. Travel Documents & Identification:</strong> For confirmed bookings and visa guidance assistance, we may receive passport scans, visa applications, date of birth, nationality, and emergency contact details strictly required by airlines, hotels, or embassies.</p>
-            <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>C. Technical & Usage Telemetry:</strong> IP addresses, browser types, device information, referring URLs, and page interactions captured through standard analytics to optimize performance.</p>
+            {lt ? (
+              <>
+                <p>{lt.sec1A}</p>
+                <p>{lt.sec1B}</p>
+                <p>{lt.sec1C}</p>
+              </>
+            ) : (
+              <>
+                <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>A. Travel Inquiries & Booking Dossiers:</strong> When you submit an itinerary inquiry or confirm a journey, we collect your name, email address, phone/WhatsApp number, preferred travel dates, destination desires, guest count, and estimated budget.</p>
+                <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>B. Travel Documents & Identification:</strong> For confirmed bookings and visa guidance assistance, we may receive passport scans, visa applications, date of birth, nationality, and emergency contact details strictly required by airlines, hotels, or embassies.</p>
+                <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>C. Technical & Usage Telemetry:</strong> IP addresses, browser types, device information, referring URLs, and page interactions captured through standard analytics to optimize performance.</p>
+              </>
+            )}
           </div>
         </section>
 
         {/* 2. How We Use Your Information */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            2. How We Use Your Information
+            {lt?.sec2Title || "2. How We Use Your Information"}
           </h2>
           <ul className={`list-disc list-inside space-y-2 text-sm pl-2 leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <li>To design custom, day-by-day travel itineraries and furnish quotes within 24 hours.</li>
-            <li>To coordinate room reservations, private transfers, rail passes, and local experiences with verified partners.</li>
-            <li>To provide step-by-step visa document verification and appointment scheduling guidance.</li>
-            <li>To offer real-time concierge assistance via WhatsApp during your travel until you safely return home.</li>
-            <li>To dispatch seasonal Private Journal editions (with an immediate one-click unsubscribe mechanism).</li>
+            {lt ? (
+              <>
+                <li>{lt.sec2Item1}</li>
+                <li>{lt.sec2Item2}</li>
+                <li>{lt.sec2Item3}</li>
+                <li>{lt.sec2Item4}</li>
+              </>
+            ) : (
+              <>
+                <li>To design custom, day-by-day travel itineraries and furnish quotes within 24 hours.</li>
+                <li>To coordinate room reservations, private transfers, rail passes, and local experiences with verified partners.</li>
+                <li>To provide step-by-step visa document verification and appointment scheduling guidance.</li>
+                <li>To offer dedicated 24/7 on-trip concierge assistance via private WhatsApp channels.</li>
+              </>
+            )}
           </ul>
         </section>
 
-        {/* 3. Non-Disclosure & Data Sharing */}
+        {/* 3. Information Sharing */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            3. Data Sharing & Non-Disclosure
+            {lt?.sec3Title || "3. Information Sharing & Sovereign Consular Disclosure"}
           </h2>
           <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            We <strong className={isDark ? 'text-white' : 'text-stone-900'}>never sell, lease, or monetize</strong> your personal details to third-party advertisers. Information is only shared strictly under necessary operational circumstances:
-          </p>
-          <ul className={`list-disc list-inside space-y-2 text-sm pl-2 leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <li><strong className={isDark ? 'text-white' : 'text-stone-900'}>Travel Suppliers:</strong> Airlines, boutique hotels, rail operators, and licensed local expedition guides who require traveler identity to honor bookings.</li>
-            <li><strong className={isDark ? 'text-white' : 'text-stone-900'}>Embassies & Consulates:</strong> Official government bodies solely for processing visa applications per your request.</li>
-            <li><strong className={isDark ? 'text-white' : 'text-stone-900'}>Legal Compliance:</strong> When strictly required by law, subpoena, or governmental mandate.</li>
-          </ul>
-        </section>
-
-        {/* 4. Security Standards */}
-        <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
-          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            4. Security Standards & Storage
-          </h2>
-          <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            All data transmitted through our web services is protected via 256-bit Transport Layer Security (TLS) encryption. Administrative portals are fortified with restricted secret-key authentication, and passport files are encrypted at rest with multi-factor safeguards.
+            {lt?.sec3Desc || "We never sell, rent, or trade your personal data. We disclose pertinent traveler information solely to verified luxury accommodation partners, airlines, visa application centers, and consular authorities solely to execute your commissioned journey."}
           </p>
         </section>
 
-        {/* 5. Your Rights */}
+        {/* 4. Data Security */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            5. Your Data Rights
+            {lt?.sec4Title || "4. Data Security & Retention"}
           </h2>
           <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            You retain full rights to access, amend, download, or request the permanent erasure of your personal data from our active registers at any time. To make a data request, please write to us at <a href="mailto:contact@zentrevo.in" className={`font-semibold underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}>contact@zentrevo.in</a>.
+            {lt?.sec4Desc || "We implement bank-level TLS encryption, least-privilege administrative access, and strict role-based controls. Traveler documents collected solely for visa purposes are retained only until consular verification is completed, after which they are securely expunged."}
           </p>
         </section>
 
-        {/* 6. Contact Information Block */}
-        <section className={`p-6 rounded-2xl border space-y-3 ${
+        {/* 5. Contact Desk */}
+        <section className={`p-6 sm:p-8 rounded-3xl border transition-all ${
           isDark 
-            ? 'bg-white/[0.03] border-white/10 text-stone-200' 
-            : 'bg-stone-50 border-stone-200 text-stone-900'
+            ? 'bg-white/[0.03] border-white/10' 
+            : 'bg-stone-100/70 border-stone-200'
         }`}>
-          <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            Official Data Controller Desk
+          <h2 className={`text-lg font-bold mb-3 ${isDark ? 'text-white' : 'text-stone-950'}`}>
+            {lt?.sec5Title || "5. Your Rights & Concierge Contact Desk"}
           </h2>
-          <div className={`text-xs space-y-1.5 font-mono ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
+          <p className={`text-xs sm:text-sm mb-4 leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+            {lt?.sec5Desc || "You retain the sovereign right to inspect, update, or request the deletion of your personal contact records. Direct all privacy inquiries to our data protection desk:"}
+          </p>
+          <div className="space-y-1.5 text-xs">
             <p className="flex items-center gap-2">
-              <Compass className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>Zentrevo Travel Co.</span>
+              <Mail className="w-3.5 h-3.5 text-amber-400" />
+              <a href="mailto:contact@zentrevo.in" className="hover:underline font-medium">contact@zentrevo.in</a>
             </p>
-            <p className="flex items-center gap-2">
-              <MapPin className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>Sector 49, Gurugram, Haryana 122018, India</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <Mail className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>contact@zentrevo.in</span>
+            <p className="flex items-center gap-2 text-stone-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>{lt?.contactHq || "Sector 49, Gurugram 122018, Haryana, India"}</span>
             </p>
           </div>
         </section>
-
-        {/* Related Policies Navigation Bar */}
-        <div className={`pt-6 border-t flex flex-wrap items-center justify-between gap-4 text-xs ${
-          isDark ? 'border-white/10' : 'border-stone-200'
-        }`}>
-          <div className="flex gap-4">
-            <a 
-              href="/terms-of-service" 
-              onClick={(e) => { 
-                e.preventDefault(); 
-                window.history.pushState({}, '', '/terms-of-service'); 
-                window.dispatchEvent(new PopStateEvent('popstate')); 
-              }} 
-              className={`font-semibold hover:underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}
-            >
-              Terms of Service →
-            </a>
-            <a 
-              href="/cancellation-and-refund" 
-              onClick={(e) => { 
-                e.preventDefault(); 
-                window.history.pushState({}, '', '/cancellation-and-refund'); 
-                window.dispatchEvent(new PopStateEvent('popstate')); 
-              }} 
-              className={`font-semibold hover:underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}
-            >
-              Cancellation & Refund Policy →
-            </a>
-          </div>
-          <button 
-            type="button" 
-            onClick={onNavigateHome} 
-            className={`cursor-pointer ${isDark ? 'text-stone-400 hover:text-white' : 'text-stone-600 hover:text-stone-950'}`}
-          >
-            ← Back to Homepage
-          </button>
-        </div>
       </main>
     </div>
   );

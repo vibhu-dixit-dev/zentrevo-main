@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, Star, Clock, ShieldCheck, ArrowRight, Sparkles, Share2 } from 'lucide-react';
 import { getDestinationSlug } from '../lib/seoRoutes';
 import { useCurrency } from '../context/CurrencyContext';
+import { useLanguage } from '../context/LanguageContext';
+import { getLocalizedDestination } from '../i18n/localizedTravelData';
 
 export default function DetailModal({ destination, isOpen, onClose, onBookNow, currentTheme }) {
   const { formatPrice } = useCurrency();
+  const { t, language } = useLanguage();
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
@@ -25,8 +28,10 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
 
+  const localizedDest = getLocalizedDestination(destination, language);
+
   const handleShare = () => {
-    const slug = getDestinationSlug(destination);
+    const slug = getDestinationSlug(localizedDest);
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.zentrevo.in';
     const url = `${origin}/destinations/${slug}`;
     if (navigator.clipboard) {
@@ -67,7 +72,7 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
             )}
             {copiedLink && (
               <span className="absolute -bottom-8 right-0 bg-stone-950 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
-                Link Copied!
+                {t('common.copied', 'Link Copied!')}
               </span>
             )}
           </button>
@@ -87,8 +92,8 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
           {/* Header Image (Scrolls smoothly with content) */}
           <div className="relative h-64 sm:h-80 w-full overflow-hidden shrink-0">
             <img
-              src={destination.image}
-              alt={destination.imageAlt || `${destination.title} - ${destination.location} itinerary | Zentrevo`}
+              src={localizedDest.image}
+              alt={localizedDest.imageAlt || `${localizedDest.title} - ${localizedDest.location} itinerary | Zentrevo`}
               loading="lazy"
               decoding="async"
               className="w-full h-full object-cover"
@@ -96,11 +101,11 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/20" />
 
             <div className="absolute bottom-5 left-6 right-16">
-              <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${destination.tagColor}`}>
-                {destination.location}
+              <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${localizedDest.tagColor}`}>
+                {localizedDest.location}
               </span>
               <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2 leading-tight drop-shadow-sm">
-                {destination.title}
+                {localizedDest.title}
               </h3>
             </div>
           </div>
@@ -111,16 +116,16 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
               <div className="flex items-center gap-4 text-xs font-semibold">
                 <span className="flex items-center gap-1.5">
                   <Clock className={`w-4 h-4 ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`} />
-                  {destination.duration}
+                  {localizedDest.duration}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  {destination.rating} ({destination.reviews} reviews)
+                  {localizedDest.rating} ({localizedDest.reviews} {t('common.reviews', 'reviews')})
                 </span>
               </div>
               <div className="text-2xl font-bold tracking-tight">
-                {formatPrice(destination.price)}
-                <span className="text-xs font-normal opacity-70"> / guest</span>
+                {formatPrice(localizedDest.price)}
+                <span className="text-xs font-normal opacity-70"> {t('destinations.perGuest')}</span>
               </div>
             </div>
 
@@ -129,10 +134,10 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
                 isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-stone-900 font-bold'
               }`}>
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Overview & Signature Atmosphere</span>
+                <span>{t('detailModal.overviewTitle', 'Overview & Signature Atmosphere')}</span>
               </h4>
               <p className={`text-sm sm:text-base leading-relaxed ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-                {destination.description}
+                {localizedDest.description}
               </p>
             </div>
 
@@ -140,10 +145,10 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
               <h4 className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
                 isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-stone-900 font-bold'
               }`}>
-                Included Signature Highlights
+                {t('detailModal.highlightsTitle', 'Included Signature Highlights')}
               </h4>
               <div className="grid grid-cols-1 gap-2.5">
-                {destination.highlights.map((h, i) => (
+                {localizedDest.highlights.map((h, i) => (
                   <div 
                     key={i} 
                     className={`p-3.5 rounded-2xl border flex items-start gap-3 text-xs sm:text-sm transition-all ${
@@ -178,7 +183,7 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
             }`}>
               <div className="flex items-center gap-2">
                 <ShieldCheck className={`w-4 h-4 shrink-0 ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`} />
-                <span>Full flexible cancellation up to 14 days prior to travel</span>
+                <span>{t('detailModal.cancellationPolicy', 'Full flexible cancellation up to 14 days prior to travel')}</span>
               </div>
             </div>
           </div>
@@ -196,13 +201,13 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
             onClick={onClose}
             className="text-xs font-semibold uppercase tracking-wider text-stone-400 hover:text-stone-100 transition-colors cursor-pointer"
           >
-            Close
+            {t('common.close')}
           </button>
 
           <button
             onClick={() => {
               onClose();
-              onBookNow(destination);
+              onBookNow(localizedDest);
             }}
             className={`px-6 sm:px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg hover:scale-[1.02] cursor-pointer ${
               isSapphire
@@ -212,7 +217,7 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
                   : 'bg-stone-950 text-white hover:bg-stone-800 shadow-stone-900/25'
             }`}
           >
-            <span>Book This Itinerary</span>
+            <span>{t('detailModal.bookItineraryBtn', 'Request Private Itinerary')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

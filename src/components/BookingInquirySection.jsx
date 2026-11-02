@@ -3,9 +3,12 @@ import { Send, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle,
 import { supabase } from '../lib/supabaseClient';
 import { destinations, getActiveDestinations, getDestinationPrice } from '../data/travelData';
 import { useCurrency } from '../context/CurrencyContext';
+import { useLanguage } from '../context/LanguageContext';
+import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 
 export default function BookingInquirySection({ currentTheme, preselectedDestination }) {
   const { currency, formatPrice } = useCurrency();
+  const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -53,19 +56,19 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
     };
   }, []);
 
+  const localizedDestinations = getLocalizedDestinationsList(activeDestList, language);
   const destinationOptions = [
-    'Select Destination',
-    ...activeDestList.map(d => d.title),
-    'Custom Multi-Country Expedition'
+    t('hero.selectDestination', 'Select Destination'),
+    ...localizedDestinations.map(d => d.title),
+    t('inquiry.customExpedition', 'Custom Multi-Country Expedition')
   ];
 
   const guestsOptions = [
-    'Select Travelers',
-    '1 Solo Explorer',
-    '2 Guests (Couple)',
-    '3-4 Small Private Party',
-    '5-8 Family Expedition',
-    '8+ Private Charter / Group'
+    t('hero.selectTravelers', 'Select Travelers'),
+    t('hero.guestSolo', '1 Solo Explorer'),
+    t('hero.guestCouple', '2 Guests (Couple)'),
+    t('hero.guestThree', '3 Guests'),
+    t('hero.guestGroup', '4-6 Family / Private Group')
   ];
 
   useEffect(() => {
@@ -211,13 +214,13 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                   isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-amber-600'
                 }`}>
                   {isSapphire ? <Crown className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  <span>Custom Itineraries</span>
+                  <span>{t('inquiry.badge', 'Custom Itineraries')}</span>
                 </p>
                 <h2 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-tight mb-2.5`}>
-                  Voyages of Wonder, Crafted For You
+                  {t('inquiry.heading', 'Voyages of Wonder, Crafted For You')}
                 </h2>
                 <p className={`text-xs sm:text-sm leading-relaxed ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-                  Tell us your vision, pacing, and dream destinations. Our private journey curators will design a personalized proposal within 24 hours.
+                  {t('inquiry.subheading', 'Tell us your vision, pacing, and dream destinations. Our private journey curators will design a personalized proposal within 24 hours.')}
                 </p>
               </div>
 
@@ -240,7 +243,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     <Mail className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-[9.5px] uppercase font-semibold text-stone-400 block">Official Support Email</span>
+                    <span className="text-[9.5px] uppercase font-semibold text-stone-400 block">{t('inquiry.emailLabel', 'Official Support Email')}</span>
                     <span className="text-xs sm:text-sm font-semibold tracking-wide">contact@zentrevo.in</span>
                   </div>
                 </a>
@@ -263,8 +266,8 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                       <MessageCircle className="w-4 h-4 fill-current" />
                     </div>
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-emerald-500 block">Fastest Direct Route</span>
-                      <span className="text-xs sm:text-sm font-bold tracking-wide">Instant WhatsApp Chat</span>
+                      <span className="text-[9.5px] uppercase font-bold text-emerald-500 block">{t('inquiry.fastestRoute', 'Fastest Direct Route')}</span>
+                      <span className="text-xs sm:text-sm font-bold tracking-wide">{t('inquiry.whatsappChat', 'Instant WhatsApp Chat')}</span>
                     </div>
                   </div>
                   <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
@@ -284,8 +287,8 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     <Clock className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-[9.5px] uppercase font-semibold text-stone-400 block">Consultation Hours</span>
-                    <span className="text-xs sm:text-sm font-semibold">24/7 (All 7 Days)</span>
+                    <span className="text-[9.5px] uppercase font-semibold text-stone-400 block">{t('inquiry.hoursLabel', 'Consultation Hours')}</span>
+                    <span className="text-xs sm:text-sm font-semibold">{t('inquiry.hoursVal', '24/7 (All 7 Days)')}</span>
                   </div>
                 </div>
 
@@ -303,7 +306,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     <MapPin className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-[9.5px] uppercase font-semibold text-stone-400 block">Headquarters / Location</span>
+                    <span className="text-[9.5px] uppercase font-semibold text-stone-400 block">{t('inquiry.hqLabel', 'Headquarters / Location')}</span>
                     <span className="text-xs sm:text-sm font-semibold">Sector 49, Gurugram 122018</span>
                   </div>
                 </div>
@@ -357,7 +360,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
-                          Full Name *
+                          {t('inquiry.fullName')}
                         </label>
                         <input
                           type="text"
@@ -377,7 +380,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
 
                       <div>
                         <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
-                          Email Address *
+                          {t('inquiry.email')}
                         </label>
                         <input
                           type="email"
@@ -399,7 +402,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
-                          Phone Number
+                          {t('inquiry.phone', 'Phone Number')}
                         </label>
                         <input
                           type="tel"
@@ -418,7 +421,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
 
                       <div className="relative" ref={guestsRef}>
                         <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
-                          Travelers / Party Size
+                          {t('inquiry.partySize', 'Travelers / Party Size')}
                         </label>
                         <button
                           type="button"
@@ -494,7 +497,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
 
                     <div className="relative" ref={destRef}>
                       <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
-                        Target Destination
+                        {t('inquiry.destination', 'Target Destination')}
                       </label>
                       <button
                         type="button"
@@ -569,11 +572,12 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
 
                     <div>
                       <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
-                        Tell Us About Your Desired Journey
+                        {t('inquiry.notes', 'Wishes, Pacing & Special Notes')}
                       </label>
                       <textarea
                         rows={2}
                         name="message"
+                        placeholder={t('inquiry.notesPlaceholder', 'Share your preferred dates, celebratory milestones, dietary choices, or private charter requirements...')}
                         value={formData.message}
                         onChange={(e) => setFormData({...formData, message: e.target.value})}
                         className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm border focus:outline-none transition-all ${
@@ -609,12 +613,12 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                       {isSubmitting ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Transmitting Dossier...</span>
+                          <span>{t('inquiry.submitting')}</span>
                         </>
                       ) : (
                         <>
                           <Send className="w-3.5 h-3.5" />
-                          <span>Send My Bespoke Request</span>
+                          <span>{t('inquiry.submitBtn')}</span>
                         </>
                       )}
                     </button>

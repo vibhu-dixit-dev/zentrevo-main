@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { destinations, getActiveDestinations } from '../data/travelData';
 import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
+import { useLanguage } from '../context/LanguageContext';
+import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 
 export default function DestinationsGrid({ 
   currentTheme, 
@@ -10,6 +12,7 @@ export default function DestinationsGrid({
   onSelectRegion
 }) {
   const { formatPrice } = useCurrency();
+  const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -45,19 +48,32 @@ export default function DestinationsGrid({
 
   const categories = ['All', 'Luxury Escapes', 'Cultural', 'Trending', 'Alpine Nature'];
 
+  const categoryLabels = {
+    All: t('destinations.catAll', 'All'),
+    'Luxury Escapes': t('destinations.catLuxury', 'Luxury Escapes'),
+    Cultural: t('destinations.catCultural', 'Cultural'),
+    Trending: t('destinations.catTrending', 'Trending'),
+    'Alpine Nature': t('destinations.catAlpine', 'Alpine Nature')
+  };
+
+  // Localized destinations array
+  const localizedList = useMemo(() => {
+    return getLocalizedDestinationsList(destinationsList, language);
+  }, [destinationsList, language]);
+
   // Counts for Regional Filters
-  const nationalCount = destinationsList.filter(d => (d.region || 'international') === 'national').length;
-  const internationalCount = destinationsList.filter(d => (d.region || 'international') === 'international').length;
+  const nationalCount = localizedList.filter(d => (d.region || 'international') === 'national').length;
+  const internationalCount = localizedList.filter(d => (d.region || 'international') === 'international').length;
 
   // 1. Filter by Region (National vs International vs All)
   const regionFiltered = currentRegion === 'all'
-    ? destinationsList
-    : destinationsList.filter(d => (d.region || 'international') === currentRegion);
+    ? localizedList
+    : localizedList.filter(d => (d.region || 'international') === currentRegion);
 
   // 2. Filter by Category
   const filteredDestinations = activeCategory === 'All' 
     ? regionFiltered 
-    : regionFiltered.filter(d => d.category === activeCategory);
+    : regionFiltered.filter(d => (d.baseCategory || d.category) === activeCategory);
 
   return (
     <section id="destinations" className="px-4 sm:px-8 py-16 scroll-mt-24">
@@ -69,16 +85,16 @@ export default function DestinationsGrid({
               {isSapphire ? (
                 <div className="flex items-center gap-1.5 text-amber-400 border-amber-500/40 bg-[#061025]/60">
                   <Crown className="w-3.5 h-3.5 inline mr-1" />
-                  <span>Curated Sovereign Escapes</span>
+                  <span>{t('destinations.badgeSapphire', 'Curated Sovereign Escapes')}</span>
                 </div>
               ) : isEmerald ? (
                 <div className="text-emerald-400 border-emerald-700/50 bg-emerald-950/40">
                   <Sparkles className="w-3.5 h-3.5 inline mr-1" />
-                  <span>Curated Expeditions</span>
+                  <span>{t('destinations.badgeEmerald', 'Curated Expeditions')}</span>
                 </div>
               ) : (
                 <div className="text-stone-700 border-stone-200 bg-white">
-                  <span>✨ Featured Itineraries</span>
+                  <span>{t('destinations.badgeEditorial', '✨ Featured Itineraries')}</span>
                 </div>
               )}
             </div>
@@ -86,7 +102,7 @@ export default function DestinationsGrid({
             <h2 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-3xl sm:text-5xl tracking-tight leading-tight max-w-2xl ${
               isSapphire || isEmerald ? 'text-stone-100' : 'text-stone-900'
             }`}>
-              The Most Amazing Travel Packages Every Traveler Dreams Of.
+              {t('destinations.headingMain', 'The Most Amazing Travel Packages Every Traveler Dreams Of.')}
             </h2>
 
             {/* Regional Filter Switcher: All / National / International */}
@@ -111,7 +127,7 @@ export default function DestinationsGrid({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>All ({destinationsList.length})</span>
+                <span>{t('destinations.allFilter')} ({destinationsList.length})</span>
               </button>
 
               <button
@@ -124,11 +140,11 @@ export default function DestinationsGrid({
                       : isEmerald
                         ? 'bg-emerald-400 text-stone-950 shadow-sm font-bold'
                         : 'bg-stone-950 text-white shadow-sm font-bold'
-                    : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
+                    : 'text-stone-500 hover:text-stone-950 dark:hover:text-stone-200'
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5" />
-                <span>National ({nationalCount})</span>
+                <span>{t('destinations.nationalFilter')} ({nationalCount})</span>
               </button>
 
               <button
@@ -145,8 +161,7 @@ export default function DestinationsGrid({
                 }`}
               >
                 <Globe2 className="w-3.5 h-3.5" />
-                <span>International ({internationalCount})</span>
-                <span>International</span>
+                <span>{t('destinations.internationalFilter')} ({internationalCount})</span>
               </button>
             </div>
           </div>
@@ -171,7 +186,7 @@ export default function DestinationsGrid({
                         : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-400'
                 }`}
               >
-                {cat}
+                {categoryLabels[cat] || cat}
               </button>
             ))}
           </div>
@@ -222,7 +237,7 @@ export default function DestinationsGrid({
                 <div className="absolute bottom-3 left-4 flex items-center gap-1.5 text-white text-xs font-semibold">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>{item.rating}</span>
-                  <span className="opacity-75">({item.reviews} reviews)</span>
+                  <span className="opacity-75">({item.reviews} {t('common.reviews', 'reviews')})</span>
                 </div>
               </div>
 
@@ -237,7 +252,7 @@ export default function DestinationsGrid({
                     </span>
                     <span className="text-lg font-bold">
                       {formatPrice(item.price)}
-                      <span className={`text-xs font-normal ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-400'}`}> / guest</span>
+                      <span className={`text-xs font-normal ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-400'}`}> {t('destinations.perGuest')}</span>
                     </span>
                   </div>
 
@@ -261,7 +276,7 @@ export default function DestinationsGrid({
                     isSapphire ? 'text-amber-300/80' : isEmerald ? 'text-emerald-300/80' : 'text-stone-500'
                   }`}>
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Includes Private Concierge</span>
+                    <span>{t('destinations.conciergeIncluded')}</span>
                   </span>
 
                   <button
@@ -274,7 +289,7 @@ export default function DestinationsGrid({
                           : 'bg-stone-100 hover:bg-stone-950 hover:text-white text-stone-800 border border-stone-200'
                     }`}
                   >
-                    <span>View Itinerary</span>
+                    <span>{t('destinations.viewDossier')}</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </button>
                 </div>

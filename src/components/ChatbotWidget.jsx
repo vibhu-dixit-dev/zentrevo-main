@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles, Crown, Compass } from 'lucide-react';
 import { askGroqChatbot } from '../services/groqService';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ChatbotWidget({ currentTheme }) {
+  const { t } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -15,7 +17,7 @@ export default function ChatbotWidget({ currentTheme }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Welcome to ZENTREVO. I am your private AI Journey Concierge. I can answer any questions about our curated destinations, bespoke itineraries, pricing, and private concierge services. How may I assist your voyage today?"
+      content: t('widgets.aiWelcome', "Welcome to ZENTREVO. I am your private AI Journey Concierge. I can answer any questions about our curated destinations, bespoke itineraries, pricing, and private concierge services. How may I assist your voyage today?")
     }
   ]);
 
@@ -98,10 +100,10 @@ export default function ChatbotWidget({ currentTheme }) {
   };
 
   const quickPrompts = [
-    "What destinations do you offer?",
-    "How much is the Swiss Glacier Express?",
-    "How do I book a custom trip?",
-    "What are your official contact details?"
+    t('widgets.prompt1', "What destinations do you offer?"),
+    t('widgets.prompt2', "How much is the Swiss Glacier Express?"),
+    t('widgets.prompt3', "How do I book a custom trip?"),
+    t('widgets.prompt4', "What are your official contact details?")
   ];
 
   return (

@@ -1,11 +1,23 @@
 import React, { useEffect } from 'react';
 import { Compass, ArrowLeft, RefreshCw, Mail, MapPin, Clock, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { legalTranslations } from '../i18n/legalTranslations';
 
 export default function CancellationRefund({ onNavigateHome, currentTheme = 'editorial' }) {
+  const { language } = useLanguage();
+  const lt = legalTranslations[language]?.refund || null;
+  const backText = legalTranslations[language]?.backHome || "Back to Home";
+
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Cancellation & Refund Policy | Zentrevo Travel";
-  }, []);
+    document.title = language === 'zh' 
+      ? "退改政策 | Zentrevo 尊贵旅行" 
+      : language === 'es' 
+        ? "Política de Cancelación y Reembolso | Zentrevo Travel" 
+        : language === 'ar' 
+          ? "سياسة الإلغاء والاسترداد | رحلات زينتريفو" 
+          : "Cancellation & Refund Policy | Zentrevo Travel";
+  }, [language]);
 
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
@@ -59,7 +71,7 @@ export default function CancellationRefund({ onNavigateHome, currentTheme = 'edi
             }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Home</span>
+            <span>{backText}</span>
           </button>
         </div>
       </header>
@@ -72,203 +84,112 @@ export default function CancellationRefund({ onNavigateHome, currentTheme = 'edi
             <span className={`text-[10px] font-mono uppercase tracking-[0.2em] font-bold ${
               isDark ? 'text-amber-300' : 'text-stone-600'
             }`}>
-              Transparent Booking Terms
+              {lt?.tag || "Booking Safeguards & Transparent Terms"}
             </span>
           </div>
 
           <h1 className={`font-editorial text-3xl sm:text-5xl font-bold tracking-tight ${
             isDark ? 'text-white' : 'text-stone-950'
           }`}>
-            Cancellation & Refund Policy
+            {lt?.title || "Cancellation & Refund Policy"}
           </h1>
 
           <p className={`text-xs sm:text-sm ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-            Effective Date: October 27, 2026 • Clear Prices, No Surprises
+            {lt?.effectiveDate || "Effective Date: October 27, 2026 • Sovereign Travel Guarantee"}
           </p>
         </div>
 
         {/* Introduction */}
         <section className={`space-y-4 text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
           <p>
-            At <strong className={isDark ? 'text-white' : 'text-stone-950'}>Zentrevo</strong>, we believe travel planning should be transparent and straightforward. We understand that plans can change unexpectedly due to personal emergencies, schedule shifts, or health matters.
-          </p>
-          <p>
-            This Cancellation and Refund Policy clearly outlines how booking cancellations are handled, applicable timelines, and the refund process for bespoke itineraries from India.
+            {lt?.intro || "At Zentrevo, bespoke expeditions involve early reservation of private villas, chartered transport, and restricted heritage access. This policy clearly delineates the cancellation timeline and refund calculations."}
           </p>
         </section>
 
-        {/* 1. Cancellation Timeline Table */}
-        <section className={`space-y-4 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
-          <h2 className={`text-lg sm:text-xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            <Clock className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-stone-800'}`} />
-            <span>1. Standard Cancellation Schedule</span>
+        {/* Cancellation Schedule */}
+        <section className="space-y-4 border-t pt-8 border-stone-200/20">
+          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
+            {lt?.timelineTitle || "Standard Cancellation Schedule & Refund Tiers"}
           </h2>
-          <p className={`text-sm ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            Cancellation requests must be submitted in writing via email or your dedicated WhatsApp concierge chat. Refunds are calculated from the verified timestamp of notice receipt:
-          </p>
 
-          <div className={`overflow-x-auto rounded-2xl border ${
-            isDark ? 'border-white/10 bg-white/[0.02]' : 'border-stone-300 bg-white shadow-sm'
-          }`}>
-            <table className="w-full text-left text-xs sm:text-sm border-collapse">
-              <thead>
-                <tr className={`border-b text-[11px] uppercase tracking-wider font-bold ${
-                  isDark 
-                    ? 'bg-white/5 border-white/10 text-stone-200' 
-                    : 'bg-stone-100 border-stone-200 text-stone-900'
-                }`}>
-                  <th className="p-3.5 sm:p-4">Notice Period Prior to Travel</th>
-                  <th className="p-3.5 sm:p-4">Refund Percentage</th>
-                  <th className="p-3.5 sm:p-4">Deductions</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-white/5 text-stone-300' : 'divide-stone-200 text-stone-800'}`}>
-                <tr className={isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-stone-50'}>
-                  <td className={`p-3.5 sm:p-4 font-semibold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    30 or more days prior
-                  </td>
-                  <td className="p-3.5 sm:p-4 font-bold text-emerald-600 dark:text-emerald-400">
-                    Up to 85% - 90%
-                  </td>
-                  <td className={`p-3.5 sm:p-4 ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-                    Actual non-refundable flight/hotel booking fees only
-                  </td>
-                </tr>
-                <tr className={isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-stone-50'}>
-                  <td className={`p-3.5 sm:p-4 font-semibold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    15 to 29 days prior
-                  </td>
-                  <td className="p-3.5 sm:p-4 font-bold text-amber-600 dark:text-amber-400">
-                    50% of land package
-                  </td>
-                  <td className={`p-3.5 sm:p-4 ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-                    Supplier retention fees & committed deposits
-                  </td>
-                </tr>
-                <tr className={isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-stone-50'}>
-                  <td className={`p-3.5 sm:p-4 font-semibold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    Less than 14 days prior
-                  </td>
-                  <td className="p-3.5 sm:p-4 font-bold text-rose-600 dark:text-rose-400">
-                    Non-refundable
-                  </td>
-                  <td className={`p-3.5 sm:p-4 ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-                    100% committed supplier non-recoverable costs
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 gap-4">
+            {/* Tier 1 */}
+            <div className={`p-5 rounded-2xl border transition-all ${
+              isDark ? 'bg-white/[0.03] border-white/10' : 'bg-stone-50 border-stone-200'
+            }`}>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-stone-950'}`}>
+                  {lt?.tier1Time || "30 Days or More Prior to Departure"}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  {lt?.tier1Refund || "Up to 85% to 90% Refundable"}
+                </span>
+              </div>
+              <p className={`text-xs leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+                {lt?.tier1Note || "Subject to committed third-party flight and hotel non-recoverable booking costs."}
+              </p>
+            </div>
+
+            {/* Tier 2 */}
+            <div className={`p-5 rounded-2xl border transition-all ${
+              isDark ? 'bg-white/[0.03] border-white/10' : 'bg-stone-50 border-stone-200'
+            }`}>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-stone-950'}`}>
+                  {lt?.tier2Time || "15 to 29 Days Prior to Departure"}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  {lt?.tier2Refund || "Up to 50% to 70% Refundable"}
+                </span>
+              </div>
+              <p className={`text-xs leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+                {lt?.tier2Note || "Calculated based on contracted private villa buyout terms and chartered transport cancellation fees."}
+              </p>
+            </div>
+
+            {/* Tier 3 */}
+            <div className={`p-5 rounded-2xl border transition-all ${
+              isDark ? 'bg-white/[0.03] border-white/10' : 'bg-stone-50 border-stone-200'
+            }`}>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-stone-950'}`}>
+                  {lt?.tier3Time || "Less than 14 Days Prior to Departure"}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+                  {lt?.tier3Refund || "Case-by-Case Rescheduling"}
+                </span>
+              </div>
+              <p className={`text-xs leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+                {lt?.tier3Note || "Within 14 days, partner suppliers enforce 100% cancellation penalties; our concierge team works to reschedule whenever feasible."}
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* 2. Strictly Non-Refundable Items */}
+        {/* Processing Timeline */}
         <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
           <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            2. Strictly Non-Refundable Items
+            {lt?.processTitle || "Refund Processing Timeline"}
           </h2>
-          <ul className={`list-disc list-inside space-y-2 text-sm pl-2 leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <li><strong className={isDark ? 'text-white' : 'text-stone-900'}>Government & Visa Embassy Fees:</strong> Fees paid directly to government visa portals, VFS Global, or consulates are 100% non-refundable under all circumstances once processed.</li>
-            <li><strong className={isDark ? 'text-white' : 'text-stone-900'}>Non-Refundable Flight Bookings:</strong> Commercial airline ticket refunds depend strictly on the respective airline’s cancellation rules.</li>
-            <li><strong className={isDark ? 'text-white' : 'text-stone-900'}>Peak Season / Holiday Stays:</strong> Certain festive departures (Christmas, New Year, Cherry Blossom peak in Japan) carry strict property-enforced non-refundable terms, which are explicitly flagged before you confirm.</li>
-          </ul>
+          <p className={`text-sm leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
+            {lt?.processDesc || "Approved refunds are transferred back to your original payment method within 7 to 10 business days."}
+          </p>
         </section>
 
-        {/* 3. Visa Refusal Mitigation Policy */}
-        <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
-          <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            3. In Event of Visa Refusal
-          </h2>
-          <div className={`p-5 rounded-2xl border space-y-2 text-sm leading-relaxed ${
-            isDark 
-              ? 'bg-white/[0.03] border-white/10 text-stone-300' 
-              : 'bg-stone-50 border-stone-200 text-stone-800'
-          }`}>
-            <p>
-              In the unfortunate event that your visa application is refused by an embassy, we strive to minimize your financial loss:
-            </p>
-            <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-              Upon furnishing the official embassy refusal letter at least <strong className={isDark ? 'text-white' : 'text-stone-900'}>10 days prior to departure</strong>, Zentrevo will waive our internal planning fee and recover every possible refundable component from our hotel and ground partners.
-            </p>
-          </div>
-        </section>
-
-        {/* 4. Refund Processing Timeline */}
-        <section className={`space-y-3 border-t pt-8 ${isDark ? 'border-white/10' : 'border-stone-200'}`}>
-          <h2 className={`text-lg sm:text-xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            <ShieldCheck className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-stone-800'}`} />
-            <span>4. Refund Processing Timeline</span>
-          </h2>
-          <div className={`space-y-2 text-sm leading-relaxed pl-2 ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <p>
-              Once a cancellation is confirmed in writing, approved refunds are credited back to the <strong className={isDark ? 'text-white' : 'text-stone-900'}>original source of payment (Bank Transfer / UPI / Card)</strong> within <strong className={isDark ? 'text-white' : 'text-stone-900'}>7 to 10 business days</strong>.
-            </p>
-            <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-              A comprehensive refund settlement breakdown statement will be provided directly via email and WhatsApp.
-            </p>
-          </div>
-        </section>
-
-        {/* 5. How to Initiate Cancellation */}
-        <section className={`p-6 rounded-2xl border space-y-3 ${
+        {/* Consular Clause */}
+        <section className={`p-6 sm:p-8 rounded-3xl border transition-all ${
           isDark 
-            ? 'bg-white/[0.03] border-white/10 text-stone-200' 
-            : 'bg-stone-50 border-stone-200 text-stone-900'
+            ? 'bg-amber-950/20 border-amber-500/30 text-amber-200' 
+            : 'bg-amber-50/70 border-amber-200 text-stone-900'
         }`}>
-          <h2 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-stone-950'}`}>
-            <CheckCircle2 className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-            <span>How to Initiate a Cancellation</span>
+          <h2 className={`text-base sm:text-lg font-bold mb-2 flex items-center gap-2 ${isDark ? 'text-amber-300' : 'text-stone-950'}`}>
+            <ShieldCheck className="w-5 h-5 text-amber-400" />
+            <span>{lt?.visaClauseTitle || "Special Visa Refusal Clause"}</span>
           </h2>
-          <p className={`text-xs leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            To request an itinerary cancellation or date rescheduling, contact your dedicated planner immediately:
+          <p className="text-xs sm:text-sm leading-relaxed">
+            {lt?.visaClauseDesc || "If a traveler's visa application is formally refused by an embassy at least 15 days prior to travel (official consular rejection letter required), Zentrevo waives all our internal planning fees and returns all recoverable partner funds."}
           </p>
-          <div className={`text-xs space-y-1.5 font-mono pt-1 ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-            <p className="flex items-center gap-2">
-              <Mail className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>Email: contact@zentrevo.in (Subject: "Cancellation Request - [Your Name]")</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <Compass className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
-              <span>Dedicated WhatsApp Concierge Chat (Available 7 days a week)</span>
-            </p>
-          </div>
         </section>
-
-        {/* Related Policies Navigation Bar */}
-        <div className={`pt-6 border-t flex flex-wrap items-center justify-between gap-4 text-xs ${
-          isDark ? 'border-white/10' : 'border-stone-200'
-        }`}>
-          <div className="flex gap-4">
-            <a 
-              href="/privacy-policy" 
-              onClick={(e) => { 
-                e.preventDefault(); 
-                window.history.pushState({}, '', '/privacy-policy'); 
-                window.dispatchEvent(new PopStateEvent('popstate')); 
-              }} 
-              className={`font-semibold hover:underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}
-            >
-              ← Privacy Policy
-            </a>
-            <a 
-              href="/terms-of-service" 
-              onClick={(e) => { 
-                e.preventDefault(); 
-                window.history.pushState({}, '', '/terms-of-service'); 
-                window.dispatchEvent(new PopStateEvent('popstate')); 
-              }} 
-              className={`font-semibold hover:underline ${isDark ? 'text-amber-300' : 'text-stone-900'}`}
-            >
-              Terms of Service →
-            </a>
-          </div>
-          <button 
-            type="button" 
-            onClick={onNavigateHome} 
-            className={`cursor-pointer ${isDark ? 'text-stone-400 hover:text-white' : 'text-stone-600 hover:text-stone-950'}`}
-          >
-            ← Back to Homepage
-          </button>
-        </div>
       </main>
     </div>
   );

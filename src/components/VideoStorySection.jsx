@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, X, Star, Quote, ArrowRight, Volume2, VolumeX, Sparkles, Crown } from 'lucide-react';
 import { testimonials, blogArticles } from '../data/travelData';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../i18n/translations';
+import { getLocalizedArticlesList } from '../i18n/localizedTravelData';
 
 export default function VideoStorySection({ currentTheme, onOpenJournal }) {
+  const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -12,6 +16,12 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
+
+  const localizedTestimonials = (translations[language]?.videoStory?.testimonials) || testimonials;
+  const activeReview = {
+    ...testimonials[activeTestimonialIndex],
+    ...(localizedTestimonials[activeTestimonialIndex] || {})
+  };
 
   // IntersectionObserver: Automatically plays when scrolled into view, pauses when scrolled up/away
   useEffect(() => {
@@ -78,8 +88,6 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
     setIsMuted(video.muted);
   };
 
-  const activeReview = testimonials[activeTestimonialIndex];
-
   return (
     <section id="stories" className="px-4 sm:px-8 py-16 scroll-mt-24">
       <div className="max-w-7xl mx-auto space-y-20">
@@ -90,15 +98,15 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
             <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${
               isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-500' : 'text-amber-600'
             }`}>
-              Visual Chronicle
+              {t('videoStory.badge', 'Visual Chronicle')}
             </p>
             <h2 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-3xl sm:text-5xl tracking-tight ${
               isSapphire || isEmerald ? 'text-stone-100' : 'text-stone-900'
             }`}>
-              Adventures And Stories Captured In Pictures
+              {t('videoStory.heading', 'Adventures And Stories Captured In Pictures')}
             </h2>
             <p className={`text-sm mt-3 ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-              Watch a panoramic 4K glimpse through the lens of our private expedition travelers across 4 continents.
+              {t('videoStory.subheading', 'Watch a panoramic 4K glimpse through the lens of our private expedition travelers across 4 continents.')}
             </p>
           </div>
 
@@ -146,7 +154,7 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
             <div className="absolute top-6 left-6 flex items-center gap-2">
               <div className="px-3 py-1 rounded-full text-[11px] font-semibold bg-black/60 backdrop-blur-md text-white border border-white/10 flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                <span>{isPlaying ? 'Auto-Playing on Scroll' : 'Auto-Paused (Scroll In View)'}</span>
+                <span>{isPlaying ? t('videoStory.autoPlaying', 'Auto-Playing on Scroll') : t('videoStory.autoPaused', 'Auto-Paused (Scroll In View)')}</span>
               </div>
             </div>
 
@@ -196,7 +204,7 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-current" />
                 ))}
-                <span className="text-xs font-bold text-stone-400 ml-2">5.0 Verified Royal Client Review</span>
+                <span className="text-xs font-bold text-stone-400 ml-2">{t('videoStory.verifiedReview', '5.0 Verified Royal Client Review')}</span>
               </div>
 
               <blockquote className={`${isEditorial ? 'font-editorial' : 'font-sans'} text-lg sm:text-2xl font-normal leading-relaxed mb-8`}>
@@ -251,24 +259,24 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
           }`}>
             <div>
               <span className={`text-xs font-semibold uppercase tracking-wider ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>
-                Guaranteed Excellence
+                {t('videoStory.guaranteedExcellence', 'Guaranteed Excellence')}
               </span>
               <h3 className="text-xl font-bold mt-2 mb-4">
-                Where Wanderlust Meets Reality Destinations
+                {t('videoStory.wanderlustHeading', 'Where Wanderlust Meets Reality Destinations')}
               </h3>
               <p className={`text-xs sm:text-sm leading-relaxed mb-6 ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-                Our travelers enjoy VIP ground clearance, verified luxury properties, zero hidden fees, and full carbon-neutral expedition offsets.
+                {t('videoStory.wanderlustDesc', 'Our travelers enjoy VIP ground clearance, verified luxury properties, zero hidden fees, and full carbon-neutral expedition offsets.')}
               </p>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-2xl bg-black/10 dark:bg-white/5 text-xs font-semibold">
-                <span>Passport & Visa Concierge</span>
-                <span className={`font-bold ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>Included</span>
+                <span>{t('videoStory.perk1', 'Passport & Visa Concierge')}</span>
+                <span className={`font-bold ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>{t('videoStory.perk1Badge', 'Included')}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-2xl bg-black/10 dark:bg-white/5 text-xs font-semibold">
-                <span>Global Medical & Evac Cover</span>
-                <span className={`font-bold ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>Tier 1 Sovereign</span>
+                <span>{t('videoStory.perk2', 'Global Medical & Evac Cover')}</span>
+                <span className={`font-bold ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>{t('videoStory.perk2Badge', 'Tier 1 Sovereign')}</span>
               </div>
             </div>
           </div>
@@ -281,10 +289,10 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
               <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${
                 isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-500' : 'text-amber-600'
               }`}>
-                Field Notes & Stories
+                {t('videoStory.fieldNotesBadge', 'Field Notes & Stories')}
               </p>
               <h3 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-2xl sm:text-3xl`}>
-                Adventure Thrills and Excitement Await
+                {t('videoStory.fieldNotesHeading', 'Adventure Thrills and Excitement Await')}
               </h3>
             </div>
             <button 
@@ -294,13 +302,13 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
                 isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-400' : 'text-stone-900'
               }`}
             >
-              <span>View All Articles</span>
+              <span>{t('videoStory.viewAllArticles', 'View All Articles')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {blogArticles.slice(0, 3).map((article) => (
+            {getLocalizedArticlesList(blogArticles, language).slice(0, 3).map((article) => (
               <div
                 key={article.id}
                 onClick={() => onOpenJournal && onOpenJournal(article)}
@@ -338,7 +346,7 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
                   <span className={`inline-flex items-center gap-1 text-xs font-semibold ${
                     isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-300' : 'text-stone-900'
                   }`}>
-                    Read Journal Entry
+                    {t('videoStory.readJournalEntry', 'Read Journal Entry')}
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>

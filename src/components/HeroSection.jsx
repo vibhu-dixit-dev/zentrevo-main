@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, Plane, CheckCircle2, ChevronDown, Crown, Sparkles, X } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { destinations } from '../data/travelData';
+import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 
 export default function HeroSection({ currentTheme, onSelectDestination, onSearchFilter, onOpenInquiry }) {
+  const { t, isRTL, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -32,23 +36,23 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
   const heroCuratedSlides = [
     {
       index: "01",
-      tag: "(FIRST)",
-      title: "Explore our curated list of must-visit destinations around the globe.",
-      destination: "Swiss Alpine Glacier Express",
+      tag: t('hero.slideFirst', '(FIRST)'),
+      title: t('hero.slide1Title', 'Explore our curated list of must-visit destinations around the globe.'),
+      destination: t('hero.slide1Dest', 'Swiss Alpine Glacier Express'),
       image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=800&q=80"
     },
     {
       index: "02",
-      tag: "(PRESENT)",
-      title: "Private cliffside villa retreats and yacht voyages along Amalfi clifftops.",
-      destination: "Amalfi Coast & Positano",
+      tag: t('hero.slidePresent', '(PRESENT)'),
+      title: t('hero.slide2Title', 'Private cliffside villa retreats and yacht voyages along Amalfi clifftops.'),
+      destination: t('hero.slide2Dest', 'Amalfi Coast & Positano'),
       image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80"
     },
     {
       index: "03",
-      tag: "(SIGNATURE)",
-      title: "Dawn balloon ascents across the fairy chimney valleys of Cappadocia.",
-      destination: "Cappadocia Balloon Valley",
+      tag: t('hero.slideSignature', '(SIGNATURE)'),
+      title: t('hero.slide3Title', 'Dawn balloon ascents across the fairy chimney valleys of Cappadocia.'),
+      destination: t('hero.slide3Dest', 'Cappadocia Balloon Valley'),
       image: "https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=800&q=80"
     }
   ];
@@ -144,17 +148,17 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
               {isSapphire ? (
                 <div className="flex items-center gap-2 text-amber-300 border-amber-500/40 bg-[#061025]/60">
                   <Crown className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Royal Sovereign Expeditions • Curated Heritage & Trust</span>
+                  <span>{t('hero.badgeSapphire', 'Royal Sovereign Expeditions • Curated Heritage & Trust')}</span>
                 </div>
               ) : isEmerald ? (
                 <div className="flex items-center gap-2 text-emerald-300 border-emerald-700/50 bg-emerald-950/40">
                   <Plane className="w-3.5 h-3.5 text-emerald-400 rotate-45" />
-                  <span>Bespoke Journeys • Summer / Autumn 2026</span>
+                  <span>{t('hero.badgeEmerald', 'Bespoke Journeys • Summer / Autumn 2026')}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-stone-700 border-stone-200 bg-white/80">
                   <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                  <span>Handcrafted Private Expeditions</span>
+                  <span>{t('hero.badge', 'Handcrafted Private Expeditions')}</span>
                 </div>
               )}
             </div>
@@ -172,7 +176,7 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                 <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Zentrevo traveler" loading="lazy" decoding="async" />
                 <img className="inline-block h-6 w-6 rounded-full ring-2 ring-amber-400 object-cover" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" alt="Zentrevo traveler" loading="lazy" decoding="async" />
               </div>
-              <span className="font-semibold">One Planner • One WhatsApp Chat</span>
+              <span className="font-semibold">{t('hero.socialProof', 'One Planner • One WhatsApp Chat')}</span>
             </div>
           </div>
 
@@ -183,16 +187,16 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
               <>
                 <p className="text-amber-400 font-semibold tracking-widest text-xs uppercase mb-3 flex items-center gap-2">
                   <span className="w-6 h-px bg-amber-400"></span>
-                  <span>Prestige • Security • Heritage</span>
+                  <span>{t('hero.sapphirePretitle', 'Prestige • Security • Heritage')}</span>
                 </p>
                 <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.08] mb-6">
-                  Your Journey To <br />
+                  {t('hero.sapphireHeading1', 'Your Journey To')} <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-white">
-                    Timeless Prestige & Wonder
+                    {t('hero.sapphireHeadingGrad', 'Timeless Prestige & Wonder')}
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg text-slate-300 max-w-xl font-normal leading-relaxed mb-8">
-                  Experience bespoke royal retreats, private aviation, and centuries of architectural grandeur curated with unshakeable confidence and trust.
+                  {t('hero.sapphireDesc', 'Experience bespoke royal retreats, private aviation, and centuries of architectural grandeur curated with unshakeable confidence and trust.')}
                 </p>
               </>
             ) : isEmerald ? (
@@ -200,33 +204,33 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
               <>
                 <p className="text-emerald-400 font-semibold tracking-widest text-xs uppercase mb-3 flex items-center gap-2">
                   <span className="w-6 h-px bg-emerald-400"></span>
-                  <span>Relax • Travel • Reconnect</span>
+                  <span>{t('hero.emeraldPretitle', 'Relax • Travel • Reconnect')}</span>
                 </p>
                 <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.08] mb-6">
-                  Your Journey To <br />
+                  {t('hero.emeraldHeading1', 'Your Journey To')} <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-white">
-                    Peace Begins Here
+                    {t('hero.emeraldHeadingGrad', 'Peace Begins Here')}
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg text-emerald-100/80 max-w-xl font-normal leading-relaxed mb-8">
-                  Plan your perfect escape with handpicked sanctuaries, private charters, and stress-free bespoke itineraries worldwide.
+                  {t('hero.emeraldDesc', 'Plan your perfect escape with handpicked sanctuaries, private charters, and stress-free bespoke itineraries worldwide.')}
                 </p>
               </>
             ) : (
               /* Travelio & Travel Style Editorial Headline */
               <>
                 <h1 className="font-editorial text-4xl sm:text-6xl lg:text-7xl font-normal tracking-tight text-stone-900 leading-[1.1] mb-6">
-                  Your Journey To The World's <br />
+                  {t('hero.editorialHeading1', "Your Journey To The World's")} <br />
                   <span className="inline-flex items-center gap-3">
-                    Best
+                    {t('hero.editorialHeadingBest', 'Best')}
                     <span className="inline-flex items-center justify-center px-3 py-1 rounded-2xl bg-stone-900 text-white text-xs font-sans align-middle shadow-md border border-stone-700">
-                      🏔️ World Heritage
+                      {t('hero.editorialBadge', '🏔️ World Heritage')}
                     </span>
-                    Destinations
+                    {t('hero.editorialHeading2', 'Destinations')}
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg text-stone-600 max-w-xl font-normal leading-relaxed mb-8">
-                  Immerse yourself in authentic cultural wonders, alpine horizons, and private journeys designed with architectural perfection.
+                  {t('hero.editorialDesc', 'Immerse yourself in authentic cultural wonders, alpine horizons, and private journeys designed with architectural perfection.')}
                 </p>
               </>
             )}
@@ -243,7 +247,7 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                       : 'bg-stone-950 text-white hover:bg-stone-800 hover:shadow-stone-900/30'
                 }`}
               >
-                <span>Join With Us</span>
+                <span>{t('hero.planJourneyBtn')}</span>
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform group-hover:rotate-45 duration-300 ${
                   isSapphire 
                     ? 'bg-stone-950 text-amber-300' 
@@ -270,7 +274,7 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                 }`}>
                   <Play className="w-3 h-3 fill-current ml-0.5" />
                 </div>
-                <span>Travel Story Video</span>
+                <span>{t('hero.exploreDestinationsBtn')}</span>
               </a>
             </div>
           </div>
@@ -321,10 +325,10 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                 <div className="flex items-center justify-between pt-4 border-t border-stone-200/20 text-xs font-mono tracking-wider">
                   <div className="flex items-center gap-3">
                     <span className={currentSlideIndex === 0 ? 'font-bold opacity-100' : 'opacity-40'}>
-                      (FIRST)
+                      {t('hero.slideFirst', '(FIRST)')}
                     </span>
                     <span className={currentSlideIndex !== 0 ? `font-bold opacity-100 ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}` : 'opacity-40'}>
-                      (PRESENT)
+                      {t('hero.slidePresent', '(PRESENT)')}
                     </span>
                   </div>
                   
@@ -371,11 +375,11 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                }}>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
               <MapPin className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
-              <span>Destination</span>
+              <span>{t('hero.selectDestination')}</span>
             </div>
             <div className="flex items-center justify-between mt-1">
               <span className={`text-sm truncate ${selectedLocation === 'Select Destination' ? 'text-stone-400 font-normal' : 'font-medium'}`}>
-                {selectedLocation}
+                {selectedLocation === 'Select Destination' ? t('hero.selectDestination') : selectedLocation}
               </span>
               <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${locationDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
             </div>
@@ -387,9 +391,12 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
             } ${
               isSapphire ? 'bg-[#0c1a38]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23]/98 border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl'
             }`}>
-              {['Select Destination', 'Italy (Amalfi Coast)', 'Japan (Kyoto)', 'Switzerland (Glacier Express)', 'Turkey (Cappadocia)', 'Bali (Uluwatu & Ubud)', 'Iceland (Aurora Wilderness)'].map(loc => (
+              {[
+                t('hero.selectDestination', 'Select Destination'),
+                ...getLocalizedDestinationsList(destinations, language).map(d => `${d.location} (${d.title})`)
+              ].map((loc, idx) => (
                 <button
-                  key={loc}
+                  key={idx}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedLocation(loc);
@@ -405,7 +412,7 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                       : isSapphire || isEmerald
                         ? 'hover:bg-white/10 text-stone-200'
                         : 'hover:bg-stone-100 text-stone-800'
-                  } ${loc === 'Select Destination' ? 'italic text-stone-400 font-normal' : ''}`}
+                  } ${idx === 0 ? 'italic text-stone-400 font-normal' : ''}`}
                 >
                   {loc}
                 </button>
@@ -419,14 +426,14 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
           <div className="w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
               <Calendar className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
-              <span>Travel Dates</span>
+              <span>{t('hero.travelDates')}</span>
             </div>
             <input 
               type="text" 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full bg-transparent text-sm font-medium focus:outline-none mt-1"
-              placeholder="Select date range"
+              placeholder={t('hero.datePlaceholder', 'Select date range')}
             />
           </div>
 
@@ -440,11 +447,11 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                }}>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
               <Users className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
-              <span>Travelers</span>
+              <span>{t('hero.travelersCount')}</span>
             </div>
             <div className="flex items-center justify-between mt-1">
               <span className={`text-sm truncate ${selectedGuests === 'Select Travelers' ? 'text-stone-400 font-normal' : 'font-medium'}`}>
-                {selectedGuests}
+                {selectedGuests === 'Select Travelers' ? t('hero.travelersCount') : selectedGuests}
               </span>
               <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${guestsDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
             </div>
@@ -456,9 +463,15 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
             } ${
               isSapphire ? 'bg-[#0c1a38]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23]/98 border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl'
             }`}>
-              {['Select Travelers', '1 Solo Explorer', '2 Guests (Couple)', '3 Guests', '4-6 Family / Private Group'].map(g => (
+              {[
+                t('hero.selectTravelers', 'Select Travelers'),
+                t('hero.guestSolo', '1 Solo Explorer'),
+                t('hero.guestCouple', '2 Guests (Couple)'),
+                t('hero.guestThree', '3 Guests'),
+                t('hero.guestGroup', '4-6 Family / Private Group')
+              ].map((g, idx) => (
                 <button
-                  key={g}
+                  key={idx}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedGuests(g);
@@ -474,7 +487,7 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                       : isSapphire || isEmerald
                         ? 'hover:bg-white/10 text-stone-200'
                         : 'hover:bg-stone-100 text-stone-800'
-                  } ${g === 'Select Travelers' ? 'italic text-stone-400 font-normal' : ''}`}
+                  } ${idx === 0 ? 'italic text-stone-400 font-normal' : ''}`}
                 >
                   {g}
                 </button>
@@ -494,7 +507,7 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
             }`}
           >
             <Search className="w-4 h-4" />
-            <span>Search</span>
+            <span>{t('hero.searchJourneysBtn')}</span>
           </button>
         </div>
       </div>

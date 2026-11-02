@@ -1,13 +1,19 @@
 import React from 'react';
 import { valuePillars } from '../data/travelData';
 import { Check, ShieldCheck, Heart, Users, PhoneCall, Sparkles, Crown } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../i18n/translations';
 
 export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
+  const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
 
   const pillarIcons = [Users, Heart, ShieldCheck];
+  const currentPillars = (translations[language] && translations[language].experienceSplit && translations[language].experienceSplit.pillars)
+    ? translations[language].experienceSplit.pillars
+    : valuePillars;
 
   return (
     <section id="values" className="px-4 sm:px-8 py-20 relative overflow-hidden scroll-mt-24">
@@ -17,23 +23,23 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
           <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${
             isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-500' : 'text-amber-600'
           }`}>
-            The Zentrevo Ethos
+            {t('experienceSplit.badge', 'The Zentrevo Ethos')}
           </p>
           <h2 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-3xl sm:text-5xl tracking-tight leading-tight mb-4 ${
             isSapphire || isEmerald ? 'text-stone-100' : 'text-stone-900'
           }`}>
-            Our Core Beliefs That Shape Travel Experiences
+            {t('experienceSplit.heading', 'Our Core Beliefs That Shape Travel Experiences')}
           </h2>
           <p className={`text-sm sm:text-base leading-relaxed ${
             isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'
           }`}>
-            We believe journeys are life milestones, not mere bookings. Here is how we redefine luxury travel.
+            {t('experienceSplit.subheading', 'We believe journeys are life milestones, not mere bookings. Here is how we redefine luxury travel.')}
           </p>
         </div>
 
         {/* 3 Value Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-          {valuePillars.map((pillar, idx) => {
+          {currentPillars.map((pillar, idx) => {
             const Icon = pillarIcons[idx];
             return (
               <div
@@ -117,7 +123,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                   </div>
                   <div className="text-xs font-semibold leading-tight uppercase tracking-wider">
                     WhatsApp <br />
-                    <span className="text-stone-400 font-normal">Support</span>
+                    <span className="text-stone-400 font-normal">{t('experienceSplit.supportTag', 'Support')}</span>
                   </div>
                 </div>
               </div>
@@ -129,31 +135,31 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                 isSapphire ? 'text-amber-400' : 'text-emerald-400'
               }`}>
                 {isSapphire ? <Crown className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-                <span>Why Discerning Travelers Choose Us</span>
+                <span>{t('experienceSplit.whyUs', 'Why Discerning Travelers Choose Us')}</span>
               </p>
               
               <h3 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-3xl sm:text-4xl tracking-tight leading-tight mb-6`}>
-                Experiencing Traditions & Authentic Cultural Immersion
+                {t('experienceSplit.splitHeading', 'Experiencing Traditions & Authentic Cultural Immersion')}
               </h3>
 
               <p className={`text-sm leading-relaxed mb-8 ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-                Travel isn't about ticking off landmarks from a bus window. It is about quiet dawn mornings in remote mountain shrines, private wine cellar keys held by 5th-generation vintners, and itineraries orchestrated with surgical elegance.
+                {t('experienceSplit.splitDesc', "Travel isn't about ticking off landmarks from a bus window. It is about quiet dawn mornings in remote mountain shrines, private wine cellar keys held by 5th-generation vintners, and itineraries orchestrated with surgical elegance.")}
               </p>
 
               {/* Checklist */}
               <div className="space-y-4 mb-8">
                 {[
                   {
-                    title: "Curated Private Sanctuaries",
-                    sub: "Direct partnerships with verified private villas, boutique castles, and overwater suites."
+                    title: t('experienceSplit.c1Title', 'Curated Private Sanctuaries'),
+                    sub: t('experienceSplit.c1Sub', 'Direct partnerships with verified private villas, boutique castles, and overwater suites.')
                   },
                   {
-                    title: "24/7 Dedicated Ground Concierge",
-                    sub: "Real-time itinerary adjustments, private helicopter charters, and multilingual hosts."
+                    title: t('experienceSplit.c2Title', '24/7 Dedicated Ground Concierge'),
+                    sub: t('experienceSplit.c2Sub', 'Real-time itinerary adjustments, private helicopter charters, and multilingual hosts.')
                   },
                   {
-                    title: "Seamless Visa & Logistics Handled",
-                    sub: "Zero friction from private runway clearance to luggage transfers between cities."
+                    title: t('experienceSplit.c3Title', 'Seamless Visa & Logistics Handled'),
+                    sub: t('experienceSplit.c3Sub', 'Zero friction from private runway clearance to luggage transfers between cities.')
                   }
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-start gap-3.5">
@@ -182,7 +188,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                         : 'bg-stone-950 text-white hover:bg-stone-800'
                   }`}
                 >
-                  Request Itinerary
+                  {t('experienceSplit.requestBtn', 'Request Itinerary')}
                 </button>
 
                 <a 
@@ -196,7 +202,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                   }`}
                 >
                   <PhoneCall className="w-3.5 h-3.5" />
-                  <span>Call Us: +91 86199 28710</span>
+                  <span>{t('experienceSplit.callUs', 'Call Us: +91 86199 28710')}</span>
                 </a>
               </div>
             </div>

@@ -7,17 +7,17 @@ import {
   Clock, 
   Calendar, 
   Share2, 
-  Compass, 
   Sparkles, 
   Crown, 
   Check, 
   MapPin, 
   Send,
-  BookOpen,
-  Filter
+  BookOpen
 } from 'lucide-react';
 import { blogArticles } from '../data/travelData';
 import { getBlogSlug } from '../lib/seoRoutes';
+import { useLanguage } from '../context/LanguageContext';
+import { getLocalizedArticlesList, getLocalizedArticle } from '../i18n/localizedTravelData';
 
 export default function JournalModal({ 
   isOpen, 
@@ -27,6 +27,7 @@ export default function JournalModal({
   onInquireStory,
   onArticleChange
 }) {
+  const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -35,6 +36,16 @@ export default function JournalModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Synchronize with active language
+  const localizedArticles = useMemo(() => {
+    return getLocalizedArticlesList(blogArticles, language);
+  }, [language]);
+
+  const currentArticle = useMemo(() => {
+    if (!activeArticle) return null;
+    return getLocalizedArticle(activeArticle, language);
+  }, [activeArticle, language]);
 
   // Sync initialArticle whenever modal opens or initialArticle changes
   useEffect(() => {
@@ -67,13 +78,13 @@ export default function JournalModal({
 
   // Unique categories list
   const categories = useMemo(() => {
-    const cats = ['All', ...new Set(blogArticles.map(a => a.category))];
+    const cats = ['All', ...new Set(localizedArticles.map(a => a.category))];
     return cats;
-  }, []);
+  }, [localizedArticles]);
 
   // Filtered articles for the catalog view
   const filteredArticles = useMemo(() => {
-    return blogArticles.filter((article) => {
+    return localizedArticles.filter((article) => {
       const matchesCategory = selectedCategory === 'All' || article.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch = !q || 
@@ -85,7 +96,7 @@ export default function JournalModal({
 
       return matchesCategory && matchesSearch;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [localizedArticles, searchQuery, selectedCategory]);
 
   if (!isOpen) return null;
 
@@ -102,11 +113,11 @@ export default function JournalModal({
   };
 
   // Find adjacent articles for next/prev navigation
-  const currentIndex = activeArticle 
-    ? blogArticles.findIndex(a => a.id === activeArticle.id) 
+  const currentIndex = currentArticle 
+    ? localizedArticles.findIndex(a => a.id === currentArticle.id) 
     : -1;
-  const prevArticle = currentIndex > 0 ? blogArticles[currentIndex - 1] : null;
-  const nextArticle = currentIndex >= 0 && currentIndex < blogArticles.length - 1 ? blogArticles[currentIndex + 1] : null;
+  const prevArticle = currentIndex > 0 ? localizedArticles[currentIndex - 1] : null;
+  const nextArticle = currentIndex >= 0 && currentIndex < localizedArticles.length - 1 ? localizedArticles[currentIndex + 1] : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -128,7 +139,7 @@ export default function JournalModal({
               : 'border-stone-200 bg-stone-50/80'
         }`}>
           <div className="flex items-center gap-3">
-            {activeArticle ? (
+            {currentArticle ? (
               <button
                 type="button"
                 onClick={() => handleSelectArticle(null)}
@@ -141,7 +152,7 @@ export default function JournalModal({
                 }`}
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>All Field Notes</span>
+                <span>{t('journal.allNotes', 'All Field Notes')}</span>
               </button>
             ) : (
               <div className="flex items-center gap-2">
@@ -151,18 +162,18 @@ export default function JournalModal({
                   <BookOpen className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-stone-400 block">Zentrevo Gazette</span>
-                  <h2 className="text-sm sm:text-base font-bold">The Journal & Field Notes</h2>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-stone-400 block">{t('journal.gazette', 'Zentrevo Gazette')}</span>
+                  <h2 className="text-sm sm:text-base font-bold">{t('journal.modalTitle', 'The Journal & Field Notes')}</h2>
                 </div>
               </div>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            {activeArticle && (
+            {currentArticle && (
               <button
                 type="button"
-                onClick={() => handleShare(activeArticle)}
+                onClick={() => handleShare(currentArticle)}
                 title="Share Article Link"
                 className={`p-2 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 text-xs ${
                   isSapphire
@@ -175,7 +186,7 @@ export default function JournalModal({
                 {copiedLink ? (
                   <>
                     <Check className="w-4 h-4 text-emerald-400" />
-                    <span className="text-[11px] font-semibold text-emerald-400 pr-1">Copied!</span>
+                    <span className="text-[11px] font-semibold text-emerald-400 pr-1">{t('journal.shareCopied', 'Copied!')}</span>
                   </>
                 ) : (
                   <Share2 className="w-4 h-4" />
@@ -202,14 +213,14 @@ export default function JournalModal({
 
         {/* Modal Scrollable Body */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
-          {activeArticle ? (
+          {currentArticle ? (
             /* ================= VIEW 1: IMMERSIVE STORY READER ================= */
             <article className="animate-in fade-in zoom-in-95 duration-200">
               {/* Hero Image Banner */}
               <div className="relative aspect-[21/9] sm:aspect-[24/9] w-full overflow-hidden">
                 <img 
-                  src={activeArticle.image} 
-                  alt={activeArticle.imageAlt || `${activeArticle.title} - Zentrevo Journal Story`}
+                  src={currentArticle.image} 
+                  alt={currentArticle.imageAlt || `${currentArticle.title} - Zentrevo Journal Story`}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover"
@@ -225,22 +236,22 @@ export default function JournalModal({
                           ? 'bg-emerald-400 text-stone-950'
                           : 'bg-white text-stone-950 shadow-md'
                     }`}>
-                      {activeArticle.category}
+                      {currentArticle.category}
                     </span>
                     <span className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-semibold text-white flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-amber-400" />
-                      <span>{activeArticle.destination}</span>
+                      <span>{currentArticle.destination}</span>
                     </span>
                   </div>
 
                   <div className="flex items-center gap-3 text-white/80 text-[11px] font-medium">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {activeArticle.date}
+                      {currentArticle.date}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {activeArticle.readTime}
+                      {currentArticle.readTime}
                     </span>
                   </div>
                 </div>
@@ -251,28 +262,28 @@ export default function JournalModal({
                 {/* Title & Author */}
                 <div>
                   <h1 className={`${isEditorial ? 'font-editorial' : 'font-sans'} text-2xl sm:text-4xl font-bold leading-tight mb-5`}>
-                    {activeArticle.title}
+                    {currentArticle.title}
                   </h1>
 
                   <div className={`flex items-center gap-3 pb-6 border-b ${
                     isSapphire ? 'border-slate-800' : isEmerald ? 'border-emerald-900' : 'border-stone-200'
                   }`}>
                     <img 
-                      src={activeArticle.author.avatar} 
-                      alt={`${activeArticle.author.name} - ${activeArticle.author.role}`}
+                      src={currentArticle.author.avatar} 
+                      alt={`${currentArticle.author.name} - ${currentArticle.author.role}`}
                       loading="lazy"
                       decoding="async"
                       className="w-10 h-10 rounded-full object-cover border border-amber-400/40" 
                     />
                     <div>
-                      <span className="text-xs font-bold block">{activeArticle.author.name}</span>
-                      <span className="text-[11px] opacity-70 block">{activeArticle.author.role}</span>
+                      <span className="text-xs font-bold block">{currentArticle.author.name}</span>
+                      <span className="text-[11px] opacity-70 block">{currentArticle.author.role}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Pull Quote */}
-                {activeArticle.pullQuote && (
+                {currentArticle.pullQuote && (
                   <blockquote className={`p-5 sm:p-6 rounded-2xl border-l-4 italic text-sm sm:text-base leading-relaxed ${
                     isSapphire
                       ? 'bg-[#081226] border-l-amber-400 text-stone-200'
@@ -280,13 +291,13 @@ export default function JournalModal({
                         ? 'bg-emerald-950/60 border-l-emerald-400 text-stone-200'
                         : 'bg-stone-50 border-l-stone-900 text-stone-800'
                   }`}>
-                    "{activeArticle.pullQuote}"
+                    "{currentArticle.pullQuote}"
                   </blockquote>
                 )}
 
                 {/* Paragraphs */}
                 <div className="space-y-4 text-xs sm:text-sm leading-relaxed opacity-90">
-                  {activeArticle.content.map((p, idx) => (
+                  {currentArticle.content.map((p, idx) => (
                     <p key={idx} className="first-letter:text-2xl first-letter:font-bold first-letter:mr-0.5">
                       {p}
                     </p>
@@ -294,7 +305,7 @@ export default function JournalModal({
                 </div>
 
                 {/* Curator Highlights Card */}
-                {activeArticle.highlights && activeArticle.highlights.length > 0 && (
+                {currentArticle.highlights && currentArticle.highlights.length > 0 && (
                   <div className={`p-5 sm:p-6 rounded-2xl border space-y-3 ${
                     isSapphire
                       ? 'bg-[#081226]/80 border-amber-500/30'
@@ -304,10 +315,10 @@ export default function JournalModal({
                   }`}>
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-500" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider">Curator's Insider Access</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider">{t('journal.curatorAccess', "Curator's Insider Access")}</h3>
                     </div>
                     <ul className="space-y-2">
-                      {activeArticle.highlights.map((h, i) => (
+                      {currentArticle.highlights.map((h, i) => (
                         <li key={i} className="flex items-start gap-2.5 text-xs opacity-90">
                           <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                           <span>{h}</span>
@@ -327,16 +338,16 @@ export default function JournalModal({
                 }`}>
                   <Crown className="w-6 h-6 text-amber-400 mx-auto" />
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold mb-1 text-white">Experience This Itinerary in Person</h3>
+                    <h3 className="text-base sm:text-lg font-bold mb-1 text-white">{t('journal.experienceInPerson', 'Experience This Itinerary in Person')}</h3>
                     <p className="text-xs text-stone-300 max-w-md mx-auto">
-                      Our private journey planners can customize this exact voyage to {activeArticle.destination} for you and your party.
+                      {t('journal.customizeVoyage', 'Our private journey planners can customize this exact voyage for you and your party.')}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
                       if (onInquireStory) {
-                        onInquireStory(activeArticle.destination);
+                        onInquireStory(currentArticle.destination);
                       }
                       onClose();
                     }}
@@ -349,7 +360,7 @@ export default function JournalModal({
                     }`}
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Inquire About This Journey</span>
+                    <span>{t('journal.inquireJourney', 'Inquire About This Journey')}</span>
                   </button>
                 </div>
 
@@ -363,7 +374,7 @@ export default function JournalModal({
                     >
                       <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
                       <div className="truncate max-w-[150px] sm:max-w-[220px]">
-                        <span className="text-[10px] uppercase text-stone-400 block">Previous Story</span>
+                        <span className="text-[10px] uppercase text-stone-400 block">{t('journal.prevStory', 'Previous Story')}</span>
                         <span className="truncate block">{prevArticle.title}</span>
                       </div>
                     </button>
@@ -376,7 +387,7 @@ export default function JournalModal({
                       className="flex items-center gap-2 text-xs font-semibold opacity-80 hover:opacity-100 transition-opacity text-right cursor-pointer"
                     >
                       <div className="truncate max-w-[150px] sm:max-w-[220px]">
-                        <span className="text-[10px] uppercase text-stone-400 block">Next Story</span>
+                        <span className="text-[10px] uppercase text-stone-400 block">{t('journal.nextStory', 'Next Story')}</span>
                         <span className="truncate block">{nextArticle.title}</span>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 shrink-0" />
@@ -393,10 +404,10 @@ export default function JournalModal({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className={`${isEditorial ? 'font-editorial' : 'font-sans'} text-xl sm:text-2xl font-bold`}>
-                      Field Notes, Essays & Insider Stories
+                      {t('journal.catalogHeading', 'Field Notes, Essays & Insider Stories')}
                     </h3>
                     <p className="text-xs opacity-70 mt-0.5">
-                      Dispatches penned by our global expedition directors and cultural liaisons.
+                      {t('journal.catalogSub', 'Dispatches penned by our global expedition directors and cultural liaisons.')}
                     </p>
                   </div>
 
@@ -405,7 +416,7 @@ export default function JournalModal({
                     <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
                     <input
                       type="text"
-                      placeholder="Search stories, destinations..."
+                      placeholder={t('journal.searchPlaceholder', 'Search stories, destinations...')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className={`w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border focus:outline-none transition-all ${
@@ -451,7 +462,7 @@ export default function JournalModal({
                                 : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                         }`}
                       >
-                        {cat}
+                        {cat === 'All' ? t('destinations.catAll', 'All') : cat}
                       </button>
                     );
                   })}
@@ -462,8 +473,7 @@ export default function JournalModal({
               {filteredArticles.length === 0 ? (
                 <div className="text-center py-16 space-y-2 opacity-70">
                   <BookOpen className="w-8 h-8 mx-auto text-stone-400" />
-                  <p className="text-sm font-semibold">No journal stories match your search</p>
-                  <p className="text-xs">Try selecting "All" or adjusting your search keywords.</p>
+                  <p className="text-sm font-semibold">{t('journal.noResults', 'No journal stories match your search')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -516,7 +526,7 @@ export default function JournalModal({
                           <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${
                             isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-stone-900'
                           }`}>
-                            Read Story
+                            {t('journal.readFull', 'Read Story')}
                             <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                           </span>
                         </div>

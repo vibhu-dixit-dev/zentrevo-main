@@ -1,20 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Compass, Sparkles, Menu, X, ArrowUpRight, Crown, Sun, ChevronDown, Globe2, MapPin, Palette, FileCheck } from 'lucide-react';
+import { Compass, Sparkles, Menu, X, ArrowUpRight, Crown, Sun, ChevronDown, Globe2, MapPin, Palette, FileCheck, Languages } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onSelectRegion, onOpenJournal, onOpenVisa }) {
   const { currency, symbol, toggleCurrency, setCurrency } = useCurrency();
+  const { language, setLanguage, t, isRTL, currentLanguageMeta, availableLanguages } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [destDropdownOpen, setDestDropdownOpen] = useState(false);
   const [mobileDestOpen, setMobileDestOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
 
   const destDropdownRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
   const servicesDropdownRef = useRef(null);
   const servicesHoverTimeoutRef = useRef(null);
+  const langDropdownRef = useRef(null);
 
   const handleMouseEnter = () => {
     if (hoverTimeoutRef.current) {
@@ -61,7 +65,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Click outside listener for desktop destination and services dropdowns
+  // Click outside listener for desktop destination, services, and language dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (destDropdownRef.current && !destDropdownRef.current.contains(e.target)) {
@@ -69,6 +73,9 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
       }
       if (servicesDropdownRef.current && !servicesDropdownRef.current.contains(e.target)) {
         setServicesDropdownOpen(false);
+      }
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target)) {
+        setLangDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -158,14 +165,14 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     : 'text-stone-600 hover:text-stone-950'
               }`}
             >
-              <span>Destinations</span>
+              <span>{t('nav.destinations')}</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${destDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Dropdown Menu with Seamless Hover Bridge (zero gap) */}
             {destDropdownOpen && (
               <div 
-                className="absolute top-full left-0 pt-2 z-50 w-44"
+                className={`absolute top-full pt-2 z-50 w-48 ${isRTL ? 'right-0' : 'left-0'}`}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
@@ -190,7 +197,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     }`}
                   >
                     <MapPin className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                    <span>National</span>
+                    <span>{t('nav.national')}</span>
                   </button>
 
                   <button
@@ -205,7 +212,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     }`}
                   >
                     <Globe2 className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                    <span>International</span>
+                    <span>{t('nav.international')}</span>
                   </button>
                 </div>
               </div>
@@ -229,14 +236,14 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     : 'text-stone-600 hover:text-stone-950'
               }`}
             >
-              <span>Services</span>
+              <span>{t('nav.services')}</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${servicesDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Dropdown Menu with Seamless Hover Bridge */}
             {servicesDropdownOpen && (
               <div 
-                className="absolute top-full left-0 pt-2 z-50 w-44"
+                className={`absolute top-full pt-2 z-50 w-48 ${isRTL ? 'right-0' : 'left-0'}`}
                 onMouseEnter={handleServicesMouseEnter}
                 onMouseLeave={handleServicesMouseLeave}
               >
@@ -265,7 +272,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     }`}
                   >
                     <FileCheck className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                    <span>Visa</span>
+                    <span>{t('nav.visa')}</span>
                   </button>
                 </div>
               </div>
@@ -278,7 +285,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
               isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
             }`}
           >
-            Luxury
+            {t('nav.luxury')}
           </a>
           <a 
             href="#stories" 
@@ -289,12 +296,73 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
               isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
             }`}
           >
-            Blogs
+            {t('nav.blogs')}
           </a>
         </nav>
 
         {/* Actions & Theme Selector */}
         <div className="hidden sm:flex items-center gap-2.5">
+          {/* Multi-Language Selector Dropdown (EN / ZH / ES / AR) */}
+          <div className="relative" ref={langDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+              className={`h-9 px-3 rounded-full flex items-center gap-1.5 border text-xs font-semibold tracking-wide transition-all duration-300 cursor-pointer shadow-xs ${
+                isSapphire
+                  ? 'bg-[#060e20] border-amber-500/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10'
+                  : isEmerald
+                    ? 'bg-emerald-950/60 border-emerald-600/40 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-900/50'
+                    : 'bg-stone-100 border-stone-200 text-stone-800 hover:bg-stone-200'
+              }`}
+              title={t('nav.changeLanguage')}
+              aria-label="Select Language"
+            >
+              <span className="text-sm">{currentLanguageMeta.flag}</span>
+              <span className="text-[11px] font-bold tracking-wider">{currentLanguageMeta.code.toUpperCase()}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : 'opacity-60'}`} />
+            </button>
+
+            {langDropdownOpen && (
+              <div className={`absolute top-full mt-2 z-50 w-36 rounded-2xl p-1.5 shadow-2xl border backdrop-blur-xl animate-fadeIn ${
+                isRTL ? 'left-0' : 'right-0'
+              } ${
+                isSapphire
+                  ? 'bg-[#0a152e]/98 border-amber-500/30 text-stone-100 shadow-blue-950/90'
+                  : isEmerald
+                    ? 'bg-[#09221b]/98 border-emerald-800/60 text-stone-100 shadow-emerald-950/90'
+                    : 'bg-white/98 border-stone-200 text-stone-900 shadow-xl shadow-stone-300/60'
+              }`}>
+                {availableLanguages.map((l) => (
+                  <button
+                    key={l.code}
+                    type="button"
+                    onClick={() => {
+                      setLanguage(l.code);
+                      setLangDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      language === l.code
+                        ? isSapphire
+                          ? 'bg-amber-400/25 text-amber-300 font-bold'
+                          : isEmerald
+                            ? 'bg-emerald-400/25 text-emerald-300 font-bold'
+                            : 'bg-stone-900 text-white font-bold'
+                        : isSapphire || isEmerald
+                          ? 'hover:bg-white/10 text-stone-300'
+                          : 'hover:bg-stone-100 text-stone-700'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>{l.flag}</span>
+                      <span>{l.native}</span>
+                    </span>
+                    {language === l.code && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Currency Switcher Pill (₹ INR | $ USD) */}
           <button
             type="button"
@@ -346,7 +414,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                   : 'bg-stone-950 text-white hover:bg-stone-800 hover:shadow-stone-900/25'
             }`}
           >
-            <span>Plan Journey</span>
+            <span>{t('nav.planJourney')}</span>
             <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${
               isSapphire 
                 ? 'bg-[#0a1329] text-amber-300' 
@@ -409,7 +477,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                 onClick={() => setMobileDestOpen(!mobileDestOpen)}
                 className="w-full flex items-center justify-between py-1 text-left cursor-pointer"
               >
-                <span>Destinations</span>
+                <span>{t('nav.destinations')}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileDestOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -421,7 +489,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     className="flex items-center gap-2 text-xs opacity-85 hover:opacity-100 text-left cursor-pointer py-1"
                   >
                     <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>National</span>
+                    <span>{t('nav.national')}</span>
                   </button>
                   <button
                     type="button"
@@ -429,7 +497,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     className="flex items-center gap-2 text-xs opacity-85 hover:opacity-100 text-left cursor-pointer py-1"
                   >
                     <Globe2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                    <span>International</span>
+                    <span>{t('nav.international')}</span>
                   </button>
                 </div>
               )}
@@ -442,7 +510,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                 onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                 className="w-full flex items-center justify-between py-1 text-left cursor-pointer"
               >
-                <span>Services</span>
+                <span>{t('nav.services')}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileServicesOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -458,15 +526,40 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                     className="flex items-center gap-2 text-xs opacity-85 hover:opacity-100 text-left cursor-pointer py-1"
                   >
                     <FileCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>Visa</span>
+                    <span>{t('nav.visa')}</span>
                   </button>
                 </div>
               )}
             </div>
 
-            <a href="#experiences" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">Luxury</a>
-            <a href="#stories" onClick={() => { setMobileMenuOpen(false); if (onOpenJournal) onOpenJournal(null); }} className="py-1 border-b border-stone-200/10">Blogs</a>
+            <a href="#experiences" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">
+              {t('nav.luxury')}
+            </a>
+            <a href="#stories" onClick={() => { setMobileMenuOpen(false); if (onOpenJournal) onOpenJournal(null); }} className="py-1 border-b border-stone-200/10">
+              {t('nav.blogs')}
+            </a>
             
+            {/* Language selector in mobile drawer */}
+            <div className="py-2 flex items-center justify-between border-t border-stone-200/15 pt-3">
+              <span className="text-xs uppercase text-stone-400 font-bold">{t('nav.changeLanguage')}</span>
+              <div className="flex gap-1 flex-wrap justify-end">
+                {availableLanguages.map((l) => (
+                  <button
+                    key={l.code}
+                    onClick={() => setLanguage(l.code)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1 ${
+                      language === l.code
+                        ? isSapphire ? 'bg-amber-400 text-stone-950 font-extrabold' : isEmerald ? 'bg-emerald-400 text-stone-950 font-extrabold' : 'bg-stone-950 text-white font-extrabold'
+                        : isSapphire ? 'bg-slate-800 text-stone-300' : isEmerald ? 'bg-emerald-950 text-stone-300' : 'bg-stone-100 text-stone-700'
+                    }`}
+                  >
+                    <span>{l.flag}</span>
+                    <span>{l.code.toUpperCase()}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Currency selector in mobile drawer */}
             <div className="py-2 flex items-center justify-between border-t border-stone-200/15 pt-3">
               <span className="text-xs uppercase text-stone-400 font-bold">Currency</span>
@@ -523,7 +616,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
                 isSapphire ? 'bg-amber-400 text-stone-950' : isEmerald ? 'bg-emerald-400 text-stone-950' : 'bg-stone-950 text-white'
               }`}
             >
-              Get In Touch & Book
+              {t('nav.planJourney')}
             </button>
           </div>
         </div>

@@ -48,7 +48,7 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
       const normalizedEmail = email.trim().toLowerCase();
 
       let detectedRole = 'admin';
-      if (validPass === 'A3E591D5@admin') {
+      if (validPass === 'A3E591D5@admins') {
         // If email is explicitly a sales email, treat as sales, otherwise full admin
         detectedRole = normalizedEmail.includes('sales') ? 'sales' : 'admin';
       } else if (validPass === 'A3E591D5@sales') {

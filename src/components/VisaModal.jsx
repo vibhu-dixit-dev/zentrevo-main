@@ -11,6 +11,7 @@ import {
   FileText, 
   CalendarDays 
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function VisaModal({ 
   isOpen, 
@@ -18,6 +19,7 @@ export default function VisaModal({
   onGoAhead, 
   currentTheme = 'editorial' 
 }) {
+  const { t } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isDark = isEmerald || isSapphire;
@@ -84,20 +86,20 @@ export default function VisaModal({
               <span className={`text-[10px] font-mono uppercase tracking-[0.22em] font-bold ${
                 isDark ? 'text-amber-300/90' : 'text-stone-600'
               }`}>
-                Consular & Travel Documentation Advisory
+                {t('visaModal.topTag', 'Consular & Travel Documentation Advisory')}
               </span>
             </div>
 
             <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${
               isDark ? 'text-white' : 'text-stone-950'
             }`}>
-              Visa Guidance & Document Support
+              {t('visaModal.title', 'Visa Guidance & Document Support')}
             </h2>
 
             <p className={`text-xs sm:text-sm leading-relaxed ${
               isDark ? 'text-stone-300' : 'text-stone-600'
             }`}>
-              Preparation, requirement checklists, and confirmed booking vouchers for Indian passport holders.
+              {t('visaModal.subtitle', 'Preparation, requirement checklists, and confirmed booking vouchers for Indian passport holders.')}
             </p>
           </div>
 
@@ -112,20 +114,20 @@ export default function VisaModal({
               <span className={`text-[11px] font-bold uppercase tracking-wider font-mono ${
                 isDark ? 'text-amber-300' : 'text-amber-900'
               }`}>
-                Official Policy Notice
+                {t('visaModal.officialNotice', 'Official Policy Notice')}
               </span>
             </div>
 
             <p className={`text-sm sm:text-base font-bold leading-relaxed mb-1.5 ${
               isDark ? 'text-white' : 'text-stone-950'
             }`}>
-              "Visa guidance and document support. The embassy decides approval."
+              {t('visaModal.policyQuote', '"Visa guidance and document support. The embassy decides approval."')}
             </p>
 
             <p className={`text-xs leading-relaxed ${
               isDark ? 'text-stone-300' : 'text-stone-700'
             }`}>
-              We never promise, guarantee, or influence visa outcomes. All visa decisions, processing times, and approvals rest strictly and solely with the respective country's sovereign embassy or consulate.
+              {t('visaModal.policyDisclaimer', "We never promise, guarantee, or influence visa outcomes. All visa decisions, processing times, and approvals rest strictly and solely with the respective country's sovereign embassy or consulate.")}
             </p>
           </div>
 
@@ -135,7 +137,7 @@ export default function VisaModal({
               isDark ? 'text-stone-300' : 'text-stone-800'
             }`}>
               <CheckCircle className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-              <span>What Your Planner Helps You With</span>
+              <span>{t('visaModal.whatWeHelpWith', 'What Your Planner Helps You With')}</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -148,11 +150,11 @@ export default function VisaModal({
                 <div className="flex items-center gap-2 mb-1.5">
                   <FileText className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
                   <span className={`font-bold text-xs ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    1. Document Checklist
+                    {t('visaModal.card1Title', '1. Document Checklist')}
                   </span>
                 </div>
                 <p className={`leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
-                  Tailored checklist for your destination (Schengen, Japan, UK, Bali eVisa, Turkey).
+                  {t('visaModal.card1Desc', 'Tailored checklist for your destination (Schengen, Japan, UK, Bali eVisa, Turkey).')}
                 </p>
               </div>
 
@@ -165,11 +167,11 @@ export default function VisaModal({
                 <div className="flex items-center gap-2 mb-1.5">
                   <Building2 className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
                   <span className={`font-bold text-xs ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    2. Hotel & Travel Vouchers
+                    {t('visaModal.card2Title', '2. Appointment Booking')}
                   </span>
                 </div>
                 <p className={`leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
-                  Official day-wise itinerary dossiers and confirmed booking vouchers required for submission.
+                  {t('visaModal.card2Desc', 'Guidance on booking consular or visa center appointment slots at the right time.')}
                 </p>
               </div>
 
@@ -182,11 +184,11 @@ export default function VisaModal({
                 <div className="flex items-center gap-2 mb-1.5">
                   <Stamp className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
                   <span className={`font-bold text-xs ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    3. Application Pre-Check
+                    {t('visaModal.card3Title', '3. Confirmed Vouchers')}
                   </span>
                 </div>
                 <p className={`leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
-                  Pre-submission review of your completed visa forms and photo dimensions to prevent delays.
+                  {t('visaModal.card3Desc', 'Legitimate hotel and flight vouchers meeting strict embassy presentation requirements.')}
                 </p>
               </div>
 
@@ -199,11 +201,11 @@ export default function VisaModal({
                 <div className="flex items-center gap-2 mb-1.5">
                   <CalendarDays className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
                   <span className={`font-bold text-xs ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    4. Appointment Guidance
+                    {t('visaModal.card4Title', '4. Dossier Review')}
                   </span>
                 </div>
                 <p className={`leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
-                  Assistance with booking biometric VFS Global / TLScontact slots across Indian cities.
+                  {t('visaModal.card4Desc', 'Thorough review of application forms and supporting paperwork prior to submission.')}
                 </p>
               </div>
             </div>
@@ -216,7 +218,7 @@ export default function VisaModal({
               : 'bg-stone-100/70 border-stone-200 text-stone-700'
           }`}>
             <HelpCircle className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-600'}`} />
-            <span>Have specific visa questions before booking? Message our dedicated planner directly on WhatsApp.</span>
+            <span>{t('visaModal.footerNote', 'Have specific visa questions before booking? Message our dedicated planner directly on WhatsApp.')}</span>
           </div>
 
         </div>
@@ -238,7 +240,7 @@ export default function VisaModal({
                 : 'text-stone-600 hover:text-stone-950'
             }`}
           >
-            Close
+            {t('common.close')}
           </button>
 
           <button
@@ -252,7 +254,7 @@ export default function VisaModal({
                   : 'bg-stone-950 text-white hover:bg-stone-800 shadow-stone-900/30'
             }`}
           >
-            <span>Go Ahead</span>
+            <span>{t('visaModal.continueBtn', 'Got It, Continue to Itinerary')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

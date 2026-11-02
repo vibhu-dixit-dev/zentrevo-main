@@ -1,12 +1,37 @@
 import React from 'react';
-import { statistics, partnerLogos } from '../data/travelData';
+import { partnerLogos } from '../data/travelData';
 import { ShieldCheck, Award, HeartHandshake, Compass } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function StatsBar({ currentTheme }) {
+  const { t } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
 
   const icons = [Compass, Award, HeartHandshake, ShieldCheck];
+
+  const localizedStats = [
+    {
+      value: t('stats.stat1Val', '100%'),
+      label: t('stats.stat1Label', 'Tailored to You'),
+      detail: t('stats.stat1Sub', 'Every minute planned for you')
+    },
+    {
+      value: t('stats.stat2Val', '24/7'),
+      label: t('stats.stat2Label', 'Support via WhatsApp'),
+      detail: t('stats.stat2Sub', 'Always here whenever you need')
+    },
+    {
+      value: t('stats.stat3Val', 'Zero'),
+      label: t('stats.stat3Label', 'Hidden Costs'),
+      detail: t('stats.stat3Sub', 'Clear pricing, no surprises')
+    },
+    {
+      value: t('stats.stat4Val', '100%'),
+      label: t('stats.stat4Label', 'Real Visa Support'),
+      detail: t('stats.stat4Sub', 'Complete paperwork guidance')
+    }
+  ];
 
   return (
     <section className="px-4 sm:px-8 py-8">
@@ -22,7 +47,7 @@ export default function StatsBar({ currentTheme }) {
           }`}
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 divide-y lg:divide-y-0 lg:divide-x divide-stone-200/20">
-            {statistics.map((stat, idx) => {
+            {localizedStats.map((stat, idx) => {
               const IconComp = icons[idx];
               return (
                 <div key={idx} className={`flex items-start gap-4 ${idx > 0 ? 'pt-6 lg:pt-0 lg:pl-8' : ''}`}>
@@ -57,7 +82,7 @@ export default function StatsBar({ currentTheme }) {
         {/* Service Standards Strip */}
         <div className="mt-10 pt-4 flex flex-col items-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-6">
-            Our Core Promises • Trips Planned by People, Not Templates
+            {t('stats.corePromise', 'Our Core Promises • Trips Planned by People, Not Templates')}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
             {partnerLogos.map((p, i) => (

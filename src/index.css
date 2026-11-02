@@ -73,3 +73,14 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.5);
 }
+
+/* RTL (Right to Left for Arabic) styling enhancements */
+html[dir="rtl"] {
+  text-align: right;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+html[dir="rtl"] .font-editorial {
+  font-family: system-ui, -apple-system, 'Playfair Display', serif;
+}
+

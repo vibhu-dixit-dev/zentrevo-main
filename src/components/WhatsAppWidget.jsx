@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function WhatsAppWidget() {
+  const { t } = useLanguage();
   const [showTooltip, setShowTooltip] = useState(false);
   const phoneNumber = '918619928710';
   const defaultMessage = encodeURIComponent(
@@ -14,7 +16,7 @@ export default function WhatsAppWidget() {
       {/* Tooltip */}
       {showTooltip && (
         <div className="absolute left-full ml-3 px-3.5 py-1.5 rounded-full bg-stone-900 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-stone-800 animate-in fade-in duration-200 pointer-events-none">
-          <span>Chat on WhatsApp • Online Now</span>
+          <span>{t('widgets.whatsappTooltip', 'Chat on WhatsApp • Online Now')}</span>
           <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-stone-900" />
         </div>
       )}
