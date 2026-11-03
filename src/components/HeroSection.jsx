@@ -324,10 +324,10 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
 
                 <div className="flex items-center justify-between pt-4 border-t border-stone-200/20 text-xs font-mono tracking-wider">
                   <div className="flex items-center gap-3">
-                    <span className={currentSlideIndex === 0 ? 'font-bold opacity-100' : 'opacity-40'}>
+                    <span className={currentSlideIndex === 0 ? 'font-bold opacity-100' : (isSapphire || isEmerald ? 'text-stone-400 opacity-70' : 'text-stone-600 font-medium')}>
                       {t('hero.slideFirst', '(FIRST)')}
                     </span>
-                    <span className={currentSlideIndex !== 0 ? `font-bold opacity-100 ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}` : 'opacity-40'}>
+                    <span className={currentSlideIndex !== 0 ? `font-bold opacity-100 ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}` : (isSapphire || isEmerald ? 'text-stone-400 opacity-70' : 'text-stone-600 font-medium')}>
                       {t('hero.slidePresent', '(PRESENT)')}
                     </span>
                   </div>

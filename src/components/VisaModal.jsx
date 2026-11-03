@@ -201,7 +201,7 @@ export default function VisaModal({
                 <div className="flex items-center gap-2 mb-1.5">
                   <CalendarDays className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-stone-700'}`} />
                   <span className={`font-bold text-xs ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                    {t('visaModal.card4Title', '4. Dossier Review')}
+                    {t('visaModal.card4Title', '4. Journey Review')}
                   </span>
                 </div>
                 <p className={`leading-relaxed ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>

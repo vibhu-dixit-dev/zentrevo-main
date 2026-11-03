@@ -116,19 +116,19 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
               </span>
             </div>
             
-            <p className="text-xs sm:text-sm text-stone-400 max-w-sm leading-relaxed">
+            <p className="text-xs sm:text-sm text-stone-300 max-w-sm leading-relaxed">
               {t('footer.aboutDesc', 'Curating private, architectural, and culturally immersive journeys for discerning travelers across 48 countries worldwide.')}
             </p>
 
-            <div className="text-xs text-stone-400 space-y-1 pt-1">
-              <p><span className="text-stone-300 font-semibold">{t('footer.hqLabel', 'Headquarters:')}</span> Sector 49, Gurugram 122018</p>
-              <p><span className="text-stone-300 font-semibold">{t('footer.emailLabel', 'Email:')}</span> <a href="mailto:contact@zentrevo.in" className="hover:text-amber-400 underline">contact@zentrevo.in</a></p>
-              <p><span className="text-stone-300 font-semibold">{t('footer.phoneLabel', 'Phone:')}</span> <a href="tel:+918619928710" className="hover:text-amber-400">+91 86199 28710</a></p>
+            <div className="text-xs text-stone-300 space-y-1 pt-1">
+              <p><span className="text-white font-semibold">{t('footer.hqLabel', 'Headquarters:')}</span> Sector 49, Gurugram 122018</p>
+              <p><span className="text-white font-semibold">{t('footer.emailLabel', 'Email:')}</span> <a href="mailto:contact@zentrevo.in" className="hover:text-amber-400 underline">contact@zentrevo.in</a></p>
+              <p><span className="text-white font-semibold">{t('footer.phoneLabel', 'Phone:')}</span> <a href="tel:+918619928710" className="hover:text-amber-400">+91 86199 28710</a></p>
             </div>
 
             {/* Official Social Media Channels */}
             <div className="pt-2">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-400 block mb-2.5">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-stone-300 block mb-2.5">
                 {t('footer.officialChannels', 'Official Channels')}
               </span>
               <div className="flex flex-wrap items-center gap-2">
@@ -154,10 +154,10 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
 
           {/* Nav Links */}
           <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-white">
               {t('footer.colExpeditions', 'Expeditions')}
-            </h4>
-            <ul className="space-y-2.5 text-xs text-stone-400">
+            </h3>
+            <ul className="space-y-2.5 text-xs text-stone-300">
               <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Amalfi Coast, Italy</a></li>
               <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Kyoto Temples, Japan</a></li>
               <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Swiss Glacier Rail</a></li>
@@ -167,10 +167,10 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
           </div>
 
           <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-white">
               {t('footer.colCompany', 'Company')}
-            </h4>
-            <ul className="space-y-2.5 text-xs text-stone-400">
+            </h3>
+            <ul className="space-y-2.5 text-xs text-stone-300">
               <li><a href="#values" className="hover:text-amber-400 transition-colors">{t('footer.linkBeliefs', 'Our Core Beliefs')}</a></li>
               <li><a href="#experiences" className="hover:text-amber-400 transition-colors">{t('footer.linkWhyChoose', 'Why Choose Us')}</a></li>
               <li><a href="#stories" className="hover:text-amber-400 transition-colors">{t('footer.linkStories', 'Stories & Journals')}</a></li>
@@ -190,11 +190,11 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
 
           {/* Newsletter Box */}
           <div className="lg:col-span-4 space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-white">
               {t('footer.journalHeading', 'The Private Journal')}
-            </h4>
-            <p className="text-xs text-stone-400 leading-relaxed">
-              {t('footer.journalDesc', 'Receive exclusive invitation-only itinerary dossiers and seasonal destination dispatches once a month.')}
+            </h3>
+            <p className="text-xs text-stone-300 leading-relaxed">
+              {t('footer.journalDesc', 'Receive exclusive invitation-only itinerary journeys and seasonal destination dispatches once a month.')}
             </p>
 
             {subscribed ? (
@@ -288,7 +288,7 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-300 font-medium">
           <div>
             © {new Date().getFullYear()} ZENTREVO Travel Co. All rights reserved.
           </div>
@@ -296,7 +296,7 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <button
               onClick={handleCycleTheme}
-              className="text-stone-400 hover:text-amber-400 text-xs flex items-center gap-1.5 cursor-pointer"
+              className="text-stone-300 hover:text-amber-400 text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <span>Current Theme:</span>
               <span className="font-semibold text-white uppercase">{currentTheme}</span>
@@ -305,25 +305,25 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
             <a 
               href="/privacy-policy" 
               onClick={handleLinkClick('/privacy-policy')}
-              className="hover:text-amber-400 transition-colors"
+              className="text-stone-300 hover:text-amber-400 transition-colors"
             >
               {t('footer.privacyPolicy')}
             </a>
             <a 
               href="/terms-of-service" 
               onClick={handleLinkClick('/terms-of-service')}
-              className="hover:text-amber-400 transition-colors"
+              className="text-stone-300 hover:text-amber-400 transition-colors"
             >
               {t('footer.termsOfService')}
             </a>
             <a 
               href="/cancellation-and-refund" 
               onClick={handleLinkClick('/cancellation-and-refund')}
-              className="hover:text-amber-400 transition-colors"
+              className="text-stone-300 hover:text-amber-400 transition-colors"
             >
               {t('footer.cancellationPolicy')}
             </a>
-            <a href="/admin" className="hover:text-amber-400 transition-colors flex items-center gap-1 opacity-70 hover:opacity-100">Concierge Portal</a>
+            <a href="/admin" className="text-stone-300 hover:text-amber-400 transition-colors flex items-center gap-1 font-medium">Concierge Portal</a>
           </div>
         </div>
       </div>

@@ -21,7 +21,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
         {/* Core Beliefs Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${
-            isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-500' : 'text-amber-600'
+            isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-amber-800 font-bold'
           }`}>
             {t('experienceSplit.badge', 'The Zentrevo Ethos')}
           </p>
@@ -123,7 +123,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                   </div>
                   <div className="text-xs font-semibold leading-tight uppercase tracking-wider">
                     WhatsApp <br />
-                    <span className="text-stone-400 font-normal">{t('experienceSplit.supportTag', 'Support')}</span>
+                    <span className={`font-normal ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>{t('experienceSplit.supportTag', 'Support')}</span>
                   </div>
                 </div>
               </div>
@@ -132,7 +132,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
             {/* Right: Copy & Checklist */}
             <div className="lg:col-span-6">
               <p className={`text-xs font-semibold uppercase tracking-widest mb-2 flex items-center gap-2 ${
-                isSapphire ? 'text-amber-400' : 'text-emerald-400'
+                isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-amber-800 font-bold'
               }`}>
                 {isSapphire ? <Crown className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                 <span>{t('experienceSplit.whyUs', 'Why Discerning Travelers Choose Us')}</span>
@@ -170,7 +170,7 @@ export default function ExperienceSplit({ currentTheme, onOpenInquiry }) {
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold">{item.title}</h4>
-                      <p className={`text-xs mt-0.5 ${isSapphire || isEmerald ? 'text-stone-400' : 'text-stone-500'}`}>{item.sub}</p>
+                      <p className={`text-xs mt-0.5 ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>{item.sub}</p>
                     </div>
                   </div>
                 ))}

@@ -246,13 +246,13 @@ export default function DestinationsGrid({
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className={`text-[11px] font-semibold uppercase tracking-wider ${
-                      isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-300' : 'text-stone-500'
+                      isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-300' : 'text-stone-600'
                     }`}>
                       {item.badge}
                     </span>
                     <span className="text-lg font-bold">
                       {formatPrice(item.price)}
-                      <span className={`text-xs font-normal ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-400'}`}> {t('destinations.perGuest')}</span>
+                      <span className={`text-xs font-medium ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}> {t('destinations.perGuest')}</span>
                     </span>
                   </div>
 
@@ -273,7 +273,7 @@ export default function DestinationsGrid({
                 {/* Card Action Row */}
                 <div className="pt-4 border-t border-stone-200/15 flex items-center justify-between">
                   <span className={`text-xs font-medium flex items-center gap-1.5 ${
-                    isSapphire ? 'text-amber-300/80' : isEmerald ? 'text-emerald-300/80' : 'text-stone-500'
+                    isSapphire ? 'text-amber-300/80' : isEmerald ? 'text-emerald-300/80' : 'text-stone-600'
                   }`}>
                     <Clock className="w-3.5 h-3.5" />
                     <span>{t('destinations.conciergeIncluded')}</span>
@@ -289,7 +289,7 @@ export default function DestinationsGrid({
                           : 'bg-stone-100 hover:bg-stone-950 hover:text-white text-stone-800 border border-stone-200'
                     }`}
                   >
-                    <span>{t('destinations.viewDossier')}</span>
+                    <span>{t('destinations.viewJourney', 'View Journey')}</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </button>
                 </div>

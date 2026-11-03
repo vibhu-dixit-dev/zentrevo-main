@@ -28,7 +28,7 @@ export default function FAQSection({ currentTheme, onOpenInquiry }) {
           <h2 className={`${isEditorial ? 'font-editorial' : 'font-sans'} text-2xl sm:text-4xl font-bold tracking-tight`}>
             {t('faq.heading', 'Everything You Need to Know Before Booking')}
           </h2>
-          <p className="text-xs sm:text-sm text-stone-400">
+          <p className={`text-xs sm:text-sm ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
             {t('faq.subheading', 'Clear answers on custom planning, visa support, pricing, and our on-ground concierge.')}
           </p>
         </div>

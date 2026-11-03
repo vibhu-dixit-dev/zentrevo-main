@@ -2209,7 +2209,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
             </div>
           )}
 
-          {/* ─── TAB 3: GUEST INQUIRIES DOSSIER (SUPABASE LIVE + NEWSLETTER) ──────── */}
+          {/* ─── TAB 3: GUEST INQUIRIES JOURNEYS (SUPABASE LIVE + NEWSLETTER) ──────── */}
           {activeTab === 'inquiries' && !isSalesRole && (
             <div className="space-y-6">
               {/* Header with Live DB indicator and Export Button */}

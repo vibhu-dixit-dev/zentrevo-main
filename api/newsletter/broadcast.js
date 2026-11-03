@@ -112,7 +112,7 @@ export default async function handler(req, res) {
                         ${tpl.featuredTrip.price ? `From ${tpl.featuredTrip.price}` : 'Private Quote on Inquiry'}
                       </td>
                       <td align="right">
-                        <a href="${tpl.ctaUrl || 'https://zentrevo.in/#inquiry'}" style="background-color:#f59e0b;color:#050b18;text-decoration:none;padding:8px 20px;border-radius:9999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:inline-block;">Reserve Dossier</a>
+                        <a href="${tpl.ctaUrl || 'https://zentrevo.in/#inquiry'}" style="background-color:#f59e0b;color:#050b18;text-decoration:none;padding:8px 20px;border-radius:9999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:inline-block;">Reserve Journey</a>
                       </td>
                     </tr>
                   </table>

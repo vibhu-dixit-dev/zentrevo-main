@@ -1,0 +1,17 @@
+# Zentrevo Curated Journeys
+
+> Ultra-luxury bespoke travel architecture, private expeditions, and 24/7 dedicated concierge service across 48 worldwide destinations.
+
+Zentrevo is a bespoke travel studio offering handcrafted private itineraries, five-star heritage stays, dedicated WhatsApp concierges, and guaranteed consular visa assistance for discerning international travellers.
+
+## Core Services & Portfolios
+- [Home & Curated Journeys](https://www.zentrevo.in/): Primary luxury portal, featured destinations, and private inquiry booking engine.
+- [Destinations Portfolio](https://www.zentrevo.in/#destinations): Signature national and international expeditions across Switzerland, Japan, Iceland, Amalfi, Turkey, Kashmir, and Rajasthan.
+- [Private Journal & Stories](https://www.zentrevo.in/#stories): Field dispatches, cultural notes, and destination guides written by expedition leaders.
+- [Consular Visa Guidance](https://www.zentrevo.in/#visa): Step-by-step documentation, interview preparation, and consular expediting.
+- [Frequently Asked Questions](https://www.zentrevo.in/#faq): Inquiries on custom quotes, pricing, cancellation policies, and payment terms.
+
+## Legal & Compliance Policies
+- [Privacy Policy](https://www.zentrevo.in/privacy-policy): Client confidentiality, data privacy, and GDPR adherence.
+- [Terms of Service](https://www.zentrevo.in/terms-of-service): Itinerary booking terms, payment schedules, and legal governing law.
+- [Cancellation & Refund Policy](https://www.zentrevo.in/cancellation-and-refund): Multi-tier cancellation schedule, processing windows, and refund guarantees.

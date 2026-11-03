@@ -125,7 +125,7 @@ export default function PrivacyPolicy({ onNavigateHome, currentTheme = 'editoria
               </>
             ) : (
               <>
-                <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>A. Travel Inquiries & Booking Dossiers:</strong> When you submit an itinerary inquiry or confirm a journey, we collect your name, email address, phone/WhatsApp number, preferred travel dates, destination desires, guest count, and estimated budget.</p>
+                <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>A. Travel Inquiries & Booking Journeys:</strong> When you submit an itinerary inquiry or confirm a journey, we collect your name, email address, phone/WhatsApp number, preferred travel dates, destination desires, guest count, and estimated budget.</p>
                 <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>B. Travel Documents & Identification:</strong> For confirmed bookings and visa guidance assistance, we may receive passport scans, visa applications, date of birth, nationality, and emergency contact details strictly required by airlines, hotels, or embassies.</p>
                 <p><strong className={isDark ? 'text-white' : 'text-stone-900'}>C. Technical & Usage Telemetry:</strong> IP addresses, browser types, device information, referring URLs, and page interactions captured through standard analytics to optimize performance.</p>
               </>

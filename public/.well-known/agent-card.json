@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/agent-protocol/agent-protocol/main/schema.json",
+  "name": "Zentrevo Curated Journeys",
+  "description": "Ultra-luxury bespoke travel architecture, private itineraries, and 24/7 dedicated concierge service.",
+  "url": "https://www.zentrevo.in",
+  "version": "1.0.0",
+  "capabilities": {
+    "travelPlanning": true,
+    "visaGuidance": true,
+    "bookingInquiry": true
+  },
+  "endpoints": {
+    "llms": "https://www.zentrevo.in/llms.txt",
+    "inquiry": "https://www.zentrevo.in/#inquiry"
+  },
+  "provider": {
+    "name": "Zentrevo Travel Co.",
+    "url": "https://www.zentrevo.in",
+    "contact": "support@zentrevo.in"
+  }
+}

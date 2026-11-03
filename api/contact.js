@@ -91,12 +91,12 @@ export default async function handler(req, res) {
       console.warn('⚠️ SMTP_PASS is not configured in .env.');
       // If running locally without SMTP_PASS, simulate success so the UI and booking flow can be tested
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`📬 [LOCAL DEV SIMULATION] Dossier received for: ${clientName} (${clientEmail})`);
+        console.log(`📬 [LOCAL DEV SIMULATION] Journey request received for: ${clientName} (${clientEmail})`);
         console.log(`   Destination: ${clientDest} | Party: ${clientGuests}`);
         console.log('   👉 To send REAL emails locally via Titan, add SMTP_PASS=your_password in your .env file!');
         return res.status(200).json({
           success: true,
-          message: 'Local simulation: Dossier received successfully. Add SMTP_PASS in .env for live transmission.'
+          message: 'Local simulation: Journey request received successfully. Add SMTP_PASS in .env for live transmission.'
         });
       }
 
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your ZENTREVO Expedition Dossier</title>
+  <title>Your ZENTREVO Expedition Journey</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f6f5f2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1c1917; -webkit-font-smoothing: antialiased;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f6f5f2; padding: 40px 16px;">
@@ -157,7 +157,7 @@ export default async function handler(req, res) {
           <tr>
             <td style="padding: 40px 44px 32px 44px;">
               <div style="font-family: Georgia, 'Playfair Display', serif; font-size: 22px; font-weight: 600; color: #1c1917; line-height: 1.35; margin-bottom: 20px;">
-                Your Bespoke Journey Dossier Has Been Received
+                Your Bespoke Journey Request Has Been Received
               </div>
 
               <p style="font-size: 14px; line-height: 1.7; color: #44403c; margin: 0 0 18px 0;">
@@ -173,7 +173,7 @@ export default async function handler(req, res) {
                 <tr>
                   <td style="padding: 24px;">
                     <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #78716c; margin-bottom: 16px; border-bottom: 1px dashed #d6d3d1; padding-bottom: 8px;">
-                      Dossier Reference &bull; In Review
+                      Journey Reference &bull; In Review
                     </div>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="6">
@@ -217,7 +217,7 @@ export default async function handler(req, res) {
               </table>
 
               <p style="font-size: 14px; line-height: 1.7; color: #44403c; margin: 0 0 28px 0;">
-                A personalized proposal dossier crafted for your exact pacing and style will be presented directly to you within <strong>24 hours</strong>.
+                A personalized proposal journey crafted for your exact pacing and style will be presented directly to you within <strong>24 hours</strong>.
               </p>
 
               <!-- Priority WhatsApp CTA Button -->
@@ -259,7 +259,7 @@ export default async function handler(req, res) {
 <html>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1c1917; padding: 20px;">
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 24px;">
-    <h2 style="color: #b45309; margin-top: 0;">✨ New ZENTREVO Expedition Dossier Request</h2>
+    <h2 style="color: #b45309; margin-top: 0;">✨ New ZENTREVO Expedition Journey Request</h2>
     <p>A new traveler has submitted a custom journey proposal request via <strong>zentrevo.in</strong>:</p>
     
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -312,7 +312,7 @@ export default async function handler(req, res) {
       from: `"ZENTREVO Private Concierge" <${smtpUser}>`,
       to: clientEmail,
       replyTo: smtpUser,
-      subject: `✨ Your ZENTREVO Expedition Dossier is Received • ${clientDest}`,
+      subject: `✨ Your ZENTREVO Expedition Journey is Received • ${clientDest}`,
       html: clientHtmlTemplate
     });
 
@@ -321,14 +321,14 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: 'Expedition dossier successfully transmitted and auto-reply dispatched.'
+      message: 'Expedition journey successfully transmitted and auto-reply dispatched.'
     });
 
   } catch (error) {
     console.error('SMTP Mail Transmission Error:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Error transmitting dossier via SMTP.'
+      message: error.message || 'Error transmitting journey via SMTP.'
     });
   }
 }

@@ -331,7 +331,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     </div>
                     <h3 className="text-xl font-bold">Your Itinerary Request Is Received</h3>
                     <p className={`text-xs sm:text-sm max-w-md mx-auto ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600'}`}>
-                      Thank you, <span className={`font-semibold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>{formData.name || 'valued traveler'}</span>. Our senior team will review your dossier and reply from <strong className="underline">contact@zentrevo.in</strong> within 24 hours.
+                      Thank you, <span className={`font-semibold ${isSapphire ? 'text-amber-400' : 'text-emerald-400'}`}>{formData.name || 'valued traveler'}</span>. Our senior team will review your journey request and reply from <strong className="underline">contact@zentrevo.in</strong> within 24 hours.
                     </p>
                     <button
                       onClick={() => setSubmitted(false)}
@@ -359,13 +359,20 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
+                        <label 
+                          htmlFor="inquiry-full-name"
+                          className={`text-[10.5px] font-semibold uppercase tracking-wider block mb-1 ${
+                            isSapphire ? 'text-stone-300' : isEmerald ? 'text-stone-300' : 'text-stone-700'
+                          }`}
+                        >
                           {t('inquiry.fullName')}
                         </label>
                         <input
+                          id="inquiry-full-name"
                           type="text"
                           name="name"
                           required
+                          aria-required="true"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
                           className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm border focus:outline-none transition-all ${
@@ -379,13 +386,20 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                       </div>
 
                       <div>
-                        <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
+                        <label 
+                          htmlFor="inquiry-email"
+                          className={`text-[10.5px] font-semibold uppercase tracking-wider block mb-1 ${
+                            isSapphire ? 'text-stone-300' : isEmerald ? 'text-stone-300' : 'text-stone-700'
+                          }`}
+                        >
                           {t('inquiry.email')}
                         </label>
                         <input
+                          id="inquiry-email"
                           type="email"
                           name="email"
                           required
+                          aria-required="true"
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
                           className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm border focus:outline-none transition-all ${
@@ -401,10 +415,16 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
+                        <label 
+                          htmlFor="inquiry-phone"
+                          className={`text-[10.5px] font-semibold uppercase tracking-wider block mb-1 ${
+                            isSapphire ? 'text-stone-300' : isEmerald ? 'text-stone-300' : 'text-stone-700'
+                          }`}
+                        >
                           {t('inquiry.phone', 'Phone Number')}
                         </label>
                         <input
+                          id="inquiry-phone"
                           type="tel"
                           name="phone"
                           value={formData.phone}
@@ -420,17 +440,23 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                       </div>
 
                       <div className="relative" ref={guestsRef}>
-                        <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
+                        <label 
+                          id="inquiry-guests-label"
+                          className={`text-[10.5px] font-semibold uppercase tracking-wider block mb-1 ${
+                            isSapphire ? 'text-stone-300' : isEmerald ? 'text-stone-300' : 'text-stone-700'
+                          }`}
+                        >
                           {t('inquiry.partySize', 'Travelers / Party Size')}
                         </label>
                         <button
                           type="button"
+                          aria-labelledby="inquiry-guests-label"
+                          aria-haspopup="listbox"
+                          aria-expanded={guestsOpen}
                           onClick={() => {
                             setGuestsOpen(!guestsOpen);
                             setDestOpen(false);
                           }}
-                          aria-haspopup="listbox"
-                          aria-expanded={guestsOpen}
                           className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm border flex items-center justify-between text-left transition-all duration-200 cursor-pointer ${
                             isSapphire
                               ? `bg-[#050b18] text-white ${guestsOpen ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-700 hover:border-slate-500'}`
@@ -439,10 +465,10 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                                 : `bg-white text-stone-900 ${guestsOpen ? 'border-stone-800 ring-2 ring-stone-800/10' : 'border-stone-300 hover:border-stone-400'}`
                           }`}
                         >
-                          <span className={formData.guests === 'Select Travelers' ? 'text-stone-400' : 'font-medium'}>
+                          <span className={formData.guests === 'Select Travelers' ? (isSapphire || isEmerald ? 'text-stone-400' : 'text-stone-500') : 'font-medium'}>
                             {formData.guests}
                           </span>
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 text-stone-400 ${guestsOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSapphire || isEmerald ? 'text-stone-400' : 'text-stone-600'} ${guestsOpen ? 'rotate-180 text-amber-400' : ''}`} />
                         </button>
 
                         {/* Smooth Dropdown Panel */}
@@ -483,7 +509,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                                         : isEmerald
                                           ? 'hover:bg-white/10 text-stone-200'
                                           : 'hover:bg-stone-100 text-stone-800'
-                                  } ${isDefaultPlaceholder ? 'italic text-stone-400 font-normal' : ''}`}
+                                  } ${isDefaultPlaceholder ? 'italic text-stone-500 font-normal' : ''}`}
                                 >
                                   <span>{option}</span>
                                   {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
@@ -496,17 +522,23 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     </div>
 
                     <div className="relative" ref={destRef}>
-                      <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
+                      <label 
+                        id="inquiry-destination-label"
+                        className={`text-[10.5px] font-semibold uppercase tracking-wider block mb-1 ${
+                          isSapphire ? 'text-stone-300' : isEmerald ? 'text-stone-300' : 'text-stone-700'
+                        }`}
+                      >
                         {t('inquiry.destination', 'Target Destination')}
                       </label>
                       <button
                         type="button"
+                        aria-labelledby="inquiry-destination-label"
+                        aria-haspopup="listbox"
+                        aria-expanded={destOpen}
                         onClick={() => {
                           setDestOpen(!destOpen);
                           setGuestsOpen(false);
                         }}
-                        aria-haspopup="listbox"
-                        aria-expanded={destOpen}
                         className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm border flex items-center justify-between text-left transition-all duration-200 cursor-pointer ${
                           isSapphire
                             ? `bg-[#050b18] text-white ${destOpen ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-700 hover:border-slate-500'}`
@@ -515,10 +547,10 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                               : `bg-white text-stone-900 ${destOpen ? 'border-stone-800 ring-2 ring-stone-800/10' : 'border-stone-300 hover:border-stone-400'}`
                         }`}
                       >
-                        <span className={formData.destination === 'Select Destination' ? 'text-stone-400' : 'font-medium'}>
+                        <span className={formData.destination === 'Select Destination' ? (isSapphire || isEmerald ? 'text-stone-400' : 'text-stone-500') : 'font-medium'}>
                           {formData.destination}
                         </span>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 text-stone-400 ${destOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isSapphire || isEmerald ? 'text-stone-400' : 'text-stone-600'} ${destOpen ? 'rotate-180 text-amber-400' : ''}`} />
                       </button>
 
                       {/* Smooth Dropdown Panel */}
@@ -559,7 +591,7 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                                       : isEmerald
                                         ? 'hover:bg-white/10 text-stone-200'
                                         : 'hover:bg-stone-100 text-stone-800'
-                                } ${isDefaultPlaceholder ? 'italic text-stone-400 font-normal' : ''}`}
+                                } ${isDefaultPlaceholder ? 'italic text-stone-500 font-normal' : ''}`}
                               >
                                 <span>{option}</span>
                                 {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
@@ -571,10 +603,16 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
                     </div>
 
                     <div>
-                      <label className="text-[10.5px] font-semibold text-stone-400 uppercase tracking-wider block mb-1">
+                      <label 
+                        htmlFor="inquiry-message"
+                        className={`text-[10.5px] font-semibold uppercase tracking-wider block mb-1 ${
+                          isSapphire ? 'text-stone-300' : isEmerald ? 'text-stone-300' : 'text-stone-700'
+                        }`}
+                      >
                         {t('inquiry.notes', 'Wishes, Pacing & Special Notes')}
                       </label>
                       <textarea
+                        id="inquiry-message"
                         rows={2}
                         name="message"
                         placeholder={t('inquiry.notesPlaceholder', 'Share your preferred dates, celebratory milestones, dietary choices, or private charter requirements...')}

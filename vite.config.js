@@ -83,5 +83,8 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       localApiPlugin()
     ],
+    build: {
+      sourcemap: true,
+    },
   };
 });

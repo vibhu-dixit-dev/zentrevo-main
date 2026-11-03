@@ -11,7 +11,7 @@ export const destinations = [
     rating: 4.95,
     reviews: 142,
     category: "Luxury Escapes",
-    image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Amalfi Coast Positano cliffside villa and Mediterranean yacht charter for Indian travelers",
     description: "Private cliffside villa stays, chartered yacht cruises through Capri grottos, and Michelin-starred lemon grove dining.",
     highlights: ["Private Capri boat charter", "Lemon grove wine tasting", "Helicopter transfer from Naples"]
@@ -28,7 +28,7 @@ export const destinations = [
     rating: 4.98,
     reviews: 218,
     category: "Cultural",
-    image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Kyoto Japan Arashiyama bamboo grove and ancient zen temple tour from India",
     description: "Sunrise meditation with temple monks, private tea ceremony masters, and exclusive ryokan onsen retreats.",
     highlights: ["Exclusive Arashiyama sunrise access", "Master kaiseki dining", "Private geisha art performance"]
@@ -45,7 +45,7 @@ export const destinations = [
     rating: 4.92,
     reviews: 96,
     category: "Alpine Nature",
-    image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Swiss Alpine Glacier Express panoramic rail journey through St Moritz and Zermatt",
     description: "Panoramic luxury glass rail across St. Moritz and Zermatt, Matterhorn helicopter touring, and alpine chalets.",
     highlights: ["First-class Glacier Express seats", "Matterhorn summit heli-tour", "Thermal spa sanctuary access"]
@@ -62,7 +62,7 @@ export const destinations = [
     rating: 4.89,
     reviews: 310,
     category: "Trending",
-    image: "https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Cappadocia Turkey sunrise hot air balloon flight over fairy chimneys and cave suites",
     description: "VIP sunrise basket flights over fairy chimneys, cave suite accommodations, and ancient subterranean city tours.",
     highlights: ["Private sunrise flight basket", "Luxury cave suite with heated plunge pool", "Goreme historical guide"]
@@ -79,7 +79,7 @@ export const destinations = [
     rating: 4.97,
     reviews: 184,
     category: "Alpine Nature",
-    image: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Reykjavik Iceland northern lights aurora borealis and glacier ice cave expedition",
     description: "Super-jeep expeditions into ice caves, private geothermal lagoon bathing, and clear-roof glass igloo nights.",
     highlights: ["Private Blue Lagoon retreat", "Glacier ice cave descent", "Northern lights glass cabin stay"]
@@ -96,7 +96,7 @@ export const destinations = [
     rating: 4.94,
     reviews: 265,
     category: "Luxury Escapes",
-    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Ubud Bali rice terrace morning tour and Uluwatu cliffside sunset villa for Indian travelers",
     description: "Cliffside infinity villas, sound healing in sacred river valleys, and private traditional catamaran sunset sailings.",
     highlights: ["Overwater temple access", "Holistic jungle wellness sessions", "Private chef beach barbecue"]
@@ -113,7 +113,7 @@ export const destinations = [
     rating: 4.96,
     reviews: 178,
     category: "Luxury Escapes",
-    image: "https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Udaipur Lake Palace Lake Pichola royal heritage vintage car tour in Rajasthan India",
     description: "Private Lake Pichola palace stays, royal vintage car safari through the Aravalli hills, and candlelit courtyard dining.",
     highlights: ["Private solar royal boat cruise", "Palace dining with royal historian", "Aravalli vintage car tour"]
@@ -130,7 +130,7 @@ export const destinations = [
     rating: 4.99,
     reviews: 132,
     category: "Alpine Nature",
-    image: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1581793745862-99fde7fa73d2?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Ladakh high altitude Pangong Tso and Nubra Valley luxury glamping under Himalayan stars",
     description: "Heated luxury geodesic domes under starry Himalayan skies, private monastery blessings, and double-humped camel dunes.",
     highlights: ["Luxury heated geodesic dome stay", "Private sunrise monastery puja", "Pangong Tso stargazing astronomy session"]
@@ -147,7 +147,7 @@ export const destinations = [
     rating: 4.93,
     reviews: 204,
     category: "Trending",
-    image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Kerala backwaters private cedar luxury houseboat cruising and Munnar spice highlands",
     description: "Chartered cedar luxury houseboat cruising Vembanad lake, bespoke Ayurvedic doctor rejuvenations, and organic tea estates.",
     highlights: ["Exclusive private Kettuvallam cruiser", "Doctor-led Ayurvedic panchakarma", "Munnar private tea tasting"]
@@ -164,7 +164,7 @@ export const destinations = [
     rating: 4.95,
     reviews: 167,
     category: "Cultural",
-    image: "https://images.unsplash.com/photo-1598091383021-15ddea10925d?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1598091383021-15ddea10925d?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Kashmir Dal Lake royal cedar houseboat and dawn shikara flower market tour",
     description: "Hand-carved royal pinewood houseboat suites, private dawn shikara floating market access, and Pahalgam pine valley treks.",
     highlights: ["Private heritage pinewood houseboat", "Dawn flower market shikara access", "Pahalgam meadow horseback trek"]
@@ -241,7 +241,7 @@ export const blogArticles = [
     },
     destination: "Nubra Valley, Ladakh",
     excerpt: "Why the discerning voyager is bypassing crowded capitals in favor of high-altitude solitude and wind-sculpted silence.",
-    image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Nubra Valley Ladakh remote high altitude solitude and wind-sculpted silence",
     pullQuote: "True luxury today is not what you possess, but the absolute stillness you can summon around yourself.",
     content: [
@@ -268,7 +268,7 @@ export const blogArticles = [
     },
     destination: "Amalfi Coast & Ravello",
     excerpt: "Resist the modern compulsion to collect airport stamps. A deep fortnight in Ravello transforms an ordinary vacation into living art.",
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Ravello Amalfi Coast cliffside garden and Mediterranean slow travel view",
     pullQuote: "You do not truly arrive in Italy until the baker knows how you take your espresso in the morning.",
     content: [
@@ -295,7 +295,7 @@ export const blogArticles = [
     },
     destination: "Kyoto & Nara",
     excerpt: "Inside the secluded, sawdust-strewn ateliers where sixteenth-generation Raku masters shape tea bowls for the imperial tradition.",
-    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Kyoto master ceramicist handcrafting Raku tea bowl in traditional Japanese atelier",
     pullQuote: "In the Japanese aesthetic of wabi-sabi, imperfection is not an oversight—it is the very threshold where beauty enters.",
     content: [
@@ -322,7 +322,7 @@ export const blogArticles = [
     },
     destination: "Swiss Alps & St. Moritz",
     excerpt: "How pristine glacial air, thermal mountain springs, and larch forest bathing rejuvenate the modern mind.",
-    image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Swiss Alps Engadin valley glacial mountain springs and luxury wellness retreat",
     pullQuote: "High in the Engadin, the air is so pure and luminous it tastes like chilled crystal.",
     content: [
@@ -349,7 +349,7 @@ export const blogArticles = [
     },
     destination: "Udaipur & Lake Pichola",
     excerpt: "Unlocking forgotten royal recipes, slow-fired earthen pot curries, and private dining on marble terraces floating above Lake Pichola.",
-    image: "https://images.unsplash.com/photo-1566552881560-0be862a7c445?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1566552881560-0be862a7c445?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Udaipur Lake Pichola royal Mewar palace kitchens and heritage island dining",
     pullQuote: "In royal Mewar, cooking was never merely dining; it was an alchemy of courtly honor and herbal medicine.",
     content: [
@@ -376,7 +376,7 @@ export const blogArticles = [
     },
     destination: "Serengeti & Mara River",
     excerpt: "Witnessing the primordial pulse of 1.5 million animals from whisper-quiet electric Land Cruisers under the Southern Cross.",
-    image: "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=720&q=75",
     imageAlt: "Serengeti Mara River twilight wildlife safari and great migration drive under starlight",
     pullQuote: "To feel the earth tremor beneath your boots as thousands of hooves thunder past is to remember your place in the universe.",
     content: [

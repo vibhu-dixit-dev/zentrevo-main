@@ -138,7 +138,7 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
               Zentrevo
             </span>
             <span className={`text-[9px] tracking-widest uppercase font-medium mt-0.5 ${
-              isSapphire ? 'text-amber-300/80' : isEmerald ? 'text-emerald-300/80' : 'text-stone-400'
+              isSapphire ? 'text-amber-300/80' : isEmerald ? 'text-emerald-300/80' : 'text-stone-600'
             }`}>
               Curated Journeys
             </span>

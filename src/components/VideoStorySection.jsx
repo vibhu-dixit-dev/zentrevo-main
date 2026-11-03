@@ -96,7 +96,7 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
         <div>
           <div className="text-center max-w-2xl mx-auto mb-10">
             <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${
-              isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-500' : 'text-amber-600'
+              isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-amber-800 font-bold'
             }`}>
               {t('videoStory.badge', 'Visual Chronicle')}
             </p>
@@ -125,8 +125,11 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
               loop
               playsInline
               preload="metadata"
+              aria-label="Scenic mountain landscape video"
               className="w-full h-full object-cover object-bottom"
-            />
+            >
+              <track kind="captions" src="/captions/descriptions.vtt" srcLang="en" label="English Captions" default />
+            </video>
             
             {/* Cinematic Gradient Vignette - Softened so river and water ripples remain clearly visible */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/30 pointer-events-none" />
@@ -200,11 +203,11 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
             }`} />
 
             <div>
-              <div className="flex items-center gap-1.5 mb-6 text-amber-400">
+              <div className="flex items-center gap-1.5 mb-6 text-amber-500">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-current" />
                 ))}
-                <span className="text-xs font-bold text-stone-400 ml-2">{t('videoStory.verifiedReview', '5.0 Verified Royal Client Review')}</span>
+                <span className={`text-xs font-bold ml-2 ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>{t('videoStory.verifiedReview', '5.0 Verified Royal Client Review')}</span>
               </div>
 
               <blockquote className={`${isEditorial ? 'font-editorial' : 'font-sans'} text-lg sm:text-2xl font-normal leading-relaxed mb-8`}>
@@ -224,8 +227,8 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
                   }`}
                 />
                 <div>
-                  <h4 className="font-bold text-sm">{activeReview.author}</h4>
-                  <p className={`text-xs ${isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-300' : 'text-stone-500'}`}>
+                  <h3 className="font-bold text-sm">{activeReview.author}</h3>
+                  <p className={`text-xs ${isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-300' : 'text-stone-600'}`}>
                     {activeReview.role} • {activeReview.location}
                   </p>
                 </div>
@@ -258,7 +261,7 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
                 : 'bg-stone-50 border-stone-200 text-stone-900'
           }`}>
             <div>
-              <span className={`text-xs font-semibold uppercase tracking-wider ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>
+              <span className={`text-xs font-semibold uppercase tracking-wider ${isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-emerald-800 font-bold'}`}>
                 {t('videoStory.guaranteedExcellence', 'Guaranteed Excellence')}
               </span>
               <h3 className="text-xl font-bold mt-2 mb-4">
@@ -272,11 +275,11 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-2xl bg-black/10 dark:bg-white/5 text-xs font-semibold">
                 <span>{t('videoStory.perk1', 'Passport & Visa Concierge')}</span>
-                <span className={`font-bold ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>{t('videoStory.perk1Badge', 'Included')}</span>
+                <span className={`font-bold ${isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-emerald-800'}`}>{t('videoStory.perk1Badge', 'Included')}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-2xl bg-black/10 dark:bg-white/5 text-xs font-semibold">
                 <span>{t('videoStory.perk2', 'Global Medical & Evac Cover')}</span>
-                <span className={`font-bold ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`}>{t('videoStory.perk2Badge', 'Tier 1 Sovereign')}</span>
+                <span className={`font-bold ${isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-emerald-800'}`}>{t('videoStory.perk2Badge', 'Tier 1 Sovereign')}</span>
               </div>
             </div>
           </div>
@@ -287,7 +290,7 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
           <div className="flex items-center justify-between mb-8">
             <div>
               <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${
-                isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-500' : 'text-amber-600'
+                isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-amber-800 font-bold'
               }`}>
                 {t('videoStory.fieldNotesBadge', 'Field Notes & Stories')}
               </p>
@@ -334,7 +337,9 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
                 </div>
 
                 <div className="p-6">
-                  <div className="flex items-center justify-between text-xs text-stone-400 mb-2">
+                  <div className={`flex items-center justify-between text-xs mb-2 ${
+                    isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600 font-medium'
+                  }`}>
                     <span>{article.date}</span>
                     <span>{article.readTime}</span>
                   </div>

@@ -37,7 +37,7 @@ CORE ETHOS & PILLARS:
 - Authentic Cultural Depth: Privileged access to private heritage sites and indigenous masters.
 - Expert Local Guides: Native certified storytellers and wilderness experts.
 - Booking & Inclusions: VIP ground clearance, Tier 1 medical/evac cover, 100% carbon-neutral offset, free cancellation up to 14 days prior to travel.
-- Custom Inquiries: Custom proposal dossier prepared within 24 hours of submitting the inquiry form.`;
+- Custom Inquiries: Custom proposal journey prepared within 24 hours of submitting the inquiry form.`;
 
 export async function askGroqChatbot(messages, customApiKey = '') {
   // Check API key priority: Custom Input -> LocalStorage -> Vite Environment Variable
@@ -142,14 +142,14 @@ All packages feature flexible cancellation up to 14 days prior to travel.`;
 * 📍 **Headquarters**: **Sector 49, Gurugram 122018**
 * ⏰ **Consultation Hours**: **24/7 (All 7 Days, Round the Clock)**
 
-You can also submit your travel dates in our **"Voyages of Wonder"** section on the site for a full dossier within 24 hours!`;
+You can also submit your travel dates in our **"Voyages of Wonder"** section on the site for a full journey itinerary within 24 hours!`;
   }
 
   if (query.includes('book') || query.includes('reserve') || query.includes('how to book') || query.includes('inquiry')) {
     return `Booking with Zentrevo is a seamless 3-step experience:
 
 1. **Submit Your Vision**: Select your target destination and dates via our booking form or WhatsApp (+91 86199 28710).
-2. **Dossier Curation**: A dedicated Senior Journey Curator designs a custom day-by-day proposal within 24 hours.
+2. **Journey Curation**: A dedicated Senior Journey Curator designs a custom day-by-day proposal within 24 hours.
 3. **VIP Hand-off**: All private aviation, villas, VIP airport clearance, and private hosts are locked in.
 
 Would you like me to guide you to the booking section?`;

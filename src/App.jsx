@@ -460,49 +460,52 @@ export default function App() {
         onOpenVisa={handleOpenVisa}
       />
 
-      {/* Hero Section */}
-      <HeroSection 
-        currentTheme={currentTheme}
-        onSelectDestination={handleOpenDestination}
-        onOpenInquiry={handleScrollToInquiry}
-      />
+      {/* Main Landmark for Accessibility and Assistive Technologies */}
+      <main id="main-content">
+        {/* Hero Section */}
+        <HeroSection 
+          currentTheme={currentTheme}
+          onSelectDestination={handleOpenDestination}
+          onOpenInquiry={handleScrollToInquiry}
+        />
 
-      {/* Statistics & Partner Credibility Bar */}
-      <StatsBar 
-        currentTheme={currentTheme} 
-      />
+        {/* Statistics & Partner Credibility Bar */}
+        <StatsBar 
+          currentTheme={currentTheme} 
+        />
 
-      {/* Curated Destinations Grid */}
-      <DestinationsGrid 
-        currentTheme={currentTheme}
-        onSelectDestination={handleOpenDestination}
-        selectedRegion={selectedRegion}
-        onSelectRegion={setSelectedRegion}
-      />
+        {/* Curated Destinations Grid */}
+        <DestinationsGrid 
+          currentTheme={currentTheme}
+          onSelectDestination={handleOpenDestination}
+          selectedRegion={selectedRegion}
+          onSelectRegion={setSelectedRegion}
+        />
 
-      {/* Experience & Core Beliefs Split Section */}
-      <ExperienceSplit 
-        currentTheme={currentTheme}
-        onOpenInquiry={handleScrollToInquiry}
-      />
+        {/* Experience & Core Beliefs Split Section */}
+        <ExperienceSplit 
+          currentTheme={currentTheme}
+          onOpenInquiry={handleScrollToInquiry}
+        />
 
-      {/* Video Story Showcase, Testimonials & Journal */}
-      <VideoStorySection 
-        currentTheme={currentTheme}
-        onOpenJournal={handleOpenJournal}
-      />
+        {/* Video Story Showcase, Testimonials & Journal */}
+        <VideoStorySection 
+          currentTheme={currentTheme}
+          onOpenJournal={handleOpenJournal}
+        />
 
-      {/* Frequently Asked Questions (FAQ Section with Schema Alignment) */}
-      <FAQSection 
-        currentTheme={currentTheme}
-        onOpenInquiry={handleScrollToInquiry}
-      />
+        {/* Frequently Asked Questions (FAQ Section with Schema Alignment) */}
+        <FAQSection 
+          currentTheme={currentTheme}
+          onOpenInquiry={handleScrollToInquiry}
+        />
 
-      {/* Booking & Inquiry Form */}
-      <BookingInquirySection 
-        currentTheme={currentTheme}
-        preselectedDestination={preselectedDestination}
-      />
+        {/* Booking & Inquiry Form */}
+        <BookingInquirySection 
+          currentTheme={currentTheme}
+          preselectedDestination={preselectedDestination}
+        />
+      </main>
 
       {/* Footer */}
       <Footer 
