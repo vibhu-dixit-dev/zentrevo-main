@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ards-project/ard-spec/main/spec/schemas/ai-catalog.schema.json",
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Zentrevo Curated Journeys",
+    "identifier": "did:web:zentrevo.in",
+    "documentationUrl": "https://www.zentrevo.in/llms.txt",
+    "logoUrl": "https://www.zentrevo.in/favicon.svg"
+  },
+  "entries": [
+    {
+      "identifier": "zentrevo-curated-journeys",
+      "displayName": "Zentrevo Bespoke Journey Planner",
+      "type": "api",
+      "url": "https://www.zentrevo.in/#inquiry",
+      "description": "Ultra-luxury bespoke travel architecture, handcrafted villas, and private expeditions across 48 countries worldwide."
+    },
+    {
+      "identifier": "zentrevo-llms-catalog",
+      "displayName": "Zentrevo LLMs Knowledge Catalog",
+      "type": "documentation",
+      "url": "https://www.zentrevo.in/llms.txt",
+      "description": "Machine-readable travel service directory and itinerary dossiers for autonomous AI agents."
+    }
+  ]
+}

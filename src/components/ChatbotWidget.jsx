@@ -229,6 +229,9 @@ export default function ChatbotWidget({ currentTheme }) {
               className="flex items-center gap-2"
             >
               <input
+                id="chatbot-input-message"
+                name="chatbotMessage"
+                aria-label={`Ask ${persona.name} anything about Zentrevo`}
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
@@ -244,6 +247,7 @@ export default function ChatbotWidget({ currentTheme }) {
               />
               <button
                 type="submit"
+                aria-label="Send message to travel concierge"
                 disabled={isLoading || !inputMessage.trim()}
                 className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${persona.sendBtn}`}
               >

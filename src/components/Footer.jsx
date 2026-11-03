@@ -205,6 +205,9 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
             ) : (
               <form onSubmit={handleSubscribe} className="flex gap-2">
                 <input
+                  id="footer-newsletter-email"
+                  name="newsletterEmail"
+                  aria-label={t('footer.newsletterPlaceholder', 'Enter your email')}
                   type="email"
                   required
                   value={newsletterEmail}

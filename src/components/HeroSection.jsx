@@ -373,12 +373,12 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                  setLocationDropdownOpen(!locationDropdownOpen);
                  setGuestsDropdownOpen(false);
                }}>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
               <MapPin className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
               <span>{t('hero.selectDestination')}</span>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className={`text-sm truncate ${selectedLocation === 'Select Destination' ? 'text-stone-400 font-normal' : 'font-medium'}`}>
+              <span className={`text-sm truncate ${selectedLocation === 'Select Destination' ? (isSapphire || isEmerald ? 'text-stone-400 font-normal' : 'text-stone-600 font-normal') : 'font-medium'}`}>
                 {selectedLocation === 'Select Destination' ? t('hero.selectDestination') : selectedLocation}
               </span>
               <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${locationDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
@@ -424,11 +424,14 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
 
           {/* Field 2: Date */}
           <div className="w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <label htmlFor="hero-travel-dates" className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider block ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
               <Calendar className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
               <span>{t('hero.travelDates')}</span>
-            </div>
+            </label>
             <input 
+              id="hero-travel-dates"
+              name="travelDates"
+              aria-label={t('hero.travelDates', 'Travel Dates / Season')}
               type="text" 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
@@ -445,12 +448,12 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                  setGuestsDropdownOpen(!guestsDropdownOpen);
                  setLocationDropdownOpen(false);
                }}>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
               <Users className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
               <span>{t('hero.travelersCount')}</span>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className={`text-sm truncate ${selectedGuests === 'Select Travelers' ? 'text-stone-400 font-normal' : 'font-medium'}`}>
+              <span className={`text-sm truncate ${selectedGuests === 'Select Travelers' ? (isSapphire || isEmerald ? 'text-stone-400 font-normal' : 'text-stone-600 font-normal') : 'font-medium'}`}>
                 {selectedGuests === 'Select Travelers' ? t('hero.travelersCount') : selectedGuests}
               </span>
               <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${guestsDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />

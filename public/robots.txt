@@ -4,5 +4,8 @@ Allow: /
 # Disallow administrative console and backend endpoints
 Disallow: /admin
 Disallow: /api/
+Allow: /.well-known/
+Allow: /llms.txt
 
 Sitemap: https://www.zentrevo.in/sitemap.xml
+Agentmap: https://www.zentrevo.in/.well-known/ard.json

@@ -415,6 +415,9 @@ export default function JournalModal({
                   <div className="relative w-full sm:w-64">
                     <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
                     <input
+                      id="journal-search-input"
+                      name="journalSearch"
+                      aria-label={t('journal.searchPlaceholder', 'Search stories, destinations...')}
                       type="text"
                       placeholder={t('journal.searchPlaceholder', 'Search stories, destinations...')}
                       value={searchQuery}
