@@ -1182,18 +1182,15 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         <div className="space-y-6">
           {/* Top Brand Identity */}
           <div className="flex items-center justify-between pb-4 border-b border-stone-100">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-stone-950 text-white flex items-center justify-center shadow-xs">
-                <Compass className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="font-editorial text-lg tracking-wider font-bold block leading-none text-stone-950">
-                  ZENTREVO
-                </span>
-                <span className="text-[8px] uppercase tracking-widest font-bold text-stone-500 block mt-1">
-                  Editorial Console
-                </span>
-              </div>
+            <div className="flex items-center gap-2">
+              <img 
+                src="/zentrevo-logo.png" 
+                alt="Zentrevo Curated Journeys" 
+                className="h-8 w-auto object-contain"
+              />
+              <span className="text-[8px] uppercase tracking-widest font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md">
+                Admin
+              </span>
             </div>
             
             <button 

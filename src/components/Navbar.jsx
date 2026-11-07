@@ -123,26 +123,12 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
         }`}
       >
         {/* Brand Logo */}
-        <a href="#" className="flex items-center gap-2.5 group">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-transform group-hover:rotate-45 duration-300 ${
-            isSapphire 
-              ? 'bg-amber-400 text-[#0a1329]'
-              : isEmerald 
-                ? 'bg-emerald-500 text-[#0d2b23]' 
-                : 'bg-stone-950 text-white'
-          }`}>
-            <Compass className="w-5 h-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-editorial text-xl tracking-wider font-semibold uppercase leading-none">
-              Zentrevo
-            </span>
-            <span className={`text-[9px] tracking-widest uppercase font-medium mt-0.5 ${
-              isSapphire ? 'text-amber-300/80' : isEmerald ? 'text-emerald-300/80' : 'text-stone-600'
-            }`}>
-              Curated Journeys
-            </span>
-          </div>
+        <a href="#" className="flex items-center group py-0.5 shrink-0" aria-label="Zentrevo Home">
+          <img 
+            src={isSapphire || isEmerald ? "/zentrevo-logo-white.png" : "/zentrevo-logo.png"} 
+            alt="Zentrevo Curated Journeys" 
+            className="h-8 sm:h-9 md:h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+          />
         </a>
 
         {/* Desktop Navigation Links */}

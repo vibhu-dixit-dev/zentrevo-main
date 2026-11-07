@@ -40,25 +40,13 @@ export default function TermsOfService({ onNavigateHome, currentTheme = 'editori
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div 
             onClick={onNavigateHome}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-300 via-teal-400 to-sky-400 p-[1px]">
-              <div className="w-full h-full rounded-full bg-stone-950 flex items-center justify-center">
-                <Compass className="w-4 h-4 text-amber-200 group-hover:rotate-45 transition-transform" />
-              </div>
-            </div>
-            <div>
-              <span className={`font-editorial text-lg tracking-[0.2em] uppercase font-bold block leading-tight ${
-                isDark ? 'text-white' : 'text-stone-950'
-              }`}>
-                Zentrevo
-              </span>
-              <span className={`text-[9px] tracking-[0.25em] uppercase font-mono block ${
-                isDark ? 'text-amber-300/80' : 'text-stone-500'
-              }`}>
-                Travel Co.
-              </span>
-            </div>
+            <img 
+              src={isDark ? "/zentrevo-logo-white.png" : "/zentrevo-logo.png"} 
+              alt="Zentrevo Curated Journeys" 
+              className="h-8 sm:h-9 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            />
           </div>
 
           <button

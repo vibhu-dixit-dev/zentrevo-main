@@ -99,24 +99,14 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
             onClick={onExit}
             title="Return to Public Website"
           >
-            <div className="relative">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-amber-300/25 via-teal-400/20 to-sky-400/25 border border-white/20 backdrop-blur-md flex items-center justify-center shadow-lg shadow-teal-500/10 group-hover:border-amber-300/60 group-hover:shadow-amber-400/20 transition-all duration-500 shrink-0">
-                <Compass className="w-5 h-5 text-amber-200 group-hover:rotate-90 transition-transform duration-700 ease-out" />
-              </div>
-              {/* Dynamic Wave of Light on Brand Hover */}
-              {brandHovered && (
-                <span className="absolute -inset-2 rounded-full bg-teal-400/20 blur-md animate-ping pointer-events-none" />
-              )}
-            </div>
-
-            <div>
-              <span className="font-editorial text-xl sm:text-2xl tracking-[0.2em] uppercase font-bold text-transparent bg-clip-text bg-gradient-to-r from-stone-100 via-amber-100 to-stone-300 block leading-tight">
-                Zentrevo
-              </span>
-              <span className="block text-[8px] sm:text-[9px] tracking-[0.35em] uppercase text-teal-300/80 font-mono">
-                Expedition Core • v2.4
-              </span>
-            </div>
+            <img 
+              src="/zentrevo-logo-white.png" 
+              alt="Zentrevo Curated Journeys" 
+              className="h-9 sm:h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            />
+            <span className="text-[9px] tracking-[0.3em] uppercase text-teal-300/80 font-mono px-2.5 py-1 rounded-full border border-teal-500/20 bg-teal-500/10">
+              Console
+            </span>
           </div>
 
           {/* Active Live Status Pill */}

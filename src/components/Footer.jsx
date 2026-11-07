@@ -101,19 +101,12 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
           
           {/* Brand Col */}
           <div className="lg:col-span-4 space-y-5">
-            <div className="flex items-center gap-2.5">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                isSapphire 
-                  ? 'bg-amber-400 text-[#040813]' 
-                  : isEmerald 
-                    ? 'bg-emerald-500 text-[#081f19]' 
-                    : 'bg-white text-stone-900'
-              }`}>
-                <Compass className="w-5 h-5" />
-              </div>
-              <span className="font-editorial text-2xl font-bold tracking-wider text-white">
-                ZENTREVO
-              </span>
+            <div className="flex items-center">
+              <img 
+                src="/zentrevo-logo-white.png" 
+                alt="Zentrevo Curated Journeys" 
+                className="h-10 sm:h-11 w-auto object-contain"
+              />
             </div>
             
             <p className="text-xs sm:text-sm text-stone-300 max-w-sm leading-relaxed">
