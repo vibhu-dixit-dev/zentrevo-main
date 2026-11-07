@@ -3,7 +3,7 @@ import { Compass, Sparkles, Menu, X, ArrowUpRight, Crown, Sun, ChevronDown, Glob
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onSelectRegion, onOpenJournal, onOpenVisa }) {
+export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onSelectRegion, onOpenJournal, onOpenVisa, onNavigate }) {
   const { currency, symbol, toggleCurrency, setCurrency } = useCurrency();
   const { language, setLanguage, t, isRTL, currentLanguageMeta, availableLanguages } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
@@ -99,6 +99,15 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
     if (onSelectRegion) {
       onSelectRegion(region);
     }
+    if (onNavigate) {
+      if (region === 'national') {
+        onNavigate('/destinations/national');
+        return;
+      } else if (region === 'international') {
+        onNavigate('/destinations/international');
+        return;
+      }
+    }
     const el = document.getElementById('destinations');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -123,7 +132,16 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
         }`}
       >
         {/* Brand Logo */}
-        <a href="#" className="flex items-center group py-0.5 shrink-0" aria-label="Zentrevo Home">
+        <a 
+          href="/" 
+          onClick={(e) => {
+            e.preventDefault();
+            if (onNavigate) onNavigate('/');
+            else window.location.href = '/';
+          }}
+          className="flex items-center group py-0.5 shrink-0" 
+          aria-label="Zentrevo Home"
+        >
           <img 
             src={isSapphire || isEmerald ? "/zentrevo-logo-white.png" : "/zentrevo-logo.png"} 
             alt="Zentrevo Curated Journeys" 

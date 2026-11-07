@@ -13,6 +13,8 @@ import VisaModal from './components/VisaModal';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import CancellationRefund from './pages/CancellationRefund';
+import NationalDestinationsPage from './pages/NationalDestinationsPage';
+import InternationalDestinationsPage from './pages/InternationalDestinationsPage';
 import Footer from './components/Footer';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import ChatbotWidget from './components/ChatbotWidget';
@@ -262,6 +264,33 @@ export default function App() {
       return;
     }
 
+    // 1.5. Dedicated Regional Destination Pages
+    if (path === '/destinations/national' || path === '/destinations/national/' || path === '/national' || path === '/national/') {
+      setIsDetailModalOpen(false);
+      setIsJournalModalOpen(false);
+      setIsVisaModalOpen(false);
+      updateDocumentSeo({
+        title: 'National Journeys & Interactive Map of India | Zentrevo',
+        description: 'Explore the sovereign map of India with hand-carved houseboats in Kashmir, Himalayan domes in Ladakh, and Lake Pichola palace suites.',
+        canonical: 'https://www.zentrevo.in/destinations/national',
+        ogImage: DEFAULT_SEO.ogImage
+      });
+      return;
+    }
+
+    if (path === '/destinations/international' || path === '/destinations/international/' || path === '/international' || path === '/international/') {
+      setIsDetailModalOpen(false);
+      setIsJournalModalOpen(false);
+      setIsVisaModalOpen(false);
+      updateDocumentSeo({
+        title: 'International Curated Escapes | Zentrevo',
+        description: 'Bespoke global expeditions across Amalfi Coast cliffs, Kyoto zen sanctuaries, Swiss alpine railways, and Cappadocia balloon valleys.',
+        canonical: 'https://www.zentrevo.in/destinations/international',
+        ogImage: DEFAULT_SEO.ogImage
+      });
+      return;
+    }
+
     // 2. Visa Guidance route: /visa-guidance or /visa
     if (path === '/visa-guidance' || path === '/visa-guidance/' || path === '/visa' || path === '/visa/') {
       handleOpenVisa(false);
@@ -440,6 +469,144 @@ export default function App() {
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
 
+  const isNationalRoute = 
+    currentPath === '/destinations/national' || 
+    currentPath === '/destinations/national/' || 
+    currentPath === '/national' || 
+    currentPath === '/national/';
+
+  const isInternationalRoute = 
+    currentPath === '/destinations/international' || 
+    currentPath === '/destinations/international/' || 
+    currentPath === '/international' || 
+    currentPath === '/international/';
+
+  if (isNationalRoute) {
+    return (
+      <div 
+        className={`min-h-screen transition-colors duration-500 font-sans-clean ${
+          isSapphire
+            ? 'bg-[#050a16] text-stone-100'
+            : isEmerald 
+              ? 'bg-[#061813] text-stone-100' 
+              : 'bg-[#faf9f6] text-stone-900'
+        }`}
+      >
+        <NationalDestinationsPage 
+          currentTheme={currentTheme}
+          onSelectTheme={handleSelectTheme}
+          onSelectDestination={handleOpenDestination}
+          onNavigateHome={() => navigateTo('/')}
+          onNavigate={navigateTo}
+          onOpenInquiry={(destName) => {
+            if (destName) setPreselectedDestination(destName);
+            navigateTo('/');
+            setTimeout(() => {
+              const el = document.getElementById('inquiry');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 150);
+          }}
+          onOpenJournal={handleOpenJournal}
+          onOpenVisa={handleOpenVisa}
+        />
+
+        {/* Interactive Destination Detail Modal */}
+        <DetailModal
+          destination={selectedDestination}
+          isOpen={isDetailModalOpen}
+          onClose={handleCloseDestinationModal}
+          onBookNow={handleBookNowFromModal}
+          currentTheme={currentTheme}
+        />
+
+        {/* Dedicated Visa Guidance Modal */}
+        <VisaModal
+          isOpen={isVisaModalOpen}
+          onClose={handleCloseVisaModal}
+          onGoAhead={handleVisaGoAhead}
+          currentTheme={currentTheme}
+        />
+
+        {/* Interactive Journal & Article Reader Modal */}
+        <JournalModal
+          isOpen={isJournalModalOpen}
+          onClose={handleCloseJournalModal}
+          initialArticle={selectedJournalArticle}
+          currentTheme={currentTheme}
+          onInquireStory={handleInquireFromJournal}
+          onArticleChange={handleJournalArticleChange}
+        />
+
+        {/* Floating Widgets */}
+        <WhatsAppWidget />
+        <ChatbotWidget currentTheme={currentTheme} />
+      </div>
+    );
+  }
+
+  if (isInternationalRoute) {
+    return (
+      <div 
+        className={`min-h-screen transition-colors duration-500 font-sans-clean ${
+          isSapphire
+            ? 'bg-[#050a16] text-stone-100'
+            : isEmerald 
+              ? 'bg-[#061813] text-stone-100' 
+              : 'bg-[#faf9f6] text-stone-900'
+        }`}
+      >
+        <InternationalDestinationsPage 
+          currentTheme={currentTheme}
+          onSelectTheme={handleSelectTheme}
+          onSelectDestination={handleOpenDestination}
+          onNavigateHome={() => navigateTo('/')}
+          onNavigate={navigateTo}
+          onOpenInquiry={(destName) => {
+            if (destName) setPreselectedDestination(destName);
+            navigateTo('/');
+            setTimeout(() => {
+              const el = document.getElementById('inquiry');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 150);
+          }}
+          onOpenJournal={handleOpenJournal}
+          onOpenVisa={handleOpenVisa}
+        />
+
+        {/* Interactive Destination Detail Modal */}
+        <DetailModal
+          destination={selectedDestination}
+          isOpen={isDetailModalOpen}
+          onClose={handleCloseDestinationModal}
+          onBookNow={handleBookNowFromModal}
+          currentTheme={currentTheme}
+        />
+
+        {/* Dedicated Visa Guidance Modal */}
+        <VisaModal
+          isOpen={isVisaModalOpen}
+          onClose={handleCloseVisaModal}
+          onGoAhead={handleVisaGoAhead}
+          currentTheme={currentTheme}
+        />
+
+        {/* Interactive Journal & Article Reader Modal */}
+        <JournalModal
+          isOpen={isJournalModalOpen}
+          onClose={handleCloseJournalModal}
+          initialArticle={selectedJournalArticle}
+          currentTheme={currentTheme}
+          onInquireStory={handleInquireFromJournal}
+          onArticleChange={handleJournalArticleChange}
+        />
+
+        {/* Floating Widgets */}
+        <WhatsAppWidget />
+        <ChatbotWidget currentTheme={currentTheme} />
+      </div>
+    );
+  }
+
   return (
     <div 
       className={`min-h-screen transition-colors duration-500 font-sans-clean ${
@@ -458,6 +625,7 @@ export default function App() {
         onSelectRegion={setSelectedRegion}
         onOpenJournal={handleOpenJournal}
         onOpenVisa={handleOpenVisa}
+        onNavigate={navigateTo}
       />
 
       {/* Main Landmark for Accessibility and Assistive Technologies */}

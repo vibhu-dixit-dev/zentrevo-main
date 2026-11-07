@@ -130,7 +130,7 @@ export function getDestinationSlug(item) {
 export function findDestinationBySlug(slug, allDestinations = null) {
   if (!slug) return null;
   const cleanSlug = slug.toLowerCase().replace(/^\/destinations\/?/, '').replace(/\/$/, '').trim();
-  if (!cleanSlug) return null;
+  if (!cleanSlug || cleanSlug === 'national' || cleanSlug === 'international') return null;
 
   const list = allDestinations || (typeof window !== 'undefined' ? getActiveDestinations() : destinations);
 

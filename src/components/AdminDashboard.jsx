@@ -51,6 +51,8 @@ import {
   AtSign
 } from 'lucide-react';
 import { destinations as initialDestinations, getActiveDestinations, saveActiveDestinations, resetActiveDestinations, getDestinationPrice } from '../data/travelData';
+import { resolveIndiaCoordinates } from '../data/indiaCityGeoResolver';
+import { resolveWorldCoordinates } from '../data/worldCityGeoResolver';
 import { supabase } from '../lib/supabaseClient';
 
 // Fallback rates if offline or API delay
@@ -214,7 +216,11 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     image: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
     description: '',
     highlights: 'Private chartered yacht, Michelin dining, Helicopter transfer',
-    status: 'Live'
+    status: 'Live',
+    lat: '',
+    lng: '',
+    mapX: '',
+    mapY: ''
   };
   const [formData, setFormData] = useState(emptyForm);
 
@@ -1093,7 +1099,11 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       image: trip.image || '',
       description: trip.description || '',
       highlights: Array.isArray(trip.highlights) ? trip.highlights.join(', ') : (trip.highlights || ''),
-      status: trip.status || 'Live'
+      status: trip.status || 'Live',
+      lat: trip.lat || '',
+      lng: trip.lng || '',
+      mapX: trip.mapX || '',
+      mapY: trip.mapY || ''
     });
     setIsModalOpen(true);
   };
@@ -1107,10 +1117,49 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     const parsedRating = parseFloat(formData.rating) || 4.95;
     const parsedReviews = parseInt(formData.reviews, 10) || 0;
 
+    // Auto-resolve coordinates for National & International trips if not manually set
+    let geoCoords = {};
+    if (formData.region === 'national') {
+      const resolved = resolveIndiaCoordinates(
+        formData.location, 
+        formData.title, 
+        formData.lat, 
+        formData.lng, 
+        formData.mapX, 
+        formData.mapY
+      );
+      geoCoords = {
+        mapX: formData.mapX ? parseInt(formData.mapX, 10) : resolved.mapX,
+        mapY: formData.mapY ? parseInt(formData.mapY, 10) : resolved.mapY,
+        lat: formData.lat || (resolved.coordinates ? resolved.coordinates.split('/')[0].replace('° N', '').trim() : ''),
+        lng: formData.lng || (resolved.coordinates && resolved.coordinates.includes('/') ? resolved.coordinates.split('/')[1].replace('° E', '').trim() : ''),
+        state: resolved.state,
+        shortTitle: resolved.shortTitle
+      };
+    } else {
+      const resolved = resolveWorldCoordinates(
+        formData.location,
+        formData.title,
+        formData.lat,
+        formData.lng,
+        formData.mapX,
+        formData.mapY
+      );
+      geoCoords = {
+        mapX: formData.mapX ? parseInt(formData.mapX, 10) : resolved.mapX,
+        mapY: formData.mapY ? parseInt(formData.mapY, 10) : resolved.mapY,
+        lat: formData.lat || (resolved.coordinates ? resolved.coordinates.split('/')[0].trim() : ''),
+        lng: formData.lng || (resolved.coordinates && resolved.coordinates.includes('/') ? resolved.coordinates.split('/')[1].trim() : ''),
+        country: resolved.country,
+        shortTitle: resolved.shortTitle
+      };
+    }
+
     let updatedTrips;
     if (modalMode === 'add') {
       const newTrip = {
         ...formData,
+        ...geoCoords,
         id: Date.now(),
         rating: parsedRating,
         reviews: parsedReviews,
@@ -1124,6 +1173,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       updatedTrips = trips.map(t => t.id === editingTripId ? {
         ...t,
         ...formData,
+        ...geoCoords,
         rating: parsedRating,
         reviews: parsedReviews,
         highlights: highlightsList
@@ -3368,6 +3418,119 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                   <span className="text-[10px] text-stone-500 mt-1 block">Powers National/International switch</span>
                 </div>
               </div>
+
+              {/* Live Interactive Map Geo-Resolution Badge */}
+              {formData.region === 'national' ? (() => {
+                const geo = resolveIndiaCoordinates(formData.location, formData.title, formData.lat, formData.lng, formData.mapX, formData.mapY);
+                return (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-stone-800 space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs font-bold text-amber-950">
+                        <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Interactive India Map Placement</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-400 text-stone-950 font-bold uppercase tracking-wider">
+                        Auto-Pinned
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-stone-700 flex flex-wrap items-center gap-2">
+                      <span>Mapped to: <strong className="text-stone-900">{geo.cityName}</strong> ({geo.state})</span>
+                      <span className="text-stone-400">•</span>
+                      <span className="font-mono text-[11px] text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded">{geo.coordinates}</span>
+                    </div>
+
+                    <p className="text-[11px] text-stone-600 leading-relaxed">
+                      {geo.matched 
+                        ? '✓ Automatically recognized with cartography coordinates. A golden beacon will automatically appear on the Sovereign India Map!'
+                        : 'Include a known Indian city name in Location (e.g. "Jaipur, Rajasthan", "Manali", "Mumbai") or enter custom coordinates below.'}
+                    </p>
+
+                    <details className="text-[11px] text-stone-600 pt-1">
+                      <summary className="cursor-pointer hover:text-stone-950 font-semibold select-none">
+                        Fine-tune GPS / Map Coordinates (Optional)
+                      </summary>
+                      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-amber-500/20">
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-stone-600 block mb-1">Latitude (°N)</label>
+                          <input 
+                            type="text" 
+                            value={formData.lat || ''} 
+                            onChange={(e) => setFormData({ ...formData, lat: e.target.value })} 
+                            placeholder="e.g. 26.9124" 
+                            className="w-full bg-white border border-stone-300 rounded-xl px-2.5 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-stone-600 block mb-1">Longitude (°E)</label>
+                          <input 
+                            type="text" 
+                            value={formData.lng || ''} 
+                            onChange={(e) => setFormData({ ...formData, lng: e.target.value })} 
+                            placeholder="e.g. 75.7873" 
+                            className="w-full bg-white border border-stone-300 rounded-xl px-2.5 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                );
+              })() : (() => {
+                const geo = resolveWorldCoordinates(formData.location, formData.title, formData.lat, formData.lng, formData.mapX, formData.mapY);
+                return (
+                  <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-stone-800 space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs font-bold text-blue-950">
+                        <Globe2 className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>Interactive World Map Placement</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-400 text-stone-950 font-bold uppercase tracking-wider">
+                        Auto-Pinned
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-stone-700 flex flex-wrap items-center gap-2">
+                      <span>Mapped to: <strong className="text-stone-900">{geo.cityName}</strong> ({geo.country})</span>
+                      <span className="text-stone-400">•</span>
+                      <span className="font-mono text-[11px] text-blue-800 bg-blue-100/80 px-1.5 py-0.5 rounded">{geo.coordinates}</span>
+                    </div>
+
+                    <p className="text-[11px] text-stone-600 leading-relaxed">
+                      {geo.matched 
+                        ? '✓ Automatically recognized on global surveyor coordinates. A golden beacon will automatically appear on the Sovereign World Map!'
+                        : 'Include a known country or city name in Location (e.g. "Amalfi, Italy", "Kyoto, Japan", "Swiss Alps") or enter custom coordinates below.'}
+                    </p>
+
+                    <details className="text-[11px] text-stone-600 pt-1">
+                      <summary className="cursor-pointer hover:text-stone-950 font-semibold select-none">
+                        Fine-tune GPS / World Coordinates (Optional)
+                      </summary>
+                      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-blue-500/20">
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-stone-600 block mb-1">Latitude (°)</label>
+                          <input 
+                            type="text" 
+                            value={formData.lat || ''} 
+                            onChange={(e) => setFormData({ ...formData, lat: e.target.value })} 
+                            placeholder="e.g. 40.6340" 
+                            className="w-full bg-white border border-stone-300 rounded-xl px-2.5 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-stone-600 block mb-1">Longitude (°)</label>
+                          <input 
+                            type="text" 
+                            value={formData.lng || ''} 
+                            onChange={(e) => setFormData({ ...formData, lng: e.target.value })} 
+                            placeholder="e.g. 14.6027" 
+                            className="w-full bg-white border border-stone-300 rounded-xl px-2.5 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                );
+              })()}
 
               {/* Cover Image URL & Instant Photo Picker */}
               <div>
