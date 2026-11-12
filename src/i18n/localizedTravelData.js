@@ -564,11 +564,28 @@ export const localizedArticles = {
   }
 };
 
+const pendingTranslationKeys = new Set();
+
 // Helper function to return localized destination
 export const getLocalizedDestination = (dest, language = 'en') => {
   if (!dest) return dest;
-  if (!language || language === 'en') return dest;
-  const translationMap = localizedDestinations[language];
+  const targetLang = language || 'en';
+
+  // 1. Check dynamic cloud/admin auto-translations stored on the destination card
+  const dynamicLocalized = dest.translations?.[targetLang];
+  if (dynamicLocalized && dynamicLocalized.title) {
+    return {
+      ...dest,
+      ...dynamicLocalized,
+      baseCategory: dest.category,
+      categoryLabel: dynamicLocalized.category || dest.category
+    };
+  }
+
+  if (targetLang === 'en') return dest;
+
+  // 2. Fallback to built-in curated dictionary
+  const translationMap = localizedDestinations[targetLang];
   if (!translationMap || !translationMap[dest.id]) return dest;
   const localized = translationMap[dest.id];
   return {
@@ -577,6 +594,60 @@ export const getLocalizedDestination = (dest, language = 'en') => {
     baseCategory: dest.category,
     categoryLabel: localized.category || dest.category
   };
+};
+
+// Background helper to translate any custom/admin card lacking translations for active language
+export const ensureMissingTranslations = async (destinationsList = [], language = 'en') => {
+  if (typeof window === 'undefined' || !Array.isArray(destinationsList) || !language) return;
+
+  const candidates = destinationsList.filter((dest) => {
+    if (!dest || !dest.id || !dest.title) return false;
+    if (dest.translations?.[language]?.title) return false;
+    if (language === 'en' && !dest.translations) return false;
+    if (language !== 'en' && localizedDestinations[language]?.[dest.id]) return false;
+    const key = `${dest.id}:${language}`;
+    if (pendingTranslationKeys.has(key)) return false;
+    return true;
+  });
+
+  if (candidates.length === 0) return;
+
+  for (const dest of candidates) {
+    const key = `${dest.id}:${language}`;
+    pendingTranslationKeys.add(key);
+    try {
+      const res = await fetch('/api/translate-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trip: {
+            title: dest.title,
+            location: dest.location,
+            badge: dest.badge,
+            category: dest.category,
+            duration: dest.duration,
+            description: dest.description,
+            highlights: Array.isArray(dest.highlights) ? dest.highlights : []
+          }
+        })
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data?.success || !data?.translations) continue;
+
+      const storedRaw = localStorage.getItem('zentrevo_active_destinations');
+      const currentList = storedRaw ? JSON.parse(storedRaw) : destinationsList;
+      if (Array.isArray(currentList)) {
+        const updatedList = currentList.map((item) =>
+          item.id === dest.id
+            ? { ...item, translations: { ...(item.translations || {}), ...data.translations } }
+            : item
+        );
+        localStorage.setItem('zentrevo_active_destinations', JSON.stringify(updatedList));
+        window.dispatchEvent(new Event('zentrevo_destinations_updated'));
+      }
+    } catch {}
+  }
 };
 
 // Helper function to return array of localized destinations

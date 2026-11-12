@@ -10,7 +10,7 @@ import {
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getActiveDestinations } from '../data/travelData';
-import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
+import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -58,6 +58,10 @@ export default function NationalDestinationsPage({
       window.removeEventListener('storage', handleSync);
     };
   }, []);
+
+  useEffect(() => {
+    ensureMissingTranslations(destinationsList, language);
+  }, [destinationsList, language]);
 
   const localizedList = useMemo(() => {
     return getLocalizedDestinationsList(destinationsList, language);

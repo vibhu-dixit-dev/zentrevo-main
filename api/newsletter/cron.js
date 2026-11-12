@@ -1,12 +1,42 @@
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
+import { readNewsletterSettings, writeNewsletterSettings } from './settings.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 export default async function handler(req, res) {
   try {
+    const { settings } = await readNewsletterSettings();
+    const forceRun = req.query?.force === 'true';
+    const now = new Date();
+    const currentDay = WEEKDAYS[now.getUTCDay()];
+    const currentHour = now.getUTCHours();
+    const currentSlot = `${now.toISOString().slice(0, 10)}T${String(currentHour).padStart(2, '0')}`;
+
+    const targetDay = settings?.schedule?.day || 'Monday';
+    const targetHour = parseInt(String(settings?.schedule?.time || '10:00').split(':')[0], 10);
+
+    if (!forceRun) {
+      if (currentDay !== targetDay || currentHour !== targetHour) {
+        return res.status(200).json({
+          success: true,
+          skipped: true,
+          message: `Skipped: current UTC ${currentDay} ${currentHour}:00 != scheduled ${targetDay} ${targetHour}:00.`
+        });
+      }
+      if (settings.lastSentSlot === currentSlot) {
+        return res.status(200).json({
+          success: true,
+          skipped: true,
+          message: `Skipped: already dispatched for slot ${currentSlot}.`
+        });
+      }
+    }
+
     const smtpHost = process.env.SMTP_HOST || 'smtpout.secureserver.net';
     const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
     const smtpSecure = process.env.SMTP_SECURE !== 'false';
@@ -138,6 +168,13 @@ export default async function handler(req, res) {
       } catch (err) {
         console.warn(`Cron dispatch failed to ${recipient.email}:`, err.message);
       }
+    }
+
+    if (count > 0) {
+      await writeNewsletterSettings({
+        sentCount: (settings.sentCount || 0) + count,
+        lastSentSlot: currentSlot
+      });
     }
 
     return res.status(200).json({ success: true, count, message: `Cron executed: ${count} emails dispatched.` });

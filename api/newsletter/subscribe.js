@@ -87,14 +87,15 @@ export default async function handler(req, res) {
               </div>
               <p style="font-size:13px;color:#9ca3af;">Our next weekly dispatch is scheduled for this coming Monday. Should you wish to design a custom journey in the interim, our private concierge is always at your disposal.</p>
               <div style="text-align:center;padding-top:16px;">
-                <a href="https://zentrevo.in/#inquiry" style="background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#050b18;text-decoration:none;padding:12px 28px;border-radius:9999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:inline-block;">Explore Curated Voyages</a>
+                <a href="https://www.zentrevo.in/#inquiry" style="background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#050b18;text-decoration:none;padding:12px 28px;border-radius:9999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:inline-block;">Explore Curated Voyages</a>
               </div>
             </td>
           </tr>
           <tr>
             <td style="padding:24px 36px;background-color:#070e1c;border-top:1px solid rgba(255,255,255,0.08);text-align:center;font-size:11px;color:#6b7280;">
               <p style="margin:0 0 6px;">ZENTREVO Private Travel Co. • Sector 49, Gurugram 122018</p>
-              <p style="margin:0;">Official Support: <a href="mailto:contact@zentrevo.in" style="color:#f59e0b;text-decoration:none;">contact@zentrevo.in</a> • WhatsApp: +91 86199 28710</p>
+              <p style="margin:0 0 8px;">Official Support: <a href="mailto:contact@zentrevo.in" style="color:#f59e0b;text-decoration:none;">contact@zentrevo.in</a> • WhatsApp: +91 86199 28710</p>
+              <p style="margin:0;"><a href="https://www.zentrevo.in/api/newsletter/unsubscribe?email=${encodeURIComponent(subscriberEmail)}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe</a></p>
             </td>
           </tr>
         </table>

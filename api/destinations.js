@@ -41,7 +41,8 @@ function normalizeRowToTrip(row) {
     ...(row.lng ? { lng: row.lng } : {}),
     ...(row.state ? { state: row.state } : {}),
     ...(row.country ? { country: row.country } : {}),
-    ...(row.short_title ? { shortTitle: row.short_title } : {})
+    ...(row.short_title ? { shortTitle: row.short_title } : {}),
+    ...(row.translations && typeof row.translations === 'object' ? { translations: row.translations } : {})
   };
 }
 
@@ -72,6 +73,7 @@ function normalizeTripToRow(trip, index) {
     state: trip.state || null,
     country: trip.country || null,
     short_title: trip.shortTitle || null,
+    translations: trip.translations && typeof trip.translations === 'object' ? trip.translations : null,
     updated_at: new Date().toISOString()
   };
 }
@@ -193,7 +195,12 @@ export default async function handler(req, res) {
         }
 
         const rows = payloadDestinations.map(normalizeTripToRow);
-        const { error: upsertErr } = await supabase.from('destinations').insert(rows);
+        let { error: upsertErr } = await supabase.from('destinations').insert(rows);
+        if (upsertErr && (String(upsertErr.message || '').includes('translations') || upsertErr.code === 'PGRST204')) {
+          const rowsWithoutTranslations = rows.map(({ translations: _t, ...rest }) => rest);
+          const retry = await supabase.from('destinations').insert(rowsWithoutTranslations);
+          upsertErr = retry.error;
+        }
         if (upsertErr) throw upsertErr;
 
         return res.status(200).json({

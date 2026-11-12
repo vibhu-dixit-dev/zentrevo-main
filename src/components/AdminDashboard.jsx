@@ -782,6 +782,37 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     }
   });
 
+  // Sync newsletter schedule & sent count from Cloud (/api/newsletter/settings)
+  useEffect(() => {
+    let isMounted = true;
+    const syncNewsletterSettings = async () => {
+      try {
+        const res = await fetch('/api/newsletter/settings', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!isMounted || !data?.success || !data?.settings) return;
+
+        if (data.settings.schedule) {
+          setNewsletterSchedule(data.settings.schedule);
+          setEditScheduleDay(data.settings.schedule.day || 'Monday');
+          setEditScheduleTime(data.settings.schedule.time || '10:00');
+          try {
+            localStorage.setItem('zentrevo_newsletter_schedule', JSON.stringify(data.settings.schedule));
+          } catch {}
+        }
+
+        if (typeof data.settings.sentCount === 'number') {
+          setTotalNewslettersSent(data.settings.sentCount);
+          try {
+            localStorage.setItem('zentrevo_newsletters_sent_count', String(data.settings.sentCount));
+          } catch {}
+        }
+      } catch {}
+    };
+    syncNewsletterSettings();
+    return () => { isMounted = false; };
+  }, []);
+
   // Sync newsletter count from inquiries table if broadcast records exist
   useEffect(() => {
     if (inquiries && inquiries.length > 0) {
@@ -798,7 +829,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     }
   }, [inquiries]);
 
-  const handleSaveSchedule = (e) => {
+  const handleSaveSchedule = async (e) => {
     if (e) e.preventDefault();
     const updated = {
       day: editScheduleDay,
@@ -810,7 +841,20 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       localStorage.setItem('zentrevo_newsletter_schedule', JSON.stringify(updated));
     } catch {}
     setIsScheduleModalOpen(false);
-    showToast(`Weekly schedule updated to Every ${editScheduleDay} at ${editScheduleTime} UTC!`);
+
+    try {
+      const res = await fetch('/api/newsletter/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule: updated })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.cloudSaved) {
+        showToast(`Weekly schedule synced to Cloud: Every ${editScheduleDay} at ${editScheduleTime} UTC`);
+        return;
+      }
+    } catch {}
+    showToast(`Weekly schedule updated locally: Every ${editScheduleDay} at ${editScheduleTime} UTC`);
   };
 
   // Unified Directory of all Client Emails (Newsletter Subscribers + Inquiries Deduplicated)
@@ -1026,7 +1070,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       if (res.ok && data.success) {
         const sent = data.count || subscriberCount || 1;
         setTotalNewslettersSent(prev => {
-          const nextVal = prev + sent;
+          const nextVal = typeof data.totalSentCount === 'number' ? data.totalSentCount : prev + sent;
           try { localStorage.setItem('zentrevo_newsletters_sent_count', String(nextVal)); } catch {}
           return nextVal;
         });
@@ -1166,6 +1210,32 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       };
     }
 
+    // Auto-translate card fields into en/zh/es/ar so visitors in any language see translated content
+    let autoTranslations = null;
+    try {
+      const trRes = await fetch('/api/translate-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trip: {
+            title: formData.title,
+            location: formData.location,
+            badge: formData.badge,
+            category: formData.category,
+            duration: formData.duration,
+            description: formData.description,
+            highlights: highlightsList
+          }
+        })
+      });
+      if (trRes.ok) {
+        const trData = await trRes.json();
+        if (trData?.success && trData?.translations) {
+          autoTranslations = trData.translations;
+        }
+      }
+    } catch {}
+
     let updatedTrips;
     const isAdding = modalMode === 'add';
     if (isAdding) {
@@ -1177,7 +1247,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         id: Date.now(),
         rating: parsedRating,
         reviews: parsedReviews,
-        highlights: highlightsList
+        highlights: highlightsList,
+        ...(autoTranslations ? { translations: autoTranslations } : {})
       };
       updatedTrips = [newTrip, ...trips];
     } else {
@@ -1189,7 +1260,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         baseCurrency: currency,
         rating: parsedRating,
         reviews: parsedReviews,
-        highlights: highlightsList
+        highlights: highlightsList,
+        ...(autoTranslations ? { translations: autoTranslations } : {})
       } : t);
     }
 

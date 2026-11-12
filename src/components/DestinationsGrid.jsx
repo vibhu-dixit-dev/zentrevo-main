@@ -3,7 +3,7 @@ import { getActiveDestinations } from '../data/travelData';
 import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers, X, Search } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
+import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
 
 export default function DestinationsGrid({ 
   currentTheme, 
@@ -62,6 +62,10 @@ export default function DestinationsGrid({
   };
 
   // Localized destinations array
+  useEffect(() => {
+    ensureMissingTranslations(destinationsList, language);
+  }, [destinationsList, language]);
+
   const localizedList = useMemo(() => {
     return getLocalizedDestinationsList(destinationsList, language);
   }, [destinationsList, language]);
