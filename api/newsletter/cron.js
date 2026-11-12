@@ -14,25 +14,23 @@ export default async function handler(req, res) {
     const forceRun = req.query?.force === 'true';
     const now = new Date();
     const currentDay = WEEKDAYS[now.getUTCDay()];
-    const currentHour = now.getUTCHours();
-    const currentSlot = `${now.toISOString().slice(0, 10)}T${String(currentHour).padStart(2, '0')}`;
+    const currentSlot = now.toISOString().slice(0, 10);
 
     const targetDay = settings?.schedule?.day || 'Monday';
-    const targetHour = parseInt(String(settings?.schedule?.time || '10:00').split(':')[0], 10);
 
     if (!forceRun) {
-      if (currentDay !== targetDay || currentHour !== targetHour) {
+      if (currentDay !== targetDay) {
         return res.status(200).json({
           success: true,
           skipped: true,
-          message: `Skipped: current UTC ${currentDay} ${currentHour}:00 != scheduled ${targetDay} ${targetHour}:00.`
+          message: `Skipped: current UTC day ${currentDay} != scheduled ${targetDay}.`
         });
       }
       if (settings.lastSentSlot === currentSlot) {
         return res.status(200).json({
           success: true,
           skipped: true,
-          message: `Skipped: already dispatched for slot ${currentSlot}.`
+          message: `Skipped: already dispatched for date ${currentSlot}.`
         });
       }
     }
