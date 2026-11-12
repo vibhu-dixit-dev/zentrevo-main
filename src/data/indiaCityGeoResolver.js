@@ -615,18 +615,40 @@ export function projectLatLngToIndiaMap(lat, lng) {
   return { mapX: clampedX, mapY: clampedY };
 }
 
+function formatIndiaGpsPair(latVal, lngVal) {
+  const latStr = String(latVal || '').trim();
+  const lngStr = String(lngVal || '').trim();
+  if (!latStr || !lngStr) return 'Custom Location';
+  const cleanLat = latStr.includes('°') ? latStr : `${parseFloat(latStr).toFixed(4)}° N`;
+  const cleanLng = lngStr.includes('°') ? lngStr : `${parseFloat(lngStr).toFixed(4)}° E`;
+  return `${cleanLat} / ${cleanLng}`;
+}
+
 // Auto-resolve any city or location string to calibrated India map metadata
 export function resolveIndiaCoordinates(locationStr = '', titleStr = '', customLat = null, customLng = null, customMapX = null, customMapY = null) {
+  const query = `${locationStr} ${titleStr}`.toLowerCase();
+  let matchedCity = null;
+  for (const city of KNOWN_INDIAN_CITIES) {
+    for (const alias of city.aliases) {
+      const regex = new RegExp(`\\b${alias}\\b`, 'i');
+      if (regex.test(query) || query.includes(alias)) {
+        matchedCity = city;
+        break;
+      }
+    }
+    if (matchedCity) break;
+  }
+
   // 1. Direct explicit mapX and mapY if provided
   if (customMapX !== null && customMapX !== undefined && customMapY !== null && customMapY !== undefined) {
     const numericX = parseInt(customMapX, 10);
     const numericY = parseInt(customMapY, 10);
     if (!isNaN(numericX) && !isNaN(numericY)) {
       return {
-        cityName: locationStr || 'Custom Destination',
-        shortTitle: (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
-        state: 'India',
-        coordinates: customLat && customLng ? `${customLat}° N / ${customLng}° E` : 'Custom Location',
+        cityName: matchedCity?.name || locationStr || 'Custom Destination',
+        shortTitle: matchedCity?.shortTitle || (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
+        state: matchedCity?.state || 'India',
+        coordinates: (customLat && customLng) ? formatIndiaGpsPair(customLat, customLng) : (matchedCity ? formatIndiaGpsPair(matchedCity.lat, matchedCity.lng) : 'Custom Location'),
         mapX: numericX,
         mapY: numericY,
         matched: true
@@ -638,35 +660,27 @@ export function resolveIndiaCoordinates(locationStr = '', titleStr = '', customL
   if (customLat && customLng) {
     const proj = projectLatLngToIndiaMap(customLat, customLng);
     return {
-      cityName: locationStr || 'Custom Destination',
-      shortTitle: (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
-      state: 'India',
-      coordinates: `${parseFloat(customLat).toFixed(4)}° N / ${parseFloat(customLng).toFixed(4)}° E`,
+      cityName: matchedCity?.name || locationStr || 'Custom Destination',
+      shortTitle: matchedCity?.shortTitle || (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
+      state: matchedCity?.state || 'India',
+      coordinates: formatIndiaGpsPair(customLat, customLng),
       mapX: proj.mapX,
       mapY: proj.mapY,
       matched: true
     };
   }
 
-  const query = `${locationStr} ${titleStr}`.toLowerCase();
-
   // 3. Search known Indian city database
-  for (const city of KNOWN_INDIAN_CITIES) {
-    for (const alias of city.aliases) {
-      // Word boundary or substring match
-      const regex = new RegExp(`\\b${alias}\\b`, 'i');
-      if (regex.test(query) || query.includes(alias)) {
-        return {
-          cityName: city.name,
-          shortTitle: city.shortTitle,
-          state: city.state,
-          coordinates: `${city.lat.toFixed(4)}° N / ${city.lng.toFixed(4)}° E`,
-          mapX: city.mapX,
-          mapY: city.mapY,
-          matched: true
-        };
-      }
-    }
+  if (matchedCity) {
+    return {
+      cityName: matchedCity.name,
+      shortTitle: matchedCity.shortTitle,
+      state: matchedCity.state,
+      coordinates: formatIndiaGpsPair(matchedCity.lat, matchedCity.lng),
+      mapX: matchedCity.mapX,
+      mapY: matchedCity.mapY,
+      matched: true
+    };
   }
 
   // 4. Fallback: Search by state name

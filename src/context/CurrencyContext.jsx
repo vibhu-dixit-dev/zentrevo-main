@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { DEFAULT_EXCHANGE_RATES, formatCurrencyPrice, convertPriceAmount } from '../lib/currencyUtils';
 
 const CurrencyContext = createContext();
 
-const DEFAULT_INR_RATE = 86.85;
+const DEFAULT_INR_RATE = DEFAULT_EXCHANGE_RATES.INR;
 
 // Instant 0ms Timezone & Locale Heuristic
 const detectInitialCurrency = () => {
@@ -137,30 +138,18 @@ export const CurrencyProvider = ({ children }) => {
     setCurrency(currency === 'INR' ? 'USD' : 'INR');
   };
 
-  // Universal Currency Formatter
-  const formatPrice = (baseUsdVal, targetCurrency = currency) => {
-    if (!baseUsdVal && baseUsdVal !== 0) return '';
-    const num = typeof baseUsdVal === 'number'
-      ? baseUsdVal
-      : parseFloat(String(baseUsdVal).replace(/[^0-9.]/g, '')) || 0;
-
-    if (targetCurrency === 'INR') {
-      const converted = Math.round(num * inrRate);
-      return `₹${converted.toLocaleString('en-IN')}`;
-    }
-
-    const converted = Math.round(num);
-    return `$${converted.toLocaleString('en-US')}`;
+  // Universal Currency Formatter (respects source currency symbol such as ₹ or $)
+  const formatPrice = (rawPriceVal, targetCurrency = currency) => {
+    const activeRates = { ...DEFAULT_EXCHANGE_RATES, USD: 1, INR: inrRate };
+    return formatCurrencyPrice(rawPriceVal, targetCurrency, activeRates, 'USD');
   };
 
   // Raw numeric price calculation for booking forms / calculations
-  const getConvertedNumber = (baseUsdVal, targetCurrency = currency) => {
-    if (!baseUsdVal && baseUsdVal !== 0) return 0;
-    const num = typeof baseUsdVal === 'number'
-      ? baseUsdVal
-      : parseFloat(String(baseUsdVal).replace(/[^0-9.]/g, '')) || 0;
-
-    return targetCurrency === 'INR' ? Math.round(num * inrRate) : Math.round(num);
+  const getConvertedNumber = (rawPriceVal, targetCurrency = currency) => {
+    if (!rawPriceVal && rawPriceVal !== 0) return 0;
+    const activeRates = { ...DEFAULT_EXCHANGE_RATES, USD: 1, INR: inrRate };
+    const converted = convertPriceAmount(rawPriceVal, targetCurrency, activeRates, 'USD');
+    return converted >= 1 ? Math.round(converted) : Number(converted.toFixed(2));
   };
 
   const symbol = currency === 'INR' ? '₹' : '$';

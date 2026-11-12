@@ -1,3 +1,5 @@
+import { convertPriceAmount, DEFAULT_EXCHANGE_RATES } from '../lib/currencyUtils.js';
+
 export const destinations = [
   {
     id: 1,
@@ -533,8 +535,21 @@ export const getDestinationPrice = (destinationName, extraTrips = []) => {
 
   if (matched && matched.price) {
     if (typeof matched.price === 'number') return matched.price;
-    const num = parseInt(String(matched.price).replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(num) && num > 0) return num;
+    let inrRate = DEFAULT_EXCHANGE_RATES.INR;
+    try {
+      const cachedForex = typeof window !== 'undefined' ? localStorage.getItem('zentrevo_forex_cache') : null;
+      if (cachedForex) {
+        const parsedRate = JSON.parse(cachedForex)?.rate;
+        if (parsedRate > 0) inrRate = parsedRate;
+      }
+    } catch {}
+    const usdNum = convertPriceAmount(
+      matched.price,
+      'USD',
+      { ...DEFAULT_EXCHANGE_RATES, INR: inrRate },
+      'USD'
+    );
+    if (usdNum > 0) return usdNum >= 1 ? Math.round(usdNum) : Number(usdNum.toFixed(2));
   }
 
   // 2. Keyword fallback matching

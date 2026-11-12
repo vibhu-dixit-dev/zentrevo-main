@@ -54,21 +54,13 @@ import { destinations as initialDestinations, getActiveDestinations, saveActiveD
 import { resolveIndiaCoordinates } from '../data/indiaCityGeoResolver';
 import { resolveWorldCoordinates } from '../data/worldCityGeoResolver';
 import { supabase } from '../lib/supabaseClient';
-
-// Fallback rates if offline or API delay
-const DEFAULT_RATES = {
-  USD: 1,
-  EUR: 0.92,
-  INR: 86.85,
-  GBP: 0.79
-};
-
-const CURRENCY_SYMBOLS = {
-  USD: '$',
-  EUR: '€',
-  INR: '₹',
-  GBP: '£'
-};
+import {
+  DEFAULT_EXCHANGE_RATES as DEFAULT_RATES,
+  CURRENCY_SYMBOLS,
+  formatCurrencyPrice,
+  formatStoredAdminPrice,
+  formatEditableAdminPrice
+} from '../lib/currencyUtils';
 
 export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', userEmail = 'contact@zentrevo.in' }) {
   const isSalesRole = userRole === 'sales';
@@ -141,18 +133,9 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     };
   }, []);
 
-  // Universal Currency Converter & Formatter
-  const formatPrice = (baseUsdVal, targetCurrency = currency) => {
-    if (!baseUsdVal && baseUsdVal !== 0) return '';
-    const num = typeof baseUsdVal === 'number'
-      ? baseUsdVal
-      : parseFloat(String(baseUsdVal).replace(/[^0-9.]/g, '')) || 0;
-    
-    const rate = exchangeRates[targetCurrency] || DEFAULT_RATES[targetCurrency] || 1;
-    const converted = Math.round(num * rate);
-    const symbol = CURRENCY_SYMBOLS[targetCurrency] || '$';
-    const locale = targetCurrency === 'INR' ? 'en-IN' : 'en-US';
-    return `${symbol}${converted.toLocaleString(locale)}`;
+  // Universal Currency Converter & Formatter (respects source symbol e.g. ₹ vs $)
+  const formatPrice = (rawVal, targetCurrency = currency) => {
+    return formatCurrencyPrice(rawVal, targetCurrency, exchangeRates, 'USD');
   };
 
   // Itineraries State (Hydrated from persistent active catalogue + synced with Supabase Cloud)
@@ -188,6 +171,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'national' | 'international'
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1075,10 +1059,21 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     }
   };
 
+  const nationalTripsCount = useMemo(
+    () => trips.filter(t => (t.region || 'international') === 'national').length,
+    [trips]
+  );
+  const internationalTripsCount = useMemo(
+    () => trips.filter(t => (t.region || 'international') === 'international').length,
+    [trips]
+  );
+
   // Filtered List
   const filteredTrips = useMemo(() => {
     return trips.filter((trip) => {
       const q = searchQuery.toLowerCase();
+      const tripRegion = (trip.region || 'international').toLowerCase();
+      const matchesRegion = selectedRegion === 'all' || tripRegion === selectedRegion;
       const matchesSearch = 
         trip.title.toLowerCase().includes(q) ||
         trip.location.toLowerCase().includes(q) ||
@@ -1087,14 +1082,18 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         selectedCategory === 'All' || 
         trip.category === selectedCategory || 
         trip.badge === selectedCategory;
-      return matchesSearch && matchesCategory;
+      return matchesRegion && matchesSearch && matchesCategory;
     });
-  }, [trips, searchQuery, selectedCategory]);
+  }, [trips, searchQuery, selectedCategory, selectedRegion]);
 
   const handleOpenAdd = () => {
     setModalMode('add');
     setEditingTripId(null);
-    setFormData(emptyForm);
+    setFormData({
+      ...emptyForm,
+      region: selectedRegion === 'national' ? 'national' : 'international',
+      price: formatEditableAdminPrice('$2,500', currency, exchangeRates)
+    });
     setIsModalOpen(true);
   };
 
@@ -1107,7 +1106,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       region: trip.region || 'international',
       badge: trip.badge || 'Luxury Escapes',
       tagColor: trip.tagColor || 'bg-stone-900 text-white',
-      price: trip.price || '$2,500',
+      price: formatEditableAdminPrice(trip.price || '$2,500', currency, exchangeRates),
       duration: trip.duration || '7 Days / 6 Nights',
       rating: trip.rating !== undefined ? trip.rating : 4.95,
       reviews: trip.reviews !== undefined ? trip.reviews : 120,
@@ -1132,6 +1131,18 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
 
     const parsedRating = parseFloat(formData.rating) || 4.95;
     const parsedReviews = parseInt(formData.reviews, 10) || 0;
+    const storedPrice = formatStoredAdminPrice(formData.price, currency);
+
+    // Strip direction characters like "° N" / "° W" cleanly before persisting numeric lat/lng
+    const parseSignedCoord = (rawCoord) => {
+      if (!rawCoord) return '';
+      const str = String(rawCoord).trim();
+      const numMatch = str.match(/-?[0-9]+(?:\.[0-9]+)?/);
+      if (!numMatch) return '';
+      const val = Math.abs(parseFloat(numMatch[0]));
+      const signed = (/[SW]/i.test(str) || str.startsWith('-')) ? -val : val;
+      return String(signed);
+    };
 
     // Auto-resolve coordinates for National & International trips if not manually set
     let geoCoords = {};
@@ -1144,11 +1155,12 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         formData.mapX, 
         formData.mapY
       );
+      const [rawLat = '', rawLng = ''] = (resolved.coordinates || '').split('/');
       geoCoords = {
         mapX: formData.mapX ? parseInt(formData.mapX, 10) : resolved.mapX,
         mapY: formData.mapY ? parseInt(formData.mapY, 10) : resolved.mapY,
-        lat: formData.lat || (resolved.coordinates ? resolved.coordinates.split('/')[0].replace('° N', '').trim() : ''),
-        lng: formData.lng || (resolved.coordinates && resolved.coordinates.includes('/') ? resolved.coordinates.split('/')[1].replace('° E', '').trim() : ''),
+        lat: parseSignedCoord(formData.lat || rawLat),
+        lng: parseSignedCoord(formData.lng || rawLng),
         state: resolved.state,
         shortTitle: resolved.shortTitle
       };
@@ -1161,11 +1173,12 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         formData.mapX,
         formData.mapY
       );
+      const [rawLat = '', rawLng = ''] = (resolved.coordinates || '').split('/');
       geoCoords = {
         mapX: formData.mapX ? parseInt(formData.mapX, 10) : resolved.mapX,
         mapY: formData.mapY ? parseInt(formData.mapY, 10) : resolved.mapY,
-        lat: formData.lat || (resolved.coordinates ? resolved.coordinates.split('/')[0].trim() : ''),
-        lng: formData.lng || (resolved.coordinates && resolved.coordinates.includes('/') ? resolved.coordinates.split('/')[1].trim() : ''),
+        lat: parseSignedCoord(formData.lat || rawLat),
+        lng: parseSignedCoord(formData.lng || rawLng),
         country: resolved.country,
         shortTitle: resolved.shortTitle
       };
@@ -1177,6 +1190,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       const newTrip = {
         ...formData,
         ...geoCoords,
+        price: storedPrice,
+        baseCurrency: currency,
         id: Date.now(),
         rating: parsedRating,
         reviews: parsedReviews,
@@ -1188,6 +1203,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         ...t,
         ...formData,
         ...geoCoords,
+        price: storedPrice,
+        baseCurrency: currency,
         rating: parsedRating,
         reviews: parsedReviews,
         highlights: highlightsList
@@ -2121,29 +2138,109 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
             <div className="space-y-6">
               
               {/* Filter & Action Bar */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-stone-200/90 shadow-sm">
+              <div className="flex flex-col gap-3.5 p-4 rounded-2xl bg-white border border-stone-200/90 shadow-sm">
                 
-                {/* Category Pills (Hidden Scrollbar) */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5">
-                  {['All', 'Mediterranean', 'Cultural', 'Alpine Nature', 'Luxury Escapes', 'Trending'].map((cat) => (
+                {/* Top Row: Territory Selector (All / National / International) + Primary Actions */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  {/* Region Territory Pills */}
+                  <div className="inline-flex items-center gap-1 p-1 rounded-2xl bg-stone-100 border border-stone-200/80 w-fit">
                     <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                        selectedCategory === cat
-                          ? 'bg-stone-950 text-white font-bold'
-                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      type="button"
+                      onClick={() => setSelectedRegion('all')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        selectedRegion === 'all'
+                          ? 'bg-stone-950 text-white shadow-xs font-bold'
+                          : 'text-stone-600 hover:text-stone-950'
                       }`}
                     >
-                      {cat}
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>All Cards ({trips.length})</span>
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRegion('national')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        selectedRegion === 'national'
+                          ? 'bg-amber-400 text-stone-950 shadow-xs font-bold'
+                          : 'text-stone-600 hover:text-stone-950'
+                      }`}
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>National (India) ({nationalTripsCount})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRegion('international')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        selectedRegion === 'international'
+                          ? 'bg-stone-950 text-white shadow-xs font-bold'
+                          : 'text-stone-600 hover:text-stone-950'
+                      }`}
+                    >
+                      <Globe2 className="w-3.5 h-3.5" />
+                      <span>International ({internationalTripsCount})</span>
+                    </button>
+                  </div>
+
+                  {/* Cloud Status + Counter + Reset + "+ New Card" Button */}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap ${
+                      catalogCloudState === 'synced'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : catalogCloudState === 'syncing'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-stone-100 text-stone-600 border-stone-200'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        catalogCloudState === 'synced' ? 'bg-emerald-500' : catalogCloudState === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-stone-400'
+                      }`} />
+                      <span>
+                        {catalogCloudState === 'synced' ? 'Cloud Synced' : catalogCloudState === 'syncing' ? 'Syncing Cloud...' : 'Local Cache'}
+                      </span>
+                    </span>
+
+                    <span className="text-xs text-stone-500 font-medium whitespace-nowrap">
+                      Showing <strong className="text-stone-900">{filteredTrips.length}</strong> of {trips.length}
+                    </span>
+
+                    <button
+                      onClick={handleResetTrips}
+                      title="Restore catalog to original defaults"
+                      className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                    >
+                      <RefreshCw className="w-3 h-3 text-stone-500" />
+                      <span>Reset Defaults</span>
+                    </button>
+
+                    <button
+                      onClick={handleOpenAdd}
+                      className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>New Card</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Search Bar + Counter + "+ New Card" Button */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
-                  {/* Search Bar right next to + New Card */}
-                  <div className="relative w-full sm:w-56 md:w-64">
+                {/* Bottom Row: Category Pills + Search Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-stone-100">
+                  <div className="flex items-center flex-wrap gap-1.5">
+                    {['All', 'Mediterranean', 'Cultural', 'Alpine Nature', 'Luxury Escapes', 'Trending'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                          selectedCategory === cat
+                            ? 'bg-stone-950 text-white font-bold'
+                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative w-full sm:w-64">
                     <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
@@ -2153,42 +2250,6 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                       className="w-full bg-stone-50 border border-stone-200/90 rounded-full pl-9 pr-4 py-1.5 text-xs text-stone-900 placeholder-stone-500 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
                     />
                   </div>
-
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap ${
-                    catalogCloudState === 'synced'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      : catalogCloudState === 'syncing'
-                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                        : 'bg-stone-100 text-stone-600 border-stone-200'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      catalogCloudState === 'synced' ? 'bg-emerald-500' : catalogCloudState === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-stone-400'
-                    }`} />
-                    <span>
-                      {catalogCloudState === 'synced' ? 'Cloud Synced' : catalogCloudState === 'syncing' ? 'Syncing Cloud...' : 'Local Cache'}
-                    </span>
-                  </span>
-
-                  <span className="text-xs text-stone-500 font-medium whitespace-nowrap hidden xl:inline">
-                    Showing <strong className="text-stone-900">{filteredTrips.length}</strong> of {trips.length}
-                  </span>
-
-                  <button
-                    onClick={handleResetTrips}
-                    title="Restore catalog to original defaults"
-                    className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
-                  >
-                    <RefreshCw className="w-3 h-3 text-stone-500" />
-                    <span>Reset Defaults</span>
-                  </button>
-
-                  <button
-                    onClick={handleOpenAdd}
-                    className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                    <span>New Card</span>
-                  </button>
                 </div>
 
               </div>
@@ -3326,16 +3387,27 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
-                    Price Per Guest ({CURRENCY_SYMBOLS[currency]}) *
+                    Price Per Guest ({CURRENCY_SYMBOLS[currency]} {currency}) *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder={`e.g. ${CURRENCY_SYMBOLS[currency]}2,850`}
+                    placeholder={currency === 'INR' ? 'e.g. 2,15,000' : `e.g. ${CURRENCY_SYMBOLS[currency]}2,850`}
                     className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
                   />
+                  {(() => {
+                    const previewStored = formatStoredAdminPrice(formData.price, currency);
+                    const altCurrency = currency === 'INR' ? 'USD' : 'INR';
+                    const altPreview = formatCurrencyPrice(previewStored, altCurrency, exchangeRates, currency);
+                    if (!previewStored) return null;
+                    return (
+                      <span className="text-[10px] text-stone-500 mt-1 block font-mono">
+                        Stores <strong className="text-stone-800">{previewStored}</strong> ({altPreview} on {altCurrency})
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div>

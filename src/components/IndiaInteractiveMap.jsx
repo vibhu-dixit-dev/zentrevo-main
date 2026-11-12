@@ -9,6 +9,7 @@ import {
   X
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { indiaMapDestinations } from '../data/indiaMapData';
 import { getActiveDestinations } from '../data/travelData';
 import { getUnifiedIndiaMapDestinations } from '../data/indiaCityGeoResolver';
@@ -25,6 +26,7 @@ export default function IndiaInteractiveMap({
   onRequestCustomTrip 
 }) {
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
   const [filterMode, setFilterMode] = useState('all'); // 'all' | 'available' | 'bespoke'
   const [hoveredPlaceId, setHoveredPlaceId] = useState(null);
@@ -378,7 +380,7 @@ export default function IndiaInteractiveMap({
               <div className="pt-1.5 border-t border-amber-500/20 flex items-center justify-between gap-2">
                 <div>
                   <span className="text-xs sm:text-sm font-bold font-editorial text-amber-300 block">
-                    {activeDestination.price}
+                    {formatPrice(activeDestination.price)}
                   </span>
                 </div>
 

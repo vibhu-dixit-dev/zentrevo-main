@@ -366,18 +366,40 @@ export function projectLatLngToWorldMap(lat, lng) {
   return { mapX: clampedX, mapY: clampedY };
 }
 
+function formatGpsPair(latVal, lngVal) {
+  const latStr = String(latVal || '').trim();
+  const lngStr = String(lngVal || '').trim();
+  if (!latStr || !lngStr) return 'Global Coordinates';
+  const cleanLat = latStr.includes('°') ? latStr : `${Math.abs(parseFloat(latStr)).toFixed(4)}° ${parseFloat(latStr) < 0 ? 'S' : 'N'}`;
+  const cleanLng = lngStr.includes('°') ? lngStr : `${Math.abs(parseFloat(lngStr)).toFixed(4)}° ${parseFloat(lngStr) < 0 ? 'W' : 'E'}`;
+  return `${cleanLat} / ${cleanLng}`;
+}
+
 // Auto-resolve any international destination or location string
 export function resolveWorldCoordinates(locationStr = '', titleStr = '', customLat = null, customLng = null, customMapX = null, customMapY = null) {
+  const query = `${locationStr} ${titleStr}`.toLowerCase();
+  let matchedPlace = null;
+  for (const place of KNOWN_WORLD_CITIES) {
+    for (const alias of place.aliases) {
+      const regex = new RegExp(`\\b${alias}\\b`, 'i');
+      if (regex.test(query) || query.includes(alias)) {
+        matchedPlace = place;
+        break;
+      }
+    }
+    if (matchedPlace) break;
+  }
+
   // 1. Explicit mapX and mapY if provided
   if (customMapX !== null && customMapX !== undefined && customMapY !== null && customMapY !== undefined) {
     const nx = parseInt(customMapX, 10);
     const ny = parseInt(customMapY, 10);
     if (!isNaN(nx) && !isNaN(ny)) {
       return {
-        cityName: locationStr || 'Global Destination',
-        country: 'International',
-        shortTitle: (locationStr || titleStr || 'WORLD').toUpperCase().split('').join(' '),
-        coordinates: customLat && customLng ? `${customLat}° N / ${customLng}° E` : 'Global Coordinates',
+        cityName: matchedPlace?.name || locationStr || 'Global Destination',
+        country: matchedPlace?.country || 'International',
+        shortTitle: matchedPlace?.shortTitle || (locationStr || titleStr || 'WORLD').toUpperCase().split('').join(' '),
+        coordinates: (customLat && customLng) ? formatGpsPair(customLat, customLng) : (matchedPlace ? formatGpsPair(matchedPlace.lat, matchedPlace.lng) : 'Global Coordinates'),
         mapX: nx,
         mapY: ny,
         matched: true
@@ -389,34 +411,27 @@ export function resolveWorldCoordinates(locationStr = '', titleStr = '', customL
   if (customLat && customLng) {
     const proj = projectLatLngToWorldMap(customLat, customLng);
     return {
-      cityName: locationStr || 'Global Destination',
-      country: 'International',
-      shortTitle: (locationStr || titleStr || 'WORLD').toUpperCase().split('').join(' '),
-      coordinates: `${parseFloat(customLat).toFixed(4)}° N / ${parseFloat(customLng).toFixed(4)}° E`,
+      cityName: matchedPlace?.name || locationStr || 'Global Destination',
+      country: matchedPlace?.country || 'International',
+      shortTitle: matchedPlace?.shortTitle || (locationStr || titleStr || 'WORLD').toUpperCase().split('').join(' '),
+      coordinates: formatGpsPair(customLat, customLng),
       mapX: proj.mapX,
       mapY: proj.mapY,
       matched: true
     };
   }
 
-  const query = `${locationStr} ${titleStr}`.toLowerCase();
-
   // 3. Search known world destinations
-  for (const place of KNOWN_WORLD_CITIES) {
-    for (const alias of place.aliases) {
-      const regex = new RegExp(`\\b${alias}\\b`, 'i');
-      if (regex.test(query) || query.includes(alias)) {
-        return {
-          cityName: place.name,
-          country: place.country,
-          shortTitle: place.shortTitle,
-          coordinates: `${place.lat.toFixed(4)}° ${place.lat >= 0 ? 'N' : 'S'} / ${place.lng.toFixed(4)}° ${place.lng >= 0 ? 'E' : 'W'}`,
-          mapX: place.mapX,
-          mapY: place.mapY,
-          matched: true
-        };
-      }
-    }
+  if (matchedPlace) {
+    return {
+      cityName: matchedPlace.name,
+      country: matchedPlace.country,
+      shortTitle: matchedPlace.shortTitle,
+      coordinates: formatGpsPair(matchedPlace.lat, matchedPlace.lng),
+      mapX: matchedPlace.mapX,
+      mapY: matchedPlace.mapY,
+      matched: true
+    };
   }
 
   // 4. Default fallback: Center of the world map
