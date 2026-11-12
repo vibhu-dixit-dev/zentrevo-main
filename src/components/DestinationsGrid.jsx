@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { destinations, getActiveDestinations } from '../data/travelData';
+import { getActiveDestinations } from '../data/travelData';
 import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers, X, Search } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';

@@ -1,42 +1,25 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Compass, 
   MapPin, 
   Plus, 
   Edit3, 
   Trash2, 
   Search, 
-  Filter, 
-  Eye, 
   ArrowUpRight, 
   TrendingUp, 
   Users, 
-  DollarSign, 
-  Calendar, 
   Star, 
   CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  Bell, 
-  Settings, 
-  LayoutDashboard, 
   Sparkles, 
   X, 
   Check, 
   Copy, 
   Layers, 
   Mail, 
-  Phone, 
   MessageSquare, 
-  ChevronRight, 
   ChevronDown,
   ArrowLeft,
-  SlidersHorizontal,
-  ExternalLink,
-  ShieldCheck,
-  ImageIcon,
   Globe2,
-  FolderPlus,
   ArrowRight,
   RefreshCw,
   Menu,
@@ -44,7 +27,6 @@ import {
   PieChart,
   Activity,
   Download,
-  Database,
   Send,
   Smartphone,
   Monitor,
@@ -81,7 +63,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   const [currency, setCurrency] = useState('INR'); // 'INR' (Default) | 'USD' | 'EUR' | 'GBP'
   const [exchangeRates, setExchangeRates] = useState(DEFAULT_RATES);
   const [ratesLastUpdated, setRatesLastUpdated] = useState('');
-  const [isFetchingRates, setIsFetchingRates] = useState(false);
+  const [, setIsFetchingRates] = useState(false);
   const [isCurrencyCardOpen, setIsCurrencyCardOpen] = useState(false);
   const currencyDropdownRef = useRef(null);
 
@@ -256,7 +238,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     }
   });
 
-  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+  const [, setIsSupabaseConnected] = useState(false);
   const [inquirySearch, setInquirySearch] = useState('');
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState('All');
 

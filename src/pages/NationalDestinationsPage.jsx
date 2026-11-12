@@ -1,25 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { 
-  Compass, 
   MapPin, 
-  Sparkles, 
-  Crown, 
   ArrowUpRight, 
   Star, 
   Clock, 
   Send, 
-  ArrowLeft,
-  ChevronRight,
-  ShieldCheck,
-  Building2
+  ArrowLeft
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import IndiaInteractiveMap from '../components/IndiaInteractiveMap';
-import { destinations, getActiveDestinations } from '../data/travelData';
+import { getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
+
+const IndiaInteractiveMap = lazy(() => import('../components/IndiaInteractiveMap'));
 
 export default function NationalDestinationsPage({
   currentTheme = 'editorial',
@@ -32,11 +27,10 @@ export default function NationalDestinationsPage({
   onOpenVisa
 }) {
   const { formatPrice } = useCurrency();
-  const { t, language, isRTL } = useLanguage();
+  const { t, language } = useLanguage();
 
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
-  const isEditorial = currentTheme === 'editorial';
   const isDark = isEmerald || isSapphire;
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -194,11 +188,18 @@ export default function NationalDestinationsPage({
 
         {/* 1. The Interactive India Map Section */}
         <section aria-label="Interactive India Map" className="mb-12">
-          <IndiaInteractiveMap 
-            currentTheme={currentTheme}
-            onSelectDestinationById={handleSelectDestinationById}
-            onRequestCustomTrip={handleRequestCustomTrip}
-          />
+          <Suspense
+            fallback={
+              <div className="h-[460px] rounded-2xl border border-amber-500/20 bg-[#071022] flex items-center justify-center text-amber-300/80 text-xs font-mono uppercase tracking-[0.25em]">
+                Loading Interactive Map...
+              </div>
+            }
+          >
+            <IndiaInteractiveMap 
+              onSelectDestinationById={handleSelectDestinationById}
+              onRequestCustomTrip={handleRequestCustomTrip}
+            />
+          </Suspense>
         </section>
 
         {/* 2. Curated Indian Destinations Cards Grid */}

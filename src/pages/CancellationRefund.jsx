@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Compass, ArrowLeft, RefreshCw, Mail, MapPin, Clock, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { legalTranslations } from '../i18n/legalTranslations';
 

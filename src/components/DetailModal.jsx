@@ -199,7 +199,11 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
         }`}>
           <button
             onClick={onClose}
-            className="text-xs font-semibold uppercase tracking-wider text-stone-400 hover:text-stone-100 transition-colors cursor-pointer"
+            className={`text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+              isSapphire || isEmerald
+                ? 'text-stone-300 hover:text-white'
+                : 'text-stone-600 hover:text-stone-950'
+            }`}
           >
             {t('common.close')}
           </button>

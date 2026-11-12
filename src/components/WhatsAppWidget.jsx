@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function WhatsAppWidget() {

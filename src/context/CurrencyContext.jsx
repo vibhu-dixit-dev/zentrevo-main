@@ -34,7 +34,7 @@ const detectInitialCurrency = () => {
 
     // Default for US and international travelers
     return { currency: 'USD', isManual: false };
-  } catch (_) {
+  } catch {
     return { currency: 'USD', isManual: false };
   }
 };
@@ -62,7 +62,7 @@ export const CurrencyProvider = ({ children }) => {
             const data = await res.json();
             if (data?.country) detectedCountry = data.country;
           }
-        } catch (_) {}
+        } catch {}
 
         // Fallback to lightweight CORS-friendly Geo IP API if needed
         if (!detectedCountry) {
@@ -72,7 +72,7 @@ export const CurrencyProvider = ({ children }) => {
               const data = await res.json();
               if (data?.country) detectedCountry = data.country;
             }
-          } catch (_) {}
+          } catch {}
         }
 
         if (isMounted && detectedCountry) {
@@ -114,7 +114,7 @@ export const CurrencyProvider = ({ children }) => {
             localStorage.setItem('zentrevo_forex_cache', JSON.stringify({ rate, ts: Date.now() }));
           }
         }
-      } catch (_) {
+      } catch {
         // Fallback to standard luxury ECB peg
       }
     };
@@ -131,7 +131,7 @@ export const CurrencyProvider = ({ children }) => {
     try {
       localStorage.setItem('zentrevo_currency', newCurrency);
       localStorage.setItem('zentrevo_currency_manual', 'true');
-    } catch (_) {}
+    } catch {}
   };
 
   const toggleCurrency = () => {

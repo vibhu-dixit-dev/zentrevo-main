@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, Plane, CheckCircle2, ChevronDown, Crown, Sparkles, X } from 'lucide-react';
+import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, Plane, ChevronDown, Crown, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { destinations, getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 
-export default function HeroSection({ currentTheme, onSelectDestination, onSearchFilter, onOpenInquiry }) {
-  const { t, isRTL, language } = useLanguage();
+export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquiry }) {
+  const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
-  const isEditorial = currentTheme === 'editorial';
 
   // Sync active itinerary list (includes Admin-added trips)
   const [activeDestList, setActiveDestList] = useState(getActiveDestinations);

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Compass, 
   Lock, 
   Mail, 
   ArrowRight, 
@@ -10,8 +9,7 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   AlertCircle, 
-  Globe2,
-  ExternalLink
+  Globe2
 } from 'lucide-react';
 import DreamscapeCanvas from './DreamscapeCanvas';
 
@@ -23,7 +21,7 @@ export default function AdminLogin({ onLoginSuccess, onExit }) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [brandHovered, setBrandHovered] = useState(false);
+  const [, setBrandHovered] = useState(false);
 
   // Authenticate Form
   const handleSubmit = (e) => {

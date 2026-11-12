@@ -40,7 +40,7 @@ export default async function handler(req, res) {
             }
           }
         }
-      } catch (_) {}
+      } catch {}
 
       // Check inquiries table (deduplicated)
       try {
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
             }
           }
         }
-      } catch (_) {}
+      } catch {}
 
       recipients = Array.from(emailMap.values());
     }
@@ -79,7 +79,11 @@ export default async function handler(req, res) {
       tls: { rejectUnauthorized: true }
     });
 
-    const generateWeeklyHtml = (greeting) => `
+    const generateWeeklyHtml = (greeting, recipientEmail = '') => {
+      const unsubscribeUrl = recipientEmail
+        ? `https://www.zentrevo.in/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}`
+        : 'https://www.zentrevo.in/api/newsletter/unsubscribe';
+      return `
 <!DOCTYPE html>
 <html lang="en">
 <body style="margin:0;padding:0;background-color:#050b18;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f3f4f6;">
@@ -104,7 +108,8 @@ export default async function handler(req, res) {
           </tr>
           <tr>
             <td style="padding:24px;text-align:center;font-size:11px;color:#6b7280;background-color:#070e1c;">
-              ZENTREVO Private Travel Co. • contact@zentrevo.in
+              <p style="margin:0 0 8px;">ZENTREVO Private Travel Co. • contact@zentrevo.in</p>
+              <p style="margin:0;"><a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe from Weekly Dispatches</a></p>
             </td>
           </tr>
         </table>
@@ -113,6 +118,7 @@ export default async function handler(req, res) {
   </table>
 </body>
 </html>`;
+    };
 
     let count = 0;
     for (const recipient of recipients) {
@@ -126,7 +132,7 @@ export default async function handler(req, res) {
           from: `"Zentrevo Private Journal" <${smtpUser}>`,
           to: recipient.email,
           subject: 'Zentrevo Private Journal: Weekly Field Notes & Secret Sanctuaries',
-          html: generateWeeklyHtml(greeting)
+          html: generateWeeklyHtml(greeting, recipient.email)
         });
         count++;
       } catch (err) {

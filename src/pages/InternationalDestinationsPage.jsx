@@ -1,25 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { 
   Globe2, 
-  MapPin, 
-  Sparkles, 
-  Crown, 
   ArrowUpRight, 
   Star, 
   Clock, 
   Send, 
   ArrowLeft,
-  ChevronRight,
-  ShieldCheck,
   FileCheck2
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import WorldInteractiveMap from '../components/WorldInteractiveMap';
-import { destinations, getActiveDestinations } from '../data/travelData';
+import { getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
+
+const WorldInteractiveMap = lazy(() => import('../components/WorldInteractiveMap'));
 
 export default function InternationalDestinationsPage({
   currentTheme = 'editorial',
@@ -32,11 +28,10 @@ export default function InternationalDestinationsPage({
   onOpenVisa
 }) {
   const { formatPrice } = useCurrency();
-  const { t, language, isRTL } = useLanguage();
+  const { t, language } = useLanguage();
 
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
-  const isEditorial = currentTheme === 'editorial';
   const isDark = isEmerald || isSapphire;
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -195,11 +190,18 @@ export default function InternationalDestinationsPage({
 
         {/* 1. The Interactive World Map Section */}
         <section aria-label="Interactive World Map" className="mb-12">
-          <WorldInteractiveMap 
-            currentTheme={currentTheme}
-            onSelectDestinationById={handleSelectDestinationById}
-            onRequestCustomTrip={handleRequestCustomTrip}
-          />
+          <Suspense
+            fallback={
+              <div className="h-[460px] rounded-2xl border border-amber-500/20 bg-[#071022] flex items-center justify-center text-amber-300/80 text-xs font-mono uppercase tracking-[0.25em]">
+                Loading Interactive Map...
+              </div>
+            }
+          >
+            <WorldInteractiveMap 
+              onSelectDestinationById={handleSelectDestinationById}
+              onRequestCustomTrip={handleRequestCustomTrip}
+            />
+          </Suspense>
         </section>
 
         {/* 2. Visa Guidance Reassurance Card */}

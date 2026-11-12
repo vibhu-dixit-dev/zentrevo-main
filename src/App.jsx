@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import StatsBar from './components/StatsBar';
@@ -7,19 +7,41 @@ import ExperienceSplit from './components/ExperienceSplit';
 import VideoStorySection from './components/VideoStorySection';
 import FAQSection from './components/FAQSection';
 import BookingInquirySection from './components/BookingInquirySection';
-import DetailModal from './components/DetailModal';
-import JournalModal from './components/JournalModal';
-import VisaModal from './components/VisaModal';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import CancellationRefund from './pages/CancellationRefund';
-import NationalDestinationsPage from './pages/NationalDestinationsPage';
-import InternationalDestinationsPage from './pages/InternationalDestinationsPage';
 import Footer from './components/Footer';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import ChatbotWidget from './components/ChatbotWidget';
-import AdminDashboard from './components/AdminDashboard';
-import AdminLogin from './components/AdminLogin';
+
+const DetailModal = lazy(() => import('./components/DetailModal'));
+const JournalModal = lazy(() => import('./components/JournalModal'));
+const VisaModal = lazy(() => import('./components/VisaModal'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const CancellationRefund = lazy(() => import('./pages/CancellationRefund'));
+const NationalDestinationsPage = lazy(() => import('./pages/NationalDestinationsPage'));
+const InternationalDestinationsPage = lazy(() => import('./pages/InternationalDestinationsPage'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const AdminLogin = lazy(() => import('./components/AdminLogin'));
+
+function RouteFallback({ currentTheme = 'editorial' }) {
+  const isSapphire = currentTheme === 'sapphire';
+  const isEmerald = currentTheme === 'emerald';
+  return (
+    <div
+      className={`min-h-screen flex items-center justify-center ${
+        isSapphire
+          ? 'bg-[#050a16] text-amber-300'
+          : isEmerald
+            ? 'bg-[#061813] text-emerald-300'
+            : 'bg-[#faf9f6] text-stone-700'
+      }`}
+    >
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-current border-t-transparent animate-spin" />
+        <span className="text-xs font-mono uppercase tracking-[0.25em] opacity-80">Zentrevo</span>
+      </div>
+    </div>
+  );
+}
 import { 
   getDestinationSlug, 
   findDestinationBySlug, 
@@ -64,7 +86,17 @@ export default function App() {
   });
 
   // Theme State: 'editorial' (Default) | 'sapphire' (Royal Sapphire & Gold) | 'emerald' (Emerald Luxe)
-  const [currentTheme, setCurrentTheme] = useState('editorial');
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('zentrevo_theme');
+        if (saved === 'editorial' || saved === 'sapphire' || saved === 'emerald') {
+          return saved;
+        }
+      } catch {}
+    }
+    return 'editorial';
+  });
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'national' | 'international'
@@ -94,14 +126,6 @@ export default function App() {
     }
     if (filter.date) {
       setPreselectedDates(filter.date);
-    }
-  }, []);
-
-  const navigateTo = useCallback((path) => {
-    if (typeof window !== 'undefined') {
-      window.history.pushState({}, '', path);
-      setCurrentPath(path);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
 
@@ -381,6 +405,28 @@ export default function App() {
     resetDocumentSeo();
   }, [handleOpenDestination, handleOpenJournal, handleOpenVisa]);
 
+  const navigateTo = useCallback((path) => {
+    if (typeof window === 'undefined' || !path) return;
+    const [rawPathname, hash] = path.split('#');
+    const targetPath = rawPathname || '/';
+    const routeChanged = window.location.pathname !== targetPath;
+
+    window.history.pushState({}, '', path);
+    setCurrentPath(targetPath);
+    syncRouteWithModal(targetPath);
+
+    if (hash) {
+      setTimeout(() => {
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, routeChanged ? 150 : 0);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [syncRouteWithModal]);
+
   useEffect(() => {
     const handleLocationChange = () => {
       const path = window.location.pathname || '/';
@@ -416,17 +462,32 @@ export default function App() {
 
   // Proper Standalone Legal Pages (Not a popup)
   if (currentPath === '/privacy-policy' || currentPath === '/privacy-policy/') {
-    return <PrivacyPolicy onNavigateHome={() => navigateTo('/')} currentTheme={currentTheme} />;
+    return (
+      <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+        <PrivacyPolicy onNavigateHome={() => navigateTo('/')} currentTheme={currentTheme} />
+      </Suspense>
+    );
   }
   if (currentPath === '/terms-of-service' || currentPath === '/terms-of-service/') {
-    return <TermsOfService onNavigateHome={() => navigateTo('/')} currentTheme={currentTheme} />;
+    return (
+      <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+        <TermsOfService onNavigateHome={() => navigateTo('/')} currentTheme={currentTheme} />
+      </Suspense>
+    );
   }
   if (currentPath === '/cancellation-and-refund' || currentPath === '/cancellation-and-refund/') {
-    return <CancellationRefund onNavigateHome={() => navigateTo('/')} currentTheme={currentTheme} />;
+    return (
+      <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+        <CancellationRefund onNavigateHome={() => navigateTo('/')} currentTheme={currentTheme} />
+      </Suspense>
+    );
   }
 
   const handleSelectTheme = (themeName) => {
     setCurrentTheme(themeName);
+    try {
+      localStorage.setItem('zentrevo_theme', themeName);
+    } catch {}
   };
 
   const handleScrollToInquiry = () => {
@@ -456,54 +517,57 @@ export default function App() {
   if (isAdminRoute) {
     if (!isAdminAuthenticated) {
       return (
-        <AdminLogin 
-          onLoginSuccess={({ email, role }) => {
-            if (typeof window !== 'undefined') {
-              sessionStorage.setItem('zentrevo_admin_auth', 'true');
-              sessionStorage.setItem('zentrevo_user_role', role || 'admin');
-              sessionStorage.setItem('zentrevo_user_email', email || 'contact@zentrevo.in');
-            }
-            setUserRole(role || 'admin');
-            setUserEmail(email || 'contact@zentrevo.in');
-            setIsAdminAuthenticated(true);
-          }}
+        <Suspense fallback={<RouteFallback currentTheme="sapphire" />}>
+          <AdminLogin 
+            onLoginSuccess={({ email, role }) => {
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('zentrevo_admin_auth', 'true');
+                sessionStorage.setItem('zentrevo_user_role', role || 'admin');
+                sessionStorage.setItem('zentrevo_user_email', email || 'contact@zentrevo.in');
+              }
+              setUserRole(role || 'admin');
+              setUserEmail(email || 'contact@zentrevo.in');
+              setIsAdminAuthenticated(true);
+            }}
+            onExit={() => {
+              if (typeof window !== 'undefined') {
+                window.history.pushState({}, '', '/');
+                setCurrentPath('/');
+              }
+            }}
+          />
+        </Suspense>
+      );
+    }
+
+    return (
+      <Suspense fallback={<RouteFallback currentTheme="editorial" />}>
+        <AdminDashboard 
+          userRole={userRole}
+          userEmail={userEmail}
           onExit={() => {
             if (typeof window !== 'undefined') {
               window.history.pushState({}, '', '/');
               setCurrentPath('/');
             }
           }}
+          onLogout={() => {
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('zentrevo_admin_auth');
+              sessionStorage.removeItem('zentrevo_user_role');
+              sessionStorage.removeItem('zentrevo_user_email');
+            }
+            setIsAdminAuthenticated(false);
+            setUserRole('admin');
+            setUserEmail('contact@zentrevo.in');
+          }}
         />
-      );
-    }
-
-    return (
-      <AdminDashboard 
-        userRole={userRole}
-        userEmail={userEmail}
-        onExit={() => {
-          if (typeof window !== 'undefined') {
-            window.history.pushState({}, '', '/');
-            setCurrentPath('/');
-          }
-        }}
-        onLogout={() => {
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('zentrevo_admin_auth');
-            sessionStorage.removeItem('zentrevo_user_role');
-            sessionStorage.removeItem('zentrevo_user_email');
-          }
-          setIsAdminAuthenticated(false);
-          setUserRole('admin');
-          setUserEmail('contact@zentrevo.in');
-        }}
-      />
+      </Suspense>
     );
   }
 
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
-  const isEditorial = currentTheme === 'editorial';
 
   const isNationalRoute = 
     currentPath === '/destinations/national' || 
@@ -528,50 +592,64 @@ export default function App() {
               : 'bg-[#faf9f6] text-stone-900'
         }`}
       >
-        <NationalDestinationsPage 
-          currentTheme={currentTheme}
-          onSelectTheme={handleSelectTheme}
-          onSelectDestination={handleOpenDestination}
-          onNavigateHome={() => navigateTo('/')}
-          onNavigate={navigateTo}
-          onOpenInquiry={(destName) => {
-            if (destName) setPreselectedDestination(destName);
-            navigateTo('/');
-            setTimeout(() => {
-              const el = document.getElementById('inquiry');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }, 150);
-          }}
-          onOpenJournal={handleOpenJournal}
-          onOpenVisa={handleOpenVisa}
-        />
+        <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+          <NationalDestinationsPage 
+            currentTheme={currentTheme}
+            onSelectTheme={handleSelectTheme}
+            onSelectDestination={handleOpenDestination}
+            onNavigateHome={() => navigateTo('/')}
+            onNavigate={navigateTo}
+            onOpenInquiry={(destName) => {
+              if (destName) setPreselectedDestination(destName);
+              navigateTo('/');
+              setTimeout(() => {
+                const el = document.getElementById('inquiry');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 150);
+            }}
+            onOpenJournal={handleOpenJournal}
+            onOpenVisa={handleOpenVisa}
+          />
+        </Suspense>
 
         {/* Interactive Destination Detail Modal */}
-        <DetailModal
-          destination={selectedDestination}
-          isOpen={isDetailModalOpen}
-          onClose={handleCloseDestinationModal}
-          onBookNow={handleBookNowFromModal}
-          currentTheme={currentTheme}
-        />
+        {isDetailModalOpen && (
+          <Suspense fallback={null}>
+            <DetailModal
+              destination={selectedDestination}
+              isOpen={isDetailModalOpen}
+              onClose={handleCloseDestinationModal}
+              onBookNow={handleBookNowFromModal}
+              currentTheme={currentTheme}
+            />
+          </Suspense>
+        )}
 
         {/* Dedicated Visa Guidance Modal */}
-        <VisaModal
-          isOpen={isVisaModalOpen}
-          onClose={handleCloseVisaModal}
-          onGoAhead={handleVisaGoAhead}
-          currentTheme={currentTheme}
-        />
+        {isVisaModalOpen && (
+          <Suspense fallback={null}>
+            <VisaModal
+              isOpen={isVisaModalOpen}
+              onClose={handleCloseVisaModal}
+              onGoAhead={handleVisaGoAhead}
+              currentTheme={currentTheme}
+            />
+          </Suspense>
+        )}
 
         {/* Interactive Journal & Article Reader Modal */}
-        <JournalModal
-          isOpen={isJournalModalOpen}
-          onClose={handleCloseJournalModal}
-          initialArticle={selectedJournalArticle}
-          currentTheme={currentTheme}
-          onInquireStory={handleInquireFromJournal}
-          onArticleChange={handleJournalArticleChange}
-        />
+        {isJournalModalOpen && (
+          <Suspense fallback={null}>
+            <JournalModal
+              isOpen={isJournalModalOpen}
+              onClose={handleCloseJournalModal}
+              initialArticle={selectedJournalArticle}
+              currentTheme={currentTheme}
+              onInquireStory={handleInquireFromJournal}
+              onArticleChange={handleJournalArticleChange}
+            />
+          </Suspense>
+        )}
 
         {/* Floating Widgets */}
         <WhatsAppWidget />
@@ -591,50 +669,64 @@ export default function App() {
               : 'bg-[#faf9f6] text-stone-900'
         }`}
       >
-        <InternationalDestinationsPage 
-          currentTheme={currentTheme}
-          onSelectTheme={handleSelectTheme}
-          onSelectDestination={handleOpenDestination}
-          onNavigateHome={() => navigateTo('/')}
-          onNavigate={navigateTo}
-          onOpenInquiry={(destName) => {
-            if (destName) setPreselectedDestination(destName);
-            navigateTo('/');
-            setTimeout(() => {
-              const el = document.getElementById('inquiry');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }, 150);
-          }}
-          onOpenJournal={handleOpenJournal}
-          onOpenVisa={handleOpenVisa}
-        />
+        <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+          <InternationalDestinationsPage 
+            currentTheme={currentTheme}
+            onSelectTheme={handleSelectTheme}
+            onSelectDestination={handleOpenDestination}
+            onNavigateHome={() => navigateTo('/')}
+            onNavigate={navigateTo}
+            onOpenInquiry={(destName) => {
+              if (destName) setPreselectedDestination(destName);
+              navigateTo('/');
+              setTimeout(() => {
+                const el = document.getElementById('inquiry');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 150);
+            }}
+            onOpenJournal={handleOpenJournal}
+            onOpenVisa={handleOpenVisa}
+          />
+        </Suspense>
 
         {/* Interactive Destination Detail Modal */}
-        <DetailModal
-          destination={selectedDestination}
-          isOpen={isDetailModalOpen}
-          onClose={handleCloseDestinationModal}
-          onBookNow={handleBookNowFromModal}
-          currentTheme={currentTheme}
-        />
+        {isDetailModalOpen && (
+          <Suspense fallback={null}>
+            <DetailModal
+              destination={selectedDestination}
+              isOpen={isDetailModalOpen}
+              onClose={handleCloseDestinationModal}
+              onBookNow={handleBookNowFromModal}
+              currentTheme={currentTheme}
+            />
+          </Suspense>
+        )}
 
         {/* Dedicated Visa Guidance Modal */}
-        <VisaModal
-          isOpen={isVisaModalOpen}
-          onClose={handleCloseVisaModal}
-          onGoAhead={handleVisaGoAhead}
-          currentTheme={currentTheme}
-        />
+        {isVisaModalOpen && (
+          <Suspense fallback={null}>
+            <VisaModal
+              isOpen={isVisaModalOpen}
+              onClose={handleCloseVisaModal}
+              onGoAhead={handleVisaGoAhead}
+              currentTheme={currentTheme}
+            />
+          </Suspense>
+        )}
 
         {/* Interactive Journal & Article Reader Modal */}
-        <JournalModal
-          isOpen={isJournalModalOpen}
-          onClose={handleCloseJournalModal}
-          initialArticle={selectedJournalArticle}
-          currentTheme={currentTheme}
-          onInquireStory={handleInquireFromJournal}
-          onArticleChange={handleJournalArticleChange}
-        />
+        {isJournalModalOpen && (
+          <Suspense fallback={null}>
+            <JournalModal
+              isOpen={isJournalModalOpen}
+              onClose={handleCloseJournalModal}
+              initialArticle={selectedJournalArticle}
+              currentTheme={currentTheme}
+              onInquireStory={handleInquireFromJournal}
+              onArticleChange={handleJournalArticleChange}
+            />
+          </Suspense>
+        )}
 
         {/* Floating Widgets */}
         <WhatsAppWidget />
@@ -724,31 +816,43 @@ export default function App() {
       />
 
       {/* Interactive Destination Detail Modal with Route Sync */}
-      <DetailModal
-        destination={selectedDestination}
-        isOpen={isDetailModalOpen}
-        onClose={handleCloseDestinationModal}
-        onBookNow={handleBookNowFromModal}
-        currentTheme={currentTheme}
-      />
+      {isDetailModalOpen && (
+        <Suspense fallback={null}>
+          <DetailModal
+            destination={selectedDestination}
+            isOpen={isDetailModalOpen}
+            onClose={handleCloseDestinationModal}
+            onBookNow={handleBookNowFromModal}
+            currentTheme={currentTheme}
+          />
+        </Suspense>
+      )}
 
       {/* Interactive Journal & Article Reader Modal with Route Sync */}
-      <JournalModal
-        isOpen={isJournalModalOpen}
-        onClose={handleCloseJournalModal}
-        initialArticle={selectedJournalArticle}
-        currentTheme={currentTheme}
-        onInquireStory={handleInquireFromJournal}
-        onArticleChange={handleJournalArticleChange}
-      />
+      {isJournalModalOpen && (
+        <Suspense fallback={null}>
+          <JournalModal
+            isOpen={isJournalModalOpen}
+            onClose={handleCloseJournalModal}
+            initialArticle={selectedJournalArticle}
+            currentTheme={currentTheme}
+            onInquireStory={handleInquireFromJournal}
+            onArticleChange={handleJournalArticleChange}
+          />
+        </Suspense>
+      )}
 
       {/* Dedicated Visa Guidance Modal with Route Sync */}
-      <VisaModal
-        isOpen={isVisaModalOpen}
-        onClose={handleCloseVisaModal}
-        onGoAhead={handleVisaGoAhead}
-        currentTheme={currentTheme}
-      />
+      {isVisaModalOpen && (
+        <Suspense fallback={null}>
+          <VisaModal
+            isOpen={isVisaModalOpen}
+            onClose={handleCloseVisaModal}
+            onGoAhead={handleVisaGoAhead}
+            currentTheme={currentTheme}
+          />
+        </Suspense>
+      )}
 
       {/* 1. Floating WhatsApp Quick-Connect Widget (Bottom-Left) */}
       <WhatsAppWidget />

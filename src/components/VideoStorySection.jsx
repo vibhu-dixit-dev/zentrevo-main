@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, X, Star, Quote, ArrowRight, Volume2, VolumeX, Sparkles, Crown } from 'lucide-react';
+import { Play, Pause, Star, Quote, ArrowRight, Volume2, VolumeX } from 'lucide-react';
 import { testimonials, blogArticles } from '../data/travelData';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../i18n/translations';

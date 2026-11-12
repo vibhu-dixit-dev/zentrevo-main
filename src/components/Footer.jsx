@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Compass, ArrowRight, Check, Globe, Share2, Mail, Crown, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, Loader2 } from 'lucide-react';
 import { SOCIAL_CHANNELS } from '../data/socialChannels';
 import { supabase } from '../lib/supabaseClient';
 import { useLanguage } from '../context/LanguageContext';
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
   const { t } = useLanguage();
@@ -13,7 +15,7 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
+  const [, setSubmitError] = useState('');
 
   const handleLinkClick = (path) => (e) => {
     e.preventDefault();
@@ -76,7 +78,7 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail })
       }).catch(() => {});
-    } catch (_) {}
+    } catch {}
 
     setSubscribed(true);
     setIsSubmitting(false);
@@ -151,11 +153,11 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
               {t('footer.colExpeditions', 'Expeditions')}
             </h3>
             <ul className="space-y-2.5 text-xs text-stone-300">
-              <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Amalfi Coast, Italy</a></li>
-              <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Kyoto Temples, Japan</a></li>
-              <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Swiss Glacier Rail</a></li>
-              <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Cappadocia Valley</a></li>
-              <li><a href="#destinations" className="hover:text-amber-400 transition-colors">Bali River Sanctum</a></li>
+              <li><a href="/destinations/italy" onClick={handleLinkClick('/destinations/italy')} className="hover:text-amber-400 transition-colors">Amalfi Coast, Italy</a></li>
+              <li><a href="/destinations/japan" onClick={handleLinkClick('/destinations/japan')} className="hover:text-amber-400 transition-colors">Kyoto Temples, Japan</a></li>
+              <li><a href="/destinations/switzerland" onClick={handleLinkClick('/destinations/switzerland')} className="hover:text-amber-400 transition-colors">Swiss Glacier Rail</a></li>
+              <li><a href="/destinations/turkey" onClick={handleLinkClick('/destinations/turkey')} className="hover:text-amber-400 transition-colors">Cappadocia Valley</a></li>
+              <li><a href="/destinations/bali" onClick={handleLinkClick('/destinations/bali')} className="hover:text-amber-400 transition-colors">Bali River Sanctum</a></li>
             </ul>
           </div>
 
@@ -164,11 +166,11 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
               {t('footer.colCompany', 'Company')}
             </h3>
             <ul className="space-y-2.5 text-xs text-stone-300">
-              <li><a href="#values" className="hover:text-amber-400 transition-colors">{t('footer.linkBeliefs', 'Our Core Beliefs')}</a></li>
-              <li><a href="#experiences" className="hover:text-amber-400 transition-colors">{t('footer.linkWhyChoose', 'Why Choose Us')}</a></li>
-              <li><a href="#stories" className="hover:text-amber-400 transition-colors">{t('footer.linkStories', 'Stories & Journals')}</a></li>
-              <li><a href="#faq" className="hover:text-amber-400 transition-colors">{t('footer.linkFaq', 'FAQ & Support')}</a></li>
-              <li><a href="#inquiry" className="hover:text-amber-400 transition-colors">{t('footer.linkConcierge', 'Private Concierge')}</a></li>
+              <li><a href="/#values" onClick={handleLinkClick('/#values')} className="hover:text-amber-400 transition-colors">{t('footer.linkBeliefs', 'Our Core Beliefs')}</a></li>
+              <li><a href="/#experiences" onClick={handleLinkClick('/#experiences')} className="hover:text-amber-400 transition-colors">{t('footer.linkWhyChoose', 'Why Choose Us')}</a></li>
+              <li><a href="/journal" onClick={handleLinkClick('/journal')} className="hover:text-amber-400 transition-colors">{t('footer.linkStories', 'Stories & Journals')}</a></li>
+              <li><a href="/#faq" onClick={handleLinkClick('/#faq')} className="hover:text-amber-400 transition-colors">{t('footer.linkFaq', 'FAQ & Support')}</a></li>
+              <li><a href="/#inquiry" onClick={handleLinkClick('/#inquiry')} className="hover:text-amber-400 transition-colors">{t('footer.linkConcierge', 'Private Concierge')}</a></li>
               <li>
                 <a 
                   href="/cancellation-and-refund" 
@@ -286,7 +288,7 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-300 font-medium">
           <div>
-            © {new Date().getFullYear()} ZENTREVO Travel Co. All rights reserved.
+            © {CURRENT_YEAR} ZENTREVO Travel Co. All rights reserved.
           </div>
 
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">

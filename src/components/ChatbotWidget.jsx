@@ -7,7 +7,6 @@ export default function ChatbotWidget({ currentTheme }) {
   const { t } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
-  const isEditorial = currentTheme === 'editorial';
 
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -86,7 +85,7 @@ export default function ChatbotWidget({ currentTheme }) {
     try {
       const response = await askGroqChatbot(newMessages);
       setMessages((prev) => [...prev, { role: 'assistant', content: response }]);
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -161,7 +160,11 @@ export default function ChatbotWidget({ currentTheme }) {
               {/* Close Button */}
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 text-stone-400 hover:text-stone-100 transition-colors cursor-pointer"
+                className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                  isSapphire || isEmerald
+                    ? 'hover:bg-white/10 text-stone-300 hover:text-white'
+                    : 'hover:bg-stone-100 text-stone-500 hover:text-stone-950'
+                }`}
                 aria-label="Close Chat"
               >
                 <X className="w-4 h-4" />

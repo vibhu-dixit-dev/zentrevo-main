@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { 
   X, 
-  FileCheck2, 
   ShieldAlert, 
   CheckCircle, 
   ArrowRight, 

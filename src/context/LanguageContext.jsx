@@ -63,7 +63,7 @@ const detectInitialLanguage = () => {
 
     // Default global fallback
     return { language: 'en', isManual: false };
-  } catch (_) {
+  } catch {
     return { language: 'en', isManual: false };
   }
 };
@@ -101,7 +101,7 @@ export const LanguageProvider = ({ children }) => {
             const data = await res.json();
             if (data?.country) country = data.country.toUpperCase();
           }
-        } catch (_) {}
+        } catch {}
 
         if (!country) {
           try {
@@ -110,7 +110,7 @@ export const LanguageProvider = ({ children }) => {
               const data = await res.json();
               if (data?.country) country = data.country.toUpperCase();
             }
-          } catch (_) {}
+          } catch {}
         }
 
         if (isMounted && country) {
@@ -144,7 +144,7 @@ export const LanguageProvider = ({ children }) => {
     try {
       localStorage.setItem('zentrevo_language', newLang);
       localStorage.setItem('zentrevo_language_manual', 'true');
-    } catch (_) {}
+    } catch {}
   }, []);
 
   // Universal translation lookup helper: e.g. t('nav.planJourney')

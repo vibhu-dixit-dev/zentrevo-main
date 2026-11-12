@@ -238,6 +238,10 @@ export function updateDocumentSeo({ title, description, canonical, ogImage, ogTy
   let ogUrl = document.querySelector('meta[property="og:url"]');
   if (ogUrl && canonical) ogUrl.setAttribute('content', canonical);
 
+  // Open Graph Type
+  let ogTypeMeta = document.querySelector('meta[property="og:type"]');
+  if (ogTypeMeta && ogType) ogTypeMeta.setAttribute('content', ogType);
+
   // Open Graph Image
   let ogImg = document.querySelector('meta[property="og:image"]');
   if (ogImg && ogImage) ogImg.setAttribute('content', ogImage);

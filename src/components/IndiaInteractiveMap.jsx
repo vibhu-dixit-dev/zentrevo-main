@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { indiaMapDestinations } from '../data/indiaMapData';
 import { getActiveDestinations } from '../data/travelData';
 import { getUnifiedIndiaMapDestinations } from '../data/indiaCityGeoResolver';
 import { 
@@ -21,14 +20,12 @@ import {
 } from '../data/indiaVectorPaths';
 
 export default function IndiaInteractiveMap({ 
-  currentTheme = 'editorial', 
   onSelectDestinationById, 
   onRequestCustomTrip 
 }) {
   const { t } = useLanguage();
   const { formatPrice } = useCurrency();
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
-  const [filterMode, setFilterMode] = useState('all'); // 'all' | 'available' | 'bespoke'
   const [hoveredPlaceId, setHoveredPlaceId] = useState(null);
   const hoverTimeoutRef = useRef(null);
 
@@ -155,7 +152,7 @@ export default function IndiaInteractiveMap({
         <div className="flex items-center gap-1.5 p-1 rounded-xl border border-amber-500/30 bg-[#0a1428]/90 backdrop-blur-md self-start sm:self-auto shadow-inner">
           <div className="px-3.5 py-1 rounded-lg text-xs font-bold text-amber-300 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>{allDestinations.length} Curated Portfolios</span>
+            <span>{allDestinations.length} {t('indiaMap.curatedPortfolios', 'Curated Portfolios')}</span>
           </div>
         </div>
       </div>
@@ -330,19 +327,19 @@ export default function IndiaInteractiveMap({
                   {activeDestination.isAvailableOnPortal ? (
                     <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-emerald-400"></span>
-                      <span>Ready</span>
+                      <span>{t('indiaMap.readyLabel', 'Ready')}</span>
                     </span>
                   ) : (
                     <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-950/90 text-amber-300 border border-amber-500/50 flex items-center gap-1">
                       <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                      <span>Bespoke</span>
+                      <span>{t('indiaMap.bespokeLabel', 'Bespoke')}</span>
                     </span>
                   )}
 
                   <button
                     onClick={handleCloseCard}
                     className="p-0.5 rounded-full text-stone-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                    title="Close"
+                    title={t('modal.close', 'Close')}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -389,7 +386,7 @@ export default function IndiaInteractiveMap({
                     onClick={() => handleActionClick(activeDestination)}
                     className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-extrabold transition-all shadow-sm flex items-center gap-1 cursor-pointer"
                   >
-                    <span>View Journey</span>
+                    <span>{t('indiaMap.viewJourneyBtn', 'View Journey')}</span>
                     <ArrowUpRight className="w-3 h-3" />
                   </button>
                 ) : (
@@ -398,7 +395,7 @@ export default function IndiaInteractiveMap({
                     className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold transition-all shadow-sm flex items-center gap-1 cursor-pointer"
                   >
                     <Send className="w-2.5 h-2.5" />
-                    <span>Request Trip</span>
+                    <span>{t('indiaMap.requestTripBtn', 'Request Trip')}</span>
                   </button>
                 )}
               </div>
@@ -420,7 +417,7 @@ export default function IndiaInteractiveMap({
 
           {/* Country / State Label */}
           <span className="text-[10px] sm:text-[11px] font-sans tracking-[0.3em] uppercase text-amber-200/90 font-medium">
-            {activeDestination ? `INDIA • ${activeDestination.state.toUpperCase()}` : 'THE SOVEREIGN SUBCONTINENT'}
+            {activeDestination ? `INDIA • ${activeDestination.state.toUpperCase()}` : t('indiaMap.subcontinentSubtitle', 'THE SOVEREIGN SUBCONTINENT')}
           </span>
 
           {/* Monospace GPS Coordinates */}
@@ -431,7 +428,7 @@ export default function IndiaInteractiveMap({
           {/* Subtle Corner Attributions */}
           <div className="w-full flex items-center justify-between text-[8px] font-mono tracking-wider text-amber-400/40 mt-1.5 pt-1 border-t border-amber-500/10 px-1">
             <span>© zentrevo.in</span>
-            <span className="hidden sm:inline">THE SOVEREIGN CARTOGRAPHY SUITE</span>
+            <span className="hidden sm:inline">{t('indiaMap.cartographySuite', 'THE SOVEREIGN CARTOGRAPHY SUITE')}</span>
             <span>© OpenStreetMap contributors</span>
           </div>
         </div>
@@ -442,7 +439,7 @@ export default function IndiaInteractiveMap({
       <div className="relative z-10 mt-3 pt-2 border-t border-amber-500/20 space-y-1">
         <div className="flex items-center justify-between text-[10px] font-mono tracking-wider font-bold text-amber-400">
           <span>{t('indiaMap.selectRegionTitle', 'All Sovereign Indian Places')}</span>
-          <span>{displayedDestinations.length} Locations</span>
+          <span>{displayedDestinations.length} {t('indiaMap.locationsLabel', 'Locations')}</span>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">

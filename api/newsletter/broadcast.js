@@ -38,8 +38,12 @@ export default async function handler(req, res) {
       tls: { rejectUnauthorized: true }
     });
 
-    // Generate Luxury HTML Newsletter Template with Dynamic Personalization
-    const generateHtml = (tpl) => `
+    // Generate Luxury HTML Newsletter Template with Dynamic Personalization & Real Unsubscribe URL
+    const generateHtml = (tpl, recipientEmail = '') => {
+      const unsubscribeUrl = recipientEmail
+        ? `https://www.zentrevo.in/api/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}`
+        : 'https://www.zentrevo.in/api/newsletter/unsubscribe';
+      return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -138,8 +142,8 @@ export default async function handler(req, res) {
                 You received this dispatch because you are registered with The Private Journal at zentrevo.in.
               </p>
               <p style="margin:0;">
-                <a href="https://zentrevo.in" style="color:#9ca3af;text-decoration:underline;">Manage Preferences</a> •
-                <a href="https://zentrevo.in" style="color:#9ca3af;text-decoration:underline;">Unsubscribe</a>
+                <a href="https://www.zentrevo.in/journal" style="color:#9ca3af;text-decoration:underline;">View Web Archive</a> •
+                <a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
@@ -150,6 +154,7 @@ export default async function handler(req, res) {
   </table>
 </body>
 </html>`;
+    };
 
     // Case 1: Send Test Email
     if (isTest) {
@@ -166,7 +171,7 @@ export default async function handler(req, res) {
       }
 
       const testTemplate = { ...template, editorialText: testBody };
-      const htmlContent = generateHtml(testTemplate);
+      const htmlContent = generateHtml(testTemplate, target);
 
       await transporter.sendMail({
         from: `"Zentrevo Private Journal" <${smtpUser}>`,
@@ -204,7 +209,7 @@ export default async function handler(req, res) {
             }
           }
         }
-      } catch (_) {}
+      } catch {}
 
       // 2. Also fetch from inquiries table (deduplicated) for any existing opted-in clients
       try {
@@ -226,7 +231,7 @@ export default async function handler(req, res) {
             }
           }
         }
-      } catch (_) {}
+      } catch {}
 
       recipients = Array.from(emailMap.values());
     }
@@ -257,7 +262,7 @@ export default async function handler(req, res) {
           ...template,
           editorialText: personalizedBody
         };
-        const htmlContent = generateHtml(personalizedTemplate);
+        const htmlContent = generateHtml(personalizedTemplate, recipient.email);
 
         await transporter.sendMail({
           from: `"Zentrevo Private Journal" <${smtpUser}>`,

@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
         let { error: dbError } = await supabase.from('inquiries').insert([leadPayload]);
         if (dbError && (dbError.message?.includes('plan_price') || dbError.code === 'PGRST204')) {
-          const { plan_price, ...payloadWithoutPrice } = leadPayload;
+          const { plan_price: _planPrice, ...payloadWithoutPrice } = leadPayload;
           const retry = await supabase.from('inquiries').insert([payloadWithoutPrice]);
           dbError = retry.error;
         }

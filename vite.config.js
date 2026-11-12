@@ -41,9 +41,21 @@ function localApiPlugin() {
 
                 const wrappedRes = {
                   statusCode: 200,
+                  setHeader(k, v) {
+                    res.setHeader(k, v);
+                    return this;
+                  },
                   status(code) {
                     this.statusCode = code;
                     res.statusCode = code;
+                    return this;
+                  },
+                  send(payload) {
+                    res.statusCode = this.statusCode || 200;
+                    if (!res.getHeader('Content-Type')) {
+                      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    }
+                    res.end(typeof payload === 'string' ? payload : JSON.stringify(payload));
                     return this;
                   },
                   json(data) {
@@ -85,6 +97,26 @@ export default defineConfig(({ mode }) => {
     ],
     build: {
       sourcemap: true,
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: 'vendor-supabase',
+                test: /node_modules[\\/]@supabase/
+              },
+              {
+                name: 'vendor-react',
+                test: /node_modules[\\/](react|react-dom|scheduler)/
+              },
+              {
+                name: 'i18n-bundle',
+                test: /src[\\/]i18n[\\/]translations\.js/
+              }
+            ]
+          }
+        }
+      }
     },
   };
 });

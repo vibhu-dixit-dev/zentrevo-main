@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Clock, MapPin, CheckCircle, Sparkles, Crown, Mail, MessageCircle, ArrowUpRight, Loader2, AlertCircle, ShieldCheck, ChevronDown, Check } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { destinations, getActiveDestinations, getDestinationPrice } from '../data/travelData';
+import { getActiveDestinations, getDestinationPrice } from '../data/travelData';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
@@ -135,7 +135,7 @@ export default function BookingInquirySection({
         
         // Fallback: If plan_price column doesn't exist yet in Supabase schema, retry without it
         if (sbError && (sbError.message?.includes('plan_price') || sbError.code === 'PGRST204')) {
-          const { plan_price, ...payloadWithoutPrice } = insertPayload;
+          const { plan_price: _planPrice, ...payloadWithoutPrice } = insertPayload;
           const retry = await supabase.from('inquiries').insert([payloadWithoutPrice]);
           sbError = retry.error;
         }
@@ -154,7 +154,7 @@ export default function BookingInquirySection({
                   source: 'Booking Inquiry'
                 }
               ]);
-            } catch (_) {}
+            } catch {}
           }
         } else {
           console.warn('Supabase insertion notice:', sbError.message);

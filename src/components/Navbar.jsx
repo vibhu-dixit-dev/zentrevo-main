@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Compass, Sparkles, Menu, X, ArrowUpRight, Crown, Sun, ChevronDown, Globe2, MapPin, Palette, FileCheck, Languages } from 'lucide-react';
+import { Sparkles, Menu, X, ArrowUpRight, Crown, Sun, ChevronDown, Globe2, MapPin, Palette, FileCheck } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -284,16 +284,26 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
           </div>
 
           <a 
-            href="#experiences" 
-            className={`transition-colors ${
+            href="/#experiences" 
+            onClick={(e) => {
+              e.preventDefault();
+              if (onNavigate) {
+                onNavigate('/#experiences');
+              } else {
+                const el = document.getElementById('experiences');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className={`transition-colors cursor-pointer ${
               isSapphire ? 'text-stone-300 hover:text-amber-300' : isEmerald ? 'text-stone-300 hover:text-emerald-400' : 'text-stone-600 hover:text-stone-950'
             }`}
           >
             {t('nav.luxury')}
           </a>
           <a 
-            href="#stories" 
-            onClick={() => {
+            href="/journal" 
+            onClick={(e) => {
+              e.preventDefault();
               if (onOpenJournal) onOpenJournal(null);
             }}
             className={`transition-colors cursor-pointer ${
@@ -536,10 +546,31 @@ export default function Navbar({ currentTheme, onSelectTheme, onOpenInquiry, onS
               )}
             </div>
 
-            <a href="#experiences" onClick={() => setMobileMenuOpen(false)} className="py-1 border-b border-stone-200/10">
+            <a 
+              href="/#experiences" 
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                if (onNavigate) {
+                  onNavigate('/#experiences');
+                } else {
+                  const el = document.getElementById('experiences');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }} 
+              className="py-1 border-b border-stone-200/10"
+            >
               {t('nav.luxury')}
             </a>
-            <a href="#stories" onClick={() => { setMobileMenuOpen(false); if (onOpenJournal) onOpenJournal(null); }} className="py-1 border-b border-stone-200/10">
+            <a 
+              href="/journal" 
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                if (onOpenJournal) onOpenJournal(null);
+              }} 
+              className="py-1 border-b border-stone-200/10"
+            >
               {t('nav.blogs')}
             </a>
             
