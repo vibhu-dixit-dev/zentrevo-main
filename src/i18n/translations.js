@@ -291,6 +291,17 @@ export const translations = {
       prompt3: "How do I book a custom trip?",
       prompt4: "What are your official contact details?"
     },
+    pwa: {
+      badge: "Mobile App",
+      title: "Install Zentrevo App",
+      subtitle: "Instant access to itineraries, live maps & 24/7 concierge right from your home screen.",
+      installBtn: "Install App",
+      laterBtn: "Later",
+      gotItBtn: "Got It",
+      iosStep1: "Tap the Share icon at the bottom of Safari",
+      iosStep2: "Scroll & tap 'Add to Home Screen'",
+      manualHint: "Open your browser menu (⋮) and tap 'Install app' or 'Add to Home screen'."
+    },
     journal: {
       allNotes: "All Field Notes",
       modalTitle: "The Journal & Field Notes",
@@ -680,6 +691,17 @@ export const translations = {
       prompt2: "瑞士冰川快车行程费用是多少？",
       prompt3: "如何开始定制私人旅行方案？",
       prompt4: "你们的官方联系方式是什么？"
+    },
+    pwa: {
+      badge: "移动应用",
+      title: "安装 Zentrevo 应用",
+      subtitle: "从主屏幕一键畅享精选行程、交互地图与 24/7 私人礼宾服务。",
+      installBtn: "立即安装",
+      laterBtn: "稍后",
+      gotItBtn: "知道了",
+      iosStep1: "轻点 Safari 底部的“分享”图标",
+      iosStep2: "向下滑动并选择“添加到主屏幕”",
+      manualHint: "打开浏览器菜单 (⋮)，选择“安装应用”或“添加到主屏幕”。"
     },
     journal: {
       allNotes: "所有行者志",
@@ -1071,6 +1093,17 @@ export const translations = {
       prompt3: "¿Cómo reservo un viaje personalizado?",
       prompt4: "¿Cuáles son sus datos oficiales de contacto?"
     },
+    pwa: {
+      badge: "App Móvil",
+      title: "Instalar App Zentrevo",
+      subtitle: "Acceso rápido a itinerarios, mapas interactivos y conserjería 24/7 desde tu pantalla de inicio.",
+      installBtn: "Instalar App",
+      laterBtn: "Después",
+      gotItBtn: "Entendido",
+      iosStep1: "Toca el ícono Compartir en la barra inferior de Safari",
+      iosStep2: "Desliza y elige 'Añadir a pantalla de inicio'",
+      manualHint: "Abre el menú del navegador (⋮) y selecciona 'Instalar aplicación' o 'Añadir a pantalla de inicio'."
+    },
     journal: {
       allNotes: "Todas las Notas de Campo",
       modalTitle: "El Diario y Notas de Campo",
@@ -1460,6 +1493,17 @@ export const translations = {
       prompt2: "ما هي تكلفة قطار الأنهار الجليدية في سويسرا؟",
       prompt3: "كيف يمكنني حجز رحلة مخصصة؟",
       prompt4: "ما هي تفاصيل التواصل الرسمية لديكم؟"
+    },
+    pwa: {
+      badge: "تطبيق الجوال",
+      title: "تثبيت تطبيق Zentrevo",
+      subtitle: "وصول فوري للرحلات والخرائط التفاعلية وخدمة الكونسيرج 24/7 من شاشتك الرئيسية.",
+      installBtn: "تثبيت التطبيق",
+      laterBtn: "لاحقاً",
+      gotItBtn: "حسناً",
+      iosStep1: "اضغط على أيقونة المشاركة في أسفل متصفح سفاري",
+      iosStep2: "مرر للأسفل واختر 'إضافة إلى الشاشة الرئيسية'",
+      manualHint: "افتح قائمة المتصفح (⋮) واختر 'تثبيت التطبيق' أو 'الإضافة إلى الشاشة الرئيسية'."
     },
     journal: {
       allNotes: "جميع المذكرات واليوميات",

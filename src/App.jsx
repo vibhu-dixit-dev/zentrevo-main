@@ -10,6 +10,7 @@ import BookingInquirySection from './components/BookingInquirySection';
 import Footer from './components/Footer';
 import WhatsAppWidget from './components/WhatsAppWidget';
 import ChatbotWidget from './components/ChatbotWidget';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 
 const DetailModal = lazy(() => import('./components/DetailModal'));
 const JournalModal = lazy(() => import('./components/JournalModal'));
@@ -654,6 +655,7 @@ export default function App() {
         {/* Floating Widgets */}
         <WhatsAppWidget />
         <ChatbotWidget currentTheme={currentTheme} />
+        <PwaInstallPrompt currentTheme={currentTheme} />
       </div>
     );
   }
@@ -731,6 +733,7 @@ export default function App() {
         {/* Floating Widgets */}
         <WhatsAppWidget />
         <ChatbotWidget currentTheme={currentTheme} />
+        <PwaInstallPrompt currentTheme={currentTheme} />
       </div>
     );
   }
@@ -859,6 +862,9 @@ export default function App() {
 
       {/* 2. Floating AI Concierge Chatbot Widget (Bottom-Right, Theme-Adaptive) */}
       <ChatbotWidget currentTheme={currentTheme} />
+
+      {/* 3. One-time Mobile PWA Install Prompt */}
+      <PwaInstallPrompt currentTheme={currentTheme} />
     </div>
   );
 }

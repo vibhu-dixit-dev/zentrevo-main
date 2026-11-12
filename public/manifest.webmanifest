@@ -1,0 +1,32 @@
+{
+  "name": "Zentrevo | Curated Luxury Journeys",
+  "short_name": "Zentrevo",
+  "description": "Trips planned by people, not templates. Bespoke travel architecture, visa guidance, and 24/7 WhatsApp concierge.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#050a16",
+  "theme_color": "#050a16",
+  "categories": ["travel", "lifestyle"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
