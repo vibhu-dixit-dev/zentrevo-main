@@ -393,6 +393,7 @@ export const blogArticles = [
 ];
 
 export const STORAGE_KEY_DESTINATIONS = 'zentrevo_custom_destinations';
+const CLOUD_SYNC_FLAG_KEY = 'zentrevo_cloud_catalog_synced';
 
 export const getActiveDestinations = () => {
   if (typeof window === 'undefined') return destinations;
@@ -410,23 +411,107 @@ export const getActiveDestinations = () => {
   return destinations;
 };
 
-export const saveActiveDestinations = (newDestinations) => {
-  if (typeof window === 'undefined') return;
+/**
+ * Fetches the authoritative itinerary catalog from Supabase cloud (/api/destinations)
+ * and synchronizes localStorage + live UI listeners across the application.
+ */
+export const syncDestinationsFromCloud = async () => {
+  if (typeof window === 'undefined') {
+    return { synced: false, destinations };
+  }
+  try {
+    const res = await fetch('/api/destinations', { cache: 'no-store' });
+    if (!res.ok) {
+      return { synced: false, destinations: getActiveDestinations() };
+    }
+    const data = await res.json();
+    if (!data?.success || !data?.cloudConfigured) {
+      return { synced: false, destinations: getActiveDestinations() };
+    }
+
+    if (data.customized && Array.isArray(data.destinations) && data.destinations.length > 0) {
+      const serialized = JSON.stringify(data.destinations);
+      const current = localStorage.getItem(STORAGE_KEY_DESTINATIONS);
+      localStorage.setItem(CLOUD_SYNC_FLAG_KEY, 'true');
+
+      if (current !== serialized) {
+        localStorage.setItem(STORAGE_KEY_DESTINATIONS, serialized);
+        window.dispatchEvent(new Event('zentrevo_destinations_updated'));
+      }
+      return {
+        synced: true,
+        customized: true,
+        source: data.source,
+        destinations: data.destinations
+      };
+    }
+
+    // Cloud is in clean default state
+    if (localStorage.getItem(CLOUD_SYNC_FLAG_KEY) === 'true' && localStorage.getItem(STORAGE_KEY_DESTINATIONS)) {
+      localStorage.removeItem(STORAGE_KEY_DESTINATIONS);
+      localStorage.removeItem(CLOUD_SYNC_FLAG_KEY);
+      window.dispatchEvent(new Event('zentrevo_destinations_updated'));
+    }
+
+    return {
+      synced: true,
+      customized: false,
+      source: data.source,
+      destinations: getActiveDestinations()
+    };
+  } catch (e) {
+    console.warn('Cloud catalog sync notice:', e?.message || e);
+    return { synced: false, destinations: getActiveDestinations() };
+  }
+};
+
+export const saveActiveDestinations = async (newDestinations) => {
+  if (typeof window === 'undefined') return { localSaved: false, cloudSaved: false };
   try {
     localStorage.setItem(STORAGE_KEY_DESTINATIONS, JSON.stringify(newDestinations));
     window.dispatchEvent(new Event('zentrevo_destinations_updated'));
   } catch (e) {
-    console.error('Failed to save active destinations:', e);
+    console.error('Failed to save active destinations locally:', e);
+  }
+
+  try {
+    const res = await fetch('/api/destinations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ destinations: newDestinations })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+      try { localStorage.setItem(CLOUD_SYNC_FLAG_KEY, 'true'); } catch {}
+      return { localSaved: true, cloudSaved: true, source: data.source };
+    }
+    return { localSaved: true, cloudSaved: false, message: data.message };
+  } catch (e) {
+    console.warn('Cloud catalog persist fallback to local cache:', e?.message || e);
+    return { localSaved: true, cloudSaved: false, message: e?.message };
   }
 };
 
-export const resetActiveDestinations = () => {
-  if (typeof window === 'undefined') return;
+export const resetActiveDestinations = async () => {
+  if (typeof window === 'undefined') return { localReset: false, cloudReset: false };
   try {
     localStorage.removeItem(STORAGE_KEY_DESTINATIONS);
+    localStorage.removeItem(CLOUD_SYNC_FLAG_KEY);
     window.dispatchEvent(new Event('zentrevo_destinations_updated'));
   } catch (e) {
-    console.error('Failed to reset active destinations:', e);
+    console.error('Failed to reset active destinations locally:', e);
+  }
+
+  try {
+    const res = await fetch('/api/destinations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reset' })
+    });
+    const data = await res.json().catch(() => ({}));
+    return { localReset: true, cloudReset: !!(res.ok && data.success), source: data.source };
+  } catch (e) {
+    return { localReset: true, cloudReset: false, message: e?.message };
   }
 };
 

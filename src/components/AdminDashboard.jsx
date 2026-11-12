@@ -50,7 +50,7 @@ import {
   Monitor,
   AtSign
 } from 'lucide-react';
-import { destinations as initialDestinations, getActiveDestinations, saveActiveDestinations, resetActiveDestinations, getDestinationPrice } from '../data/travelData';
+import { destinations as initialDestinations, getActiveDestinations, saveActiveDestinations, resetActiveDestinations, syncDestinationsFromCloud, getDestinationPrice } from '../data/travelData';
 import { resolveIndiaCoordinates } from '../data/indiaCityGeoResolver';
 import { resolveWorldCoordinates } from '../data/worldCityGeoResolver';
 import { supabase } from '../lib/supabaseClient';
@@ -155,8 +155,9 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     return `${symbol}${converted.toLocaleString(locale)}`;
   };
 
-  // Itineraries State (Hydrated from persistent active catalogue)
+  // Itineraries State (Hydrated from persistent active catalogue + synced with Supabase Cloud)
   const [trips, setTrips] = useState(getActiveDestinations);
+  const [catalogCloudState, setCatalogCloudState] = useState('syncing'); // 'syncing' | 'synced' | 'local'
 
   useEffect(() => {
     const handleSyncTrips = () => {
@@ -164,7 +165,22 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     };
     window.addEventListener('zentrevo_destinations_updated', handleSyncTrips);
     window.addEventListener('storage', handleSyncTrips);
+
+    let active = true;
+    syncDestinationsFromCloud().then((result) => {
+      if (!active) return;
+      if (result.synced) {
+        setCatalogCloudState('synced');
+        if (result.destinations) {
+          setTrips(result.destinations);
+        }
+      } else {
+        setCatalogCloudState('local');
+      }
+    });
+
     return () => {
+      active = false;
       window.removeEventListener('zentrevo_destinations_updated', handleSyncTrips);
       window.removeEventListener('storage', handleSyncTrips);
     };
@@ -1108,7 +1124,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     setIsModalOpen(true);
   };
 
-  const handleSaveTrip = (e) => {
+  const handleSaveTrip = async (e) => {
     e.preventDefault();
     const highlightsList = typeof formData.highlights === 'string' 
       ? formData.highlights.split(',').map(s => s.trim()).filter(Boolean)
@@ -1156,7 +1172,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     }
 
     let updatedTrips;
-    if (modalMode === 'add') {
+    const isAdding = modalMode === 'add';
+    if (isAdding) {
       const newTrip = {
         ...formData,
         ...geoCoords,
@@ -1166,9 +1183,6 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         highlights: highlightsList
       };
       updatedTrips = [newTrip, ...trips];
-      setTrips(updatedTrips);
-      saveActiveDestinations(updatedTrips);
-      showToast(`Created & published "${formData.title}"`);
     } else {
       updatedTrips = trips.map(t => t.id === editingTripId ? {
         ...t,
@@ -1178,23 +1192,29 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         reviews: parsedReviews,
         highlights: highlightsList
       } : t);
-      setTrips(updatedTrips);
-      saveActiveDestinations(updatedTrips);
-      showToast(`Updated "${formData.title}"`);
     }
+
+    setTrips(updatedTrips);
     setIsModalOpen(false);
+    setCatalogCloudState('syncing');
+    const persistResult = await saveActiveDestinations(updatedTrips);
+    setCatalogCloudState(persistResult.cloudSaved ? 'synced' : 'local');
+    const actionLabel = isAdding ? `Created & published "${formData.title}"` : `Updated "${formData.title}"`;
+    showToast(persistResult.cloudSaved ? `${actionLabel} • Synced to Cloud` : `${actionLabel} (Local cache only)`);
   };
 
-  const handleDeleteTrip = (id, title) => {
+  const handleDeleteTrip = async (id, title) => {
     if (window.confirm(`Are you sure you want to remove "${title}" from the public catalogue?`)) {
       const updatedTrips = trips.filter(t => t.id !== id);
       setTrips(updatedTrips);
-      saveActiveDestinations(updatedTrips);
-      showToast(`Removed "${title}"`);
+      setCatalogCloudState('syncing');
+      const persistResult = await saveActiveDestinations(updatedTrips);
+      setCatalogCloudState(persistResult.cloudSaved ? 'synced' : 'local');
+      showToast(persistResult.cloudSaved ? `Removed "${title}" • Cloud Updated` : `Removed "${title}" (Local)`);
     }
   };
 
-  const handleDuplicateTrip = (trip) => {
+  const handleDuplicateTrip = async (trip) => {
     const copy = {
       ...trip,
       id: Date.now(),
@@ -1202,15 +1222,19 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     };
     const updatedTrips = [copy, ...trips];
     setTrips(updatedTrips);
-    saveActiveDestinations(updatedTrips);
-    showToast(`Duplicated "${trip.title}"`);
+    setCatalogCloudState('syncing');
+    const persistResult = await saveActiveDestinations(updatedTrips);
+    setCatalogCloudState(persistResult.cloudSaved ? 'synced' : 'local');
+    showToast(persistResult.cloudSaved ? `Duplicated "${trip.title}" • Cloud Synced` : `Duplicated "${trip.title}"`);
   };
 
-  const handleResetTrips = () => {
+  const handleResetTrips = async () => {
     if (window.confirm('Reset all itinerary cards to original curated catalog defaults? Any custom cards will be cleared.')) {
-      resetActiveDestinations();
+      setCatalogCloudState('syncing');
+      const resetResult = await resetActiveDestinations();
       setTrips(initialDestinations);
-      showToast('Restored default itinerary cards');
+      setCatalogCloudState(resetResult.cloudReset ? 'synced' : 'local');
+      showToast(resetResult.cloudReset ? 'Restored default itinerary cards (Cloud & Local)' : 'Restored default itinerary cards');
     }
   };
 
@@ -2129,6 +2153,21 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                       className="w-full bg-stone-50 border border-stone-200/90 rounded-full pl-9 pr-4 py-1.5 text-xs text-stone-900 placeholder-stone-500 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
                     />
                   </div>
+
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap ${
+                    catalogCloudState === 'synced'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : catalogCloudState === 'syncing'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-stone-100 text-stone-600 border-stone-200'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      catalogCloudState === 'synced' ? 'bg-emerald-500' : catalogCloudState === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-stone-400'
+                    }`} />
+                    <span>
+                      {catalogCloudState === 'synced' ? 'Cloud Synced' : catalogCloudState === 'syncing' ? 'Syncing Cloud...' : 'Local Cache'}
+                    </span>
+                  </span>
 
                   <span className="text-xs text-stone-500 font-medium whitespace-nowrap hidden xl:inline">
                     Showing <strong className="text-stone-900">{filteredTrips.length}</strong> of {trips.length}

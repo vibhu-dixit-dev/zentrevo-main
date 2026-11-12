@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, Plane, CheckCircle2, ChevronDown, Crown, Sparkles, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { destinations } from '../data/travelData';
+import { destinations, getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 
 export default function HeroSection({ currentTheme, onSelectDestination, onSearchFilter, onOpenInquiry }) {
@@ -10,8 +10,24 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
 
+  // Sync active itinerary list (includes Admin-added trips)
+  const [activeDestList, setActiveDestList] = useState(getActiveDestinations);
+
+  useEffect(() => {
+    const handleSync = () => {
+      setActiveDestList(getActiveDestinations());
+    };
+    window.addEventListener('zentrevo_destinations_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('zentrevo_destinations_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
   // Search State
   const [selectedLocation, setSelectedLocation] = useState('Select Destination');
+  const [selectedDestItem, setSelectedDestItem] = useState(null);
   const [selectedDate, setSelectedDate] = useState('Oct 28 - Nov 4, 2026');
   const [selectedGuests, setSelectedGuests] = useState('Select Travelers');
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
@@ -64,9 +80,12 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
   const handleSearchClick = () => {
     if (onSearchFilter) {
       onSearchFilter({
-        location: selectedLocation,
+        destinationId: selectedDestItem ? selectedDestItem.id : null,
+        destinationTitle: selectedDestItem ? selectedDestItem.title : '',
+        destinationLocation: selectedDestItem ? selectedDestItem.location : '',
+        label: selectedLocation !== 'Select Destination' ? selectedLocation : '',
         date: selectedDate,
-        guests: selectedGuests
+        guests: selectedGuests !== 'Select Travelers' ? selectedGuests : ''
       });
     }
     const destEl = document.getElementById('destinations');
@@ -392,18 +411,28 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
               isSapphire ? 'bg-[#0c1a38]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23]/98 border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl'
             }`}>
               {[
-                t('hero.selectDestination', 'Select Destination'),
-                ...getLocalizedDestinationsList(destinations, language).map(d => `${d.location} (${d.title})`)
-              ].map((loc, idx) => (
+                { id: null, label: t('hero.selectDestination', 'Select Destination'), item: null },
+                ...getLocalizedDestinationsList(activeDestList.length ? activeDestList : destinations, language).map(d => ({
+                  id: d.id,
+                  label: `${d.location} (${d.title})`,
+                  item: d
+                }))
+              ].map((opt, idx) => (
                 <button
-                  key={idx}
+                  key={opt.id || 'default'}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedLocation(loc);
+                    if (idx === 0) {
+                      setSelectedLocation('Select Destination');
+                      setSelectedDestItem(null);
+                    } else {
+                      setSelectedLocation(opt.label);
+                      setSelectedDestItem(opt.item);
+                    }
                     setLocationDropdownOpen(false);
                   }}
                   className={`w-full text-left px-3 py-2 text-xs rounded-xl transition-colors cursor-pointer ${
-                    selectedLocation === loc
+                    (idx === 0 ? selectedLocation === 'Select Destination' : selectedDestItem?.id === opt.id)
                       ? isSapphire
                         ? 'bg-amber-400/20 text-amber-300 font-semibold'
                         : isEmerald
@@ -414,7 +443,7 @@ export default function HeroSection({ currentTheme, onSelectDestination, onSearc
                         : 'hover:bg-stone-100 text-stone-800'
                   } ${idx === 0 ? 'italic text-stone-400 font-normal' : ''}`}
                 >
-                  {loc}
+                  {opt.label}
                 </button>
               ))}
             </div>

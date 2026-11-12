@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { destinations, getActiveDestinations } from '../data/travelData';
-import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers } from 'lucide-react';
+import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers, X, Search } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
@@ -9,7 +9,9 @@ export default function DestinationsGrid({
   currentTheme, 
   onSelectDestination,
   selectedRegion = 'all',
-  onSelectRegion
+  onSelectRegion,
+  searchFilter = null,
+  onClearSearchFilter
 }) {
   const { formatPrice } = useCurrency();
   const { t, language } = useLanguage();
@@ -41,6 +43,9 @@ export default function DestinationsGrid({
 
   const handleRegionChange = (region) => {
     setCurrentRegion(region);
+    if (onClearSearchFilter) {
+      onClearSearchFilter();
+    }
     if (onSelectRegion) {
       onSelectRegion(region);
     }
@@ -65,15 +70,34 @@ export default function DestinationsGrid({
   const nationalCount = localizedList.filter(d => (d.region || 'international') === 'national').length;
   const internationalCount = localizedList.filter(d => (d.region || 'international') === 'international').length;
 
-  // 1. Filter by Region (National vs International vs All)
+  // 1. Apply Hero Search Filter if active
+  const hasActiveSearch = Boolean(
+    searchFilter && (searchFilter.destinationId || searchFilter.destinationTitle || searchFilter.destinationLocation || searchFilter.label)
+  );
+
+  // 2. Filter by Region (National vs International vs All)
   const regionFiltered = currentRegion === 'all'
     ? localizedList
     : localizedList.filter(d => (d.region || 'international') === currentRegion);
 
-  // 2. Filter by Category
-  const filteredDestinations = activeCategory === 'All' 
-    ? regionFiltered 
-    : regionFiltered.filter(d => (d.baseCategory || d.category) === activeCategory);
+  // 3. Filter by Category or Search Criteria
+  const filteredDestinations = useMemo(() => {
+    if (hasActiveSearch) {
+      return localizedList.filter((d) => {
+        if (searchFilter.destinationId && String(d.id) === String(searchFilter.destinationId)) {
+          return true;
+        }
+        const qTitle = (searchFilter.destinationTitle || '').toLowerCase();
+        const qLoc = (searchFilter.destinationLocation || '').toLowerCase();
+        const dTitle = (d.title || '').toLowerCase();
+        const dLoc = (d.location || '').toLowerCase();
+        return (qTitle && dTitle.includes(qTitle)) || (qLoc && dLoc.includes(qLoc));
+      });
+    }
+    return activeCategory === 'All' 
+      ? regionFiltered 
+      : regionFiltered.filter(d => (d.baseCategory || d.category) === activeCategory);
+  }, [hasActiveSearch, searchFilter, localizedList, activeCategory, regionFiltered]);
 
   return (
     <section id="destinations" className="px-4 sm:px-8 py-16 scroll-mt-24">
@@ -171,7 +195,10 @@ export default function DestinationsGrid({
             {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  setActiveCategory(cat);
+                  if (onClearSearchFilter) onClearSearchFilter();
+                }}
                 className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
                   activeCategory === cat
                     ? isSapphire
@@ -191,6 +218,50 @@ export default function DestinationsGrid({
             ))}
           </div>
         </div>
+
+        {/* Active Search Filter Banner (from Hero Search Bar) */}
+        {hasActiveSearch && (
+          <div className={`mb-8 p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 animate-fadeIn ${
+            isSapphire
+              ? 'bg-[#091530] border-amber-500/40 text-stone-100'
+              : isEmerald
+                ? 'bg-[#08221a] border-emerald-700/50 text-stone-100'
+                : 'bg-white border-stone-300 text-stone-900 shadow-sm'
+          }`}>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className={`inline-flex items-center gap-1.5 font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                isSapphire ? 'bg-amber-400/20 text-amber-300' : isEmerald ? 'bg-emerald-500/20 text-emerald-300' : 'bg-stone-100 text-stone-800'
+              }`}>
+                <Search className="w-3 h-3" />
+                <span>Filtered Result</span>
+              </span>
+              <span className="font-semibold">
+                {searchFilter.label || searchFilter.destinationTitle || searchFilter.destinationLocation}
+              </span>
+              {searchFilter.date && (
+                <span className="opacity-75">• {searchFilter.date}</span>
+              )}
+              {searchFilter.guests && (
+                <span className="opacity-75">• {searchFilter.guests}</span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onClearSearchFilter && onClearSearchFilter()}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
+                isSapphire
+                  ? 'border-amber-500/40 text-amber-300 hover:bg-amber-400 hover:text-stone-950'
+                  : isEmerald
+                    ? 'border-emerald-600/50 text-emerald-300 hover:bg-emerald-400 hover:text-stone-950'
+                    : 'border-stone-300 text-stone-700 hover:bg-stone-950 hover:text-white'
+              }`}
+            >
+              <span>Show All Journeys</span>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Masonry / Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

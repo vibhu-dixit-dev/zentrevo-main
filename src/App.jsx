@@ -30,6 +30,7 @@ import {
   updateDocumentSeo, 
   resetDocumentSeo 
 } from './lib/seoRoutes';
+import { syncDestinationsFromCloud } from './data/travelData';
 
 export default function App() {
   // Admin Session State
@@ -71,6 +72,30 @@ export default function App() {
   const [selectedJournalArticle, setSelectedJournalArticle] = useState(null);
   const [isVisaModalOpen, setIsVisaModalOpen] = useState(false);
   const [preselectedDestination, setPreselectedDestination] = useState('');
+  const [preselectedGuests, setPreselectedGuests] = useState('');
+  const [preselectedDates, setPreselectedDates] = useState('');
+  const [heroSearchFilter, setHeroSearchFilter] = useState(null);
+
+  const handleHeroSearchFilter = useCallback((filter) => {
+    if (!filter) return;
+    const hasDestinationChoice = Boolean(filter.destinationId || filter.destinationTitle || filter.destinationLocation || filter.label);
+    if (hasDestinationChoice) {
+      setHeroSearchFilter(filter);
+      setSelectedRegion('all');
+      if (filter.destinationTitle || filter.destinationLocation) {
+        setPreselectedDestination(filter.destinationTitle || filter.destinationLocation);
+      }
+    } else {
+      setHeroSearchFilter(null);
+    }
+
+    if (filter.guests) {
+      setPreselectedGuests(filter.guests);
+    }
+    if (filter.date) {
+      setPreselectedDates(filter.date);
+    }
+  }, []);
 
   const navigateTo = useCallback((path) => {
     if (typeof window !== 'undefined') {
@@ -366,9 +391,20 @@ export default function App() {
     // Initial sync on mount to handle direct URLs (e.g. /destinations/bali or /privacy-policy)
     handleLocationChange();
 
+    // Fetch authoritative live itinerary catalog from Supabase Cloud
+    let isMounted = true;
+    syncDestinationsFromCloud().then((res) => {
+      if (!isMounted) return;
+      const path = window.location.pathname || '/';
+      if (res?.synced && path.startsWith('/destinations/')) {
+        syncRouteWithModal(path);
+      }
+    });
+
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('hashchange', handleLocationChange);
     return () => {
+      isMounted = false;
       window.removeEventListener('popstate', handleLocationChange);
       window.removeEventListener('hashchange', handleLocationChange);
     };
@@ -634,6 +670,7 @@ export default function App() {
         <HeroSection 
           currentTheme={currentTheme}
           onSelectDestination={handleOpenDestination}
+          onSearchFilter={handleHeroSearchFilter}
           onOpenInquiry={handleScrollToInquiry}
         />
 
@@ -648,6 +685,8 @@ export default function App() {
           onSelectDestination={handleOpenDestination}
           selectedRegion={selectedRegion}
           onSelectRegion={setSelectedRegion}
+          searchFilter={heroSearchFilter}
+          onClearSearchFilter={() => setHeroSearchFilter(null)}
         />
 
         {/* Experience & Core Beliefs Split Section */}
@@ -672,6 +711,8 @@ export default function App() {
         <BookingInquirySection 
           currentTheme={currentTheme}
           preselectedDestination={preselectedDestination}
+          preselectedGuests={preselectedGuests}
+          preselectedDates={preselectedDates}
         />
       </main>
 

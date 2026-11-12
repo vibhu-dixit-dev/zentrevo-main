@@ -6,7 +6,12 @@ import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
 
-export default function BookingInquirySection({ currentTheme, preselectedDestination }) {
+export default function BookingInquirySection({
+  currentTheme,
+  preselectedDestination,
+  preselectedGuests,
+  preselectedDates
+}) {
   const { currency, formatPrice } = useCurrency();
   const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
@@ -32,15 +37,22 @@ export default function BookingInquirySection({ currentTheme, preselectedDestina
   const destRef = useRef(null);
   const guestsRef = useRef(null);
 
-  // Sync preselected destination if user clicks "Book This Itinerary" on any card
+  // Sync preselected destination, guests, and travel dates from cards or Hero Search Bar
   useEffect(() => {
-    if (preselectedDestination) {
-      setFormData(prev => ({
-        ...prev,
-        destination: preselectedDestination
-      }));
+    if (preselectedDestination || preselectedGuests || preselectedDates) {
+      setFormData(prev => {
+        const nextMessage = preselectedDates && (!prev.message || prev.message.startsWith('Preferred Dates:'))
+          ? `Preferred Dates: ${preselectedDates}`
+          : prev.message;
+        return {
+          ...prev,
+          ...(preselectedDestination ? { destination: preselectedDestination } : {}),
+          ...(preselectedGuests ? { guests: preselectedGuests } : {}),
+          message: nextMessage
+        };
+      });
     }
-  }, [preselectedDestination]);
+  }, [preselectedDestination, preselectedGuests, preselectedDates]);
 
   const [activeDestList, setActiveDestList] = useState(getActiveDestinations);
 
