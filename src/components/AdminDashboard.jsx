@@ -30,9 +30,22 @@ import {
   Send,
   Smartphone,
   Monitor,
-  AtSign
+  AtSign,
+  BookOpen
 } from 'lucide-react';
-import { destinations as initialDestinations, getActiveDestinations, saveActiveDestinations, resetActiveDestinations, syncDestinationsFromCloud, getDestinationPrice } from '../data/travelData';
+import { 
+  destinations as initialDestinations, 
+  getActiveDestinations, 
+  saveActiveDestinations, 
+  resetActiveDestinations, 
+  syncDestinationsFromCloud, 
+  getDestinationPrice,
+  blogArticles as initialBlogArticles,
+  getActiveBlogArticles,
+  saveActiveBlogArticles,
+  resetActiveBlogArticles,
+  syncBlogArticlesFromCloud
+} from '../data/travelData';
 import { resolveIndiaCoordinates } from '../data/indiaCityGeoResolver';
 import { resolveWorldCoordinates } from '../data/worldCityGeoResolver';
 import { supabase } from '../lib/supabaseClient';
@@ -148,6 +161,61 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       active = false;
       window.removeEventListener('zentrevo_destinations_updated', handleSyncTrips);
       window.removeEventListener('storage', handleSyncTrips);
+    };
+  }, []);
+
+  // Journal / Blog Articles State (Hydrated from active blog articles + synced with Supabase Cloud)
+  const [articles, setArticles] = useState(getActiveBlogArticles);
+  const [blogCloudState, setBlogCloudState] = useState('syncing'); // 'syncing' | 'synced' | 'local'
+  const [articleSearch, setArticleSearch] = useState('');
+  const [selectedBlogCategory, setSelectedBlogCategory] = useState('All');
+  const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
+  const [blogModalMode, setBlogModalMode] = useState('add'); // 'add' | 'edit'
+  const [editingArticleId, setEditingArticleId] = useState(null);
+
+  const initialBlogForm = {
+    title: '',
+    destination: '',
+    category: 'Adventure & Seclusion',
+    date: 'November 13, 2026',
+    readTime: '5 min read',
+    image: '',
+    imageAlt: '',
+    authorName: 'Elena Rostova',
+    authorRole: 'Private Expedition Curator',
+    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    pullQuote: '',
+    excerpt: '',
+    content: '',
+    highlights: ''
+  };
+
+  const [blogFormData, setBlogFormData] = useState(initialBlogForm);
+
+  useEffect(() => {
+    const handleSyncBlogs = () => {
+      setArticles(getActiveBlogArticles());
+    };
+    window.addEventListener('zentrevo_blogs_updated', handleSyncBlogs);
+    window.addEventListener('storage', handleSyncBlogs);
+
+    let active = true;
+    syncBlogArticlesFromCloud().then((result) => {
+      if (!active) return;
+      if (result.synced) {
+        setBlogCloudState('synced');
+        if (result.articles) {
+          setArticles(result.articles);
+        }
+      } else {
+        setBlogCloudState('local');
+      }
+    });
+
+    return () => {
+      active = false;
+      window.removeEventListener('zentrevo_blogs_updated', handleSyncBlogs);
+      window.removeEventListener('storage', handleSyncBlogs);
     };
   }, []);
 
@@ -1309,6 +1377,129 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     }
   };
 
+  // ─── BLOG / JOURNAL CMS HANDLERS ───────────────────────────────────────────
+  const handleOpenAddBlogModal = () => {
+    setBlogModalMode('add');
+    setEditingArticleId(null);
+    setBlogFormData({
+      ...initialBlogForm,
+      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    });
+    setIsBlogModalOpen(true);
+  };
+
+  const handleOpenEditBlogModal = (article) => {
+    setBlogModalMode('edit');
+    setEditingArticleId(article.id);
+    const contentText = Array.isArray(article.content) ? article.content.join('\n\n') : (article.content || '');
+    const highlightsText = Array.isArray(article.highlights) ? article.highlights.join('\n') : (article.highlights || '');
+
+    setBlogFormData({
+      title: article.title || '',
+      destination: article.destination || '',
+      category: article.category || 'Adventure & Seclusion',
+      date: article.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      readTime: article.readTime || '5 min read',
+      image: article.image || '',
+      imageAlt: article.imageAlt || '',
+      authorName: article.author?.name || 'Elena Rostova',
+      authorRole: article.author?.role || 'Private Expedition Curator',
+      authorAvatar: article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      pullQuote: article.pullQuote || '',
+      excerpt: article.excerpt || '',
+      content: contentText,
+      highlights: highlightsText
+    });
+    setIsBlogModalOpen(true);
+  };
+
+  const handleSaveBlog = async (e) => {
+    e.preventDefault();
+    if (!blogFormData.title.trim()) {
+      showToast('Please provide an article title.');
+      return;
+    }
+
+    const contentParagraphs = blogFormData.content
+      ? blogFormData.content.split(/\n+/).map(p => p.trim()).filter(Boolean)
+      : [];
+
+    const highlightsList = blogFormData.highlights
+      ? blogFormData.highlights.split(/\n|,/).map(h => h.trim()).filter(Boolean)
+      : [];
+
+    const articlePayload = {
+      id: blogModalMode === 'edit' && editingArticleId ? editingArticleId : Date.now(),
+      title: blogFormData.title.trim(),
+      destination: blogFormData.destination.trim() || 'Global Expedition',
+      category: blogFormData.category || 'Adventure & Seclusion',
+      date: blogFormData.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      readTime: blogFormData.readTime || '5 min read',
+      image: blogFormData.image || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=720&q=75',
+      imageAlt: blogFormData.imageAlt || `${blogFormData.title} - Zentrevo Journal`,
+      author: {
+        name: blogFormData.authorName || 'Elena Rostova',
+        role: blogFormData.authorRole || 'Private Expedition Curator',
+        avatar: blogFormData.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
+      },
+      pullQuote: blogFormData.pullQuote || '',
+      excerpt: blogFormData.excerpt || '',
+      content: contentParagraphs.length > 0 ? contentParagraphs : [blogFormData.excerpt || 'Bespoke narrative from Zentrevo private curators.'],
+      highlights: highlightsList
+    };
+
+    let updated;
+    if (blogModalMode === 'add') {
+      updated = [articlePayload, ...articles];
+    } else {
+      updated = articles.map(a => a.id === editingArticleId ? { ...a, ...articlePayload } : a);
+    }
+
+    setArticles(updated);
+    setIsBlogModalOpen(false);
+    setBlogCloudState('syncing');
+
+    const result = await saveActiveBlogArticles(updated);
+    setBlogCloudState(result.cloudSaved ? 'synced' : 'local');
+    const actionLabel = blogModalMode === 'add' ? `Published "${articlePayload.title}"` : `Updated "${articlePayload.title}"`;
+    showToast(result.cloudSaved ? `${actionLabel} • Synced to Cloud` : `${actionLabel} (Local Cache)`);
+  };
+
+  const handleDeleteBlog = async (id, title) => {
+    if (window.confirm(`Are you sure you want to remove "${title}" from the Private Journal?`)) {
+      const updated = articles.filter(a => a.id !== id);
+      setArticles(updated);
+      setBlogCloudState('syncing');
+      const result = await saveActiveBlogArticles(updated);
+      setBlogCloudState(result.cloudSaved ? 'synced' : 'local');
+      showToast(result.cloudSaved ? `Removed "${title}" • Cloud Synced` : `Removed "${title}"`);
+    }
+  };
+
+  const handleDuplicateBlog = async (article) => {
+    const copy = {
+      ...article,
+      id: Date.now(),
+      title: `${article.title} (Curator's Cut)`
+    };
+    const updated = [copy, ...articles];
+    setArticles(updated);
+    setBlogCloudState('syncing');
+    const result = await saveActiveBlogArticles(updated);
+    setBlogCloudState(result.cloudSaved ? 'synced' : 'local');
+    showToast(result.cloudSaved ? `Duplicated "${article.title}" • Cloud Synced` : `Duplicated "${article.title}"`);
+  };
+
+  const handleResetBlogs = async () => {
+    if (window.confirm('Reset all Journal articles to original curated editorial defaults? Any custom articles will be restored.')) {
+      setBlogCloudState('syncing');
+      const result = await resetActiveBlogArticles();
+      setArticles(initialBlogArticles);
+      setBlogCloudState(result.cloudReset ? 'synced' : 'local');
+      showToast(result.cloudReset ? 'Restored default Journal articles (Cloud & Local)' : 'Restored default Journal articles');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#fcfbf9] text-stone-900 font-sans-clean antialiased selection:bg-stone-900 selection:text-white flex">
       
@@ -1396,7 +1587,32 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                   </span>
                 </button>
 
-                {/* Panel Tab 3: Guest Inquiries */}
+                {/* Panel Tab 3: Journal & Stories CMS */}
+                <button
+                  onClick={() => {
+                    setActiveTab('blogs');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'blogs'
+                      ? 'bg-stone-950 text-white shadow-sm font-bold'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <BookOpen className="w-4 h-4" />
+                    <span>Journal CMS</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeTab === 'blogs' ? 'bg-amber-400 text-stone-950' : 'bg-stone-100 text-stone-700'
+                    }`}>
+                      {articles.length}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Panel Tab 4: Guest Inquiries */}
                 <button
                   onClick={() => {
                     setActiveTab('inquiries');
@@ -1550,11 +1766,13 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                     ? 'Performance' 
                     : activeTab === 'itineraries' 
                       ? 'Cards' 
-                      : activeTab === 'inquiries' 
-                        ? 'Inquiries' 
-                        : activeTab === 'emails' 
-                          ? 'Emails' 
-                          : 'Newsletter'}
+                      : activeTab === 'blogs'
+                        ? 'Journal CMS'
+                        : activeTab === 'inquiries' 
+                          ? 'Inquiries' 
+                          : activeTab === 'emails' 
+                            ? 'Emails' 
+                            : 'Newsletter'}
               </span>
             </div>
           </div>
@@ -3377,6 +3595,254 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
             </div>
           )}
 
+          {/* ─── TAB 6: THE PRIVATE JOURNAL / STORIES CMS ─────────────────────── */}
+          {activeTab === 'blogs' && !isSalesRole && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              
+              {/* Top Banner Card */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-amber-800">
+                        Content Management System
+                      </span>
+                      <span className="text-stone-300">•</span>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-200 bg-stone-50">
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          blogCloudState === 'synced' ? 'bg-emerald-500 animate-pulse' : blogCloudState === 'syncing' ? 'bg-amber-400 animate-spin' : 'bg-stone-400'
+                        }`} />
+                        <span className="text-stone-600">
+                          {blogCloudState === 'synced' ? 'Synced to Cloud (Supabase)' : blogCloudState === 'syncing' ? 'Syncing...' : 'Local Cache'}
+                        </span>
+                      </div>
+                    </div>
+                    <h2 className="font-editorial text-xl sm:text-2xl font-bold tracking-tight text-stone-950">
+                      The Private Journal • Stories & Dispatches
+                    </h2>
+                    <p className="text-xs text-stone-600 mt-1 max-w-2xl">
+                      Curate, publish, and edit bespoke luxury travel narratives, artisan studio profiles, and high-altitude dispatches.
+                    </p>
+                  </div>
+
+                  {/* Actions: Add New Story & Reset */}
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleResetBlogs}
+                      className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-stone-200"
+                      title="Restore original curated story defaults"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Reset Defaults</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleOpenAddBlogModal}
+                      className="px-4 py-2 rounded-xl bg-stone-950 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-md cursor-pointer hover:scale-[1.02]"
+                    >
+                      <Plus className="w-4 h-4 text-amber-400" />
+                      <span>Curate New Story</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* KPI Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-stone-100">
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Total Published Stories</span>
+                    <span className="font-editorial text-2xl font-bold text-stone-950 mt-0.5 block">{articles.length}</span>
+                  </div>
+
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Active Categories</span>
+                    <span className="font-editorial text-2xl font-bold text-amber-800 mt-0.5 block">
+                      {new Set(articles.map(a => a.category)).size}
+                    </span>
+                  </div>
+
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Global Public Visibility</span>
+                    <span className="font-editorial text-2xl font-bold text-emerald-800 mt-0.5 block">
+                      Live on /journal
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search & Filter Bar */}
+              <div className="bg-white rounded-2xl p-4 border border-stone-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={articleSearch}
+                    onChange={(e) => setArticleSearch(e.target.value)}
+                    placeholder="Search by title, destination, category, author..."
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-stone-50 border border-stone-200 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-950 focus:bg-white transition-all font-medium"
+                  />
+                  {articleSearch && (
+                    <button
+                      onClick={() => setArticleSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 cursor-pointer text-xs"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar scrollbar-none [scrollbar-width:none]">
+                  {[
+                    'All',
+                    'Adventure & Seclusion',
+                    'Culture & Philosophy',
+                    'Artisan Heritage',
+                    'Wellness Sanctuary',
+                    'Culinary Expeditions'
+                  ].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedBlogCategory(cat)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                        selectedBlogCategory === cat
+                          ? 'bg-stone-950 text-white shadow-xs font-bold'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-950'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Articles Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {articles
+                  .filter((item) => {
+                    const q = articleSearch.toLowerCase().trim();
+                    const matchesSearch = !q ||
+                      (item.title && item.title.toLowerCase().includes(q)) ||
+                      (item.destination && item.destination.toLowerCase().includes(q)) ||
+                      (item.category && item.category.toLowerCase().includes(q)) ||
+                      (item.author?.name && item.author.name.toLowerCase().includes(q)) ||
+                      (item.excerpt && item.excerpt.toLowerCase().includes(q));
+
+                    const matchesCategory = selectedBlogCategory === 'All' || item.category === selectedBlogCategory;
+                    return matchesSearch && matchesCategory;
+                  })
+                  .map((article) => (
+                    <div
+                      key={article.id}
+                      className="bg-white rounded-3xl overflow-hidden border border-stone-200/90 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group"
+                    >
+                      {/* Cover Photo */}
+                      <div className="relative aspect-[16/10] overflow-hidden bg-stone-100">
+                        <img
+                          src={article.image || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=720&q=75'}
+                          alt={article.imageAlt || article.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-transparent pointer-events-none" />
+
+                        {/* Category & Read Time Tags */}
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-950/85 text-white backdrop-blur-md border border-white/10 shadow-sm">
+                            {article.category}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-white bg-black/60 backdrop-blur-md border border-white/10">
+                            {article.readTime}
+                          </span>
+                        </div>
+
+                        {/* Destination */}
+                        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 text-xs font-semibold text-white">
+                          <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span className="drop-shadow-sm truncate">{article.destination}</span>
+                        </div>
+                      </div>
+
+                      {/* Content Details */}
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <div className="space-y-2">
+                          <h3 className="font-editorial text-base sm:text-lg font-bold text-stone-950 line-clamp-2 leading-snug group-hover:text-amber-800 transition-colors">
+                            {article.title}
+                          </h3>
+                          <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed font-normal">
+                            {article.excerpt}
+                          </p>
+
+                          {article.pullQuote && (
+                            <div className="pl-2.5 border-l-2 border-amber-500/50 italic text-[11px] text-stone-700 line-clamp-2 mt-2">
+                              "{article.pullQuote}"
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Author Byline & Publication Date */}
+                        <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <img
+                              src={article.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                              alt={article.author?.name}
+                              className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-stone-200"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-stone-950 truncate text-[11px]">{article.author?.name}</p>
+                              <p className="text-[10px] text-stone-500 truncate">{article.author?.role}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-stone-400 shrink-0 font-medium">{article.date}</span>
+                        </div>
+
+                        {/* Actions Bar */}
+                        <div className="pt-2 flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditBlogModal(article)}
+                            className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3 h-3 text-stone-600" />
+                            <span>Edit Story</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateBlog(article)}
+                            className="p-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
+                            title="Duplicate story"
+                            aria-label="Duplicate story"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBlog(article.id, article.title)}
+                            className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
+                            title="Delete story"
+                            aria-label="Delete story"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                {articles.length === 0 && (
+                  <div className="col-span-full p-12 text-center rounded-3xl bg-white border border-stone-200/90 space-y-3">
+                    <BookOpen className="w-8 h-8 text-stone-400 mx-auto" />
+                    <h3 className="font-editorial text-lg font-bold text-stone-900">No Journal Stories Published Yet</h3>
+                    <p className="text-xs text-stone-500">Click "+ Curate New Story" above to publish your first luxury narrative.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -3788,6 +4254,287 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                   className="px-7 py-3 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 transition-all shadow-lg cursor-pointer hover:scale-[1.02]"
                 >
                   {modalMode === 'add' ? 'Publish Itinerary' : 'Save Modifications'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 3.5 EDITORIAL MODAL FOR ADD / EDIT JOURNAL STORY ───────────────── */}
+      {isBlogModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-6 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-3xl bg-white rounded-2xl sm:rounded-[32px] shadow-2xl border border-stone-200/90 overflow-hidden max-h-[94vh] flex flex-col">
+            
+            {/* Header */}
+            <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-stone-100 flex items-center justify-between bg-stone-50/60 shrink-0">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-amber-800 block">
+                  {blogModalMode === 'add' ? 'New Journal Dispatch' : 'Story Content Modification'}
+                </span>
+                <h2 className="font-editorial text-xl sm:text-2xl font-bold text-stone-950 mt-0.5 truncate max-w-xl">
+                  {blogModalMode === 'add' ? 'Curate New Travel Story' : blogFormData.title || 'Edit Story'}
+                </h2>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsBlogModalOpen(false)}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                aria-label="Close story modal"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveBlog} className="p-4 sm:p-8 overflow-y-auto space-y-4 sm:space-y-5 flex-1">
+              
+              {/* Row 1: Title & Destination */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                    Story Headline / Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={blogFormData.title}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, title: e.target.value })}
+                    placeholder="e.g. Remote Destinations and Hidden Hideaways in 2026"
+                    className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                    Destination / Geographic Focus *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={blogFormData.destination}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, destination: e.target.value })}
+                    placeholder="e.g. Nubra Valley, Ladakh"
+                    className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Category, Read Time, Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                    Category *
+                  </label>
+                  <select
+                    value={blogFormData.category}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, category: e.target.value })}
+                    className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-3 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                  >
+                    <option value="Adventure & Seclusion">Adventure & Seclusion</option>
+                    <option value="Culture & Philosophy">Culture & Philosophy</option>
+                    <option value="Artisan Heritage">Artisan Heritage</option>
+                    <option value="Wellness Sanctuary">Wellness Sanctuary</option>
+                    <option value="Culinary Expeditions">Culinary Expeditions</option>
+                    <option value="Wildlife & Conservation">Wildlife & Conservation</option>
+                    <option value="Architectural Journeys">Architectural Journeys</option>
+                    <option value="Royal Legacies">Royal Legacies</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                    Estimated Read Time
+                  </label>
+                  <input
+                    type="text"
+                    value={blogFormData.readTime}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, readTime: e.target.value })}
+                    placeholder="e.g. 5 min read"
+                    className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                    Publication Date
+                  </label>
+                  <input
+                    type="text"
+                    value={blogFormData.date}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, date: e.target.value })}
+                    placeholder="e.g. November 13, 2026"
+                    className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Author / Curator Byline */}
+              <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-3">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-stone-500 block">
+                  Author / Byline Details
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-stone-700 block mb-1">
+                      Author Name
+                    </label>
+                    <input
+                      type="text"
+                      value={blogFormData.authorName}
+                      onChange={(e) => setBlogFormData({ ...blogFormData, authorName: e.target.value })}
+                      placeholder="e.g. Elena Rostova"
+                      className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-stone-700 block mb-1">
+                      Author Role / Title
+                    </label>
+                    <input
+                      type="text"
+                      value={blogFormData.authorRole}
+                      onChange={(e) => setBlogFormData({ ...blogFormData, authorRole: e.target.value })}
+                      placeholder="e.g. Private Expedition Curator"
+                      className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-stone-700 block mb-1">
+                      Author Avatar URL
+                    </label>
+                    <input
+                      type="url"
+                      value={blogFormData.authorAvatar}
+                      onChange={(e) => setBlogFormData({ ...blogFormData, authorAvatar: e.target.value })}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: Photography / Cover Image */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                <div className="sm:col-span-2 space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                      Cover Photography Image URL
+                    </label>
+                    <input
+                      type="url"
+                      value={blogFormData.image}
+                      onChange={(e) => setBlogFormData({ ...blogFormData, image: e.target.value })}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                      Image Alt Text (SEO & Accessibility)
+                    </label>
+                    <input
+                      type="text"
+                      value={blogFormData.imageAlt}
+                      onChange={(e) => setBlogFormData({ ...blogFormData, imageAlt: e.target.value })}
+                      placeholder="e.g. Nubra Valley Ladakh remote high altitude solitude"
+                      className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Live Image Preview */}
+                <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 relative flex items-center justify-center">
+                  {blogFormData.image ? (
+                    <img
+                      src={blogFormData.image}
+                      alt="Story preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span className="text-[10px] text-stone-400 font-medium">Cover Preview</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 5: Pull Quote & Excerpt */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                    Editorial Pull Quote
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={blogFormData.pullQuote}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, pullQuote: e.target.value })}
+                    placeholder="e.g. True luxury today is not what you possess, but the absolute stillness you can summon around yourself."
+                    className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                    Lead Excerpt / Subtitle
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={blogFormData.excerpt}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, excerpt: e.target.value })}
+                    placeholder="e.g. Why the discerning voyager is bypassing crowded capitals in favor of high-altitude solitude and wind-sculpted silence."
+                    className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Row 6: Full Narrative Content */}
+              <div>
+                <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                  Full Story Paragraphs (Separate each paragraph with an empty line / double Enter) *
+                </label>
+                <textarea
+                  rows={8}
+                  required
+                  value={blogFormData.content}
+                  onChange={(e) => setBlogFormData({ ...blogFormData, content: e.target.value })}
+                  placeholder={`As high-speed connectivity penetrates the furthest corners of the globe, true silence has emerged as the supreme luxury...\n\nIn the high reaches of Ladakh's Nubra Valley, our guests awake not to sirens or alerts, but to the gentle clinking of prayer wheels...\n\nOur expedition architects work directly with local families to secure access to ancient caravan tracks...`}
+                  className="w-full bg-stone-50 border border-stone-300 rounded-2xl p-4 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium leading-relaxed"
+                />
+              </div>
+
+              {/* Row 7: Signature Highlights */}
+              <div>
+                <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                  Signature Highlights / Takeaways (One per line)
+                </label>
+                <textarea
+                  rows={3}
+                  value={blogFormData.highlights}
+                  onChange={(e) => setBlogFormData({ ...blogFormData, highlights: e.target.value })}
+                  placeholder={`Private stargazing sessions with nomadic astronomers.\nAccess to 14th-century monastery archives normally closed to the public.\nHandcrafted heated luxury geodesic domes with panoramic Himalayan views.`}
+                  className="w-full bg-stone-50 border border-stone-300 rounded-2xl p-3 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-stone-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setIsBlogModalOpen(false)}
+                  className="px-5 py-2.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-950 transition-colors cursor-pointer"
+                >
+                  Discard
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-7 py-3 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 transition-all shadow-lg cursor-pointer hover:scale-[1.02]"
+                >
+                  {blogModalMode === 'add' ? 'Publish Story to Journal' : 'Save Story Changes'}
                 </button>
               </div>
 

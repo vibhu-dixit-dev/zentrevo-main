@@ -661,6 +661,12 @@ export const getLocalizedDestinationsList = (destinationsList = baseDestinations
 export const getLocalizedArticle = (article, language = 'en') => {
   if (!article) return article;
   if (!language || language === 'en') return article;
+  if (article.translations && article.translations[language]) {
+    return {
+      ...article,
+      ...article.translations[language]
+    };
+  }
   const translationMap = localizedArticles[language];
   if (!translationMap || !translationMap[article.id]) return article;
   return {

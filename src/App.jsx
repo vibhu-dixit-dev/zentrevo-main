@@ -53,7 +53,7 @@ import {
   updateDocumentSeo, 
   resetDocumentSeo 
 } from './lib/seoRoutes';
-import { syncDestinationsFromCloud } from './data/travelData';
+import { syncDestinationsFromCloud, syncBlogArticlesFromCloud } from './data/travelData';
 
 export default function App() {
   // Admin Session State
@@ -438,7 +438,7 @@ export default function App() {
     // Initial sync on mount to handle direct URLs (e.g. /destinations/bali or /privacy-policy)
     handleLocationChange();
 
-    // Fetch authoritative live itinerary catalog from Supabase Cloud
+    // Fetch authoritative live itinerary catalog and blog stories from Supabase Cloud
     let isMounted = true;
     syncDestinationsFromCloud().then((res) => {
       if (!isMounted) return;
@@ -447,6 +447,7 @@ export default function App() {
         syncRouteWithModal(path);
       }
     });
+    syncBlogArticlesFromCloud();
 
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('hashchange', handleLocationChange);

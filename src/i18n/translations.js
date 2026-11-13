@@ -95,7 +95,11 @@ export const translations = {
       catLuxury: "Luxury Escapes",
       catCultural: "Cultural",
       catTrending: "Trending",
-      catAlpine: "Alpine Nature"
+      catAlpine: "Alpine Nature",
+      viewMore: "View More Expeditions",
+      showingCount: "Showing",
+      ofTotal: "of",
+      curatedJourneys: "curated journeys"
     },
     experienceSplit: {
       badge: "The Zentrevo Ethos",
@@ -496,7 +500,11 @@ export const translations = {
       catLuxury: "奢华度假",
       catCultural: "文化探索",
       catTrending: "热门风向",
-      catAlpine: "高山自然"
+      catAlpine: "高山自然",
+      viewMore: "浏览更多精彩远征",
+      showingCount: "已显示",
+      ofTotal: "共",
+      curatedJourneys: "条精选专属旅程"
     },
     experienceSplit: {
       badge: "Zentrevo 哲学",
@@ -897,7 +905,11 @@ export const translations = {
       catLuxury: "Escapadas de Lujo",
       catCultural: "Cultural",
       catTrending: "Tendencias",
-      catAlpine: "Naturaleza Alpina"
+      catAlpine: "Naturaleza Alpina",
+      viewMore: "Ver Más Expediciones",
+      showingCount: "Mostrando",
+      ofTotal: "de",
+      curatedJourneys: "viajes exclusivos"
     },
     experienceSplit: {
       badge: "La Filosofía Zentrevo",
@@ -1298,7 +1310,11 @@ export const translations = {
       catLuxury: "ملاذات فاخرة",
       catCultural: "تراث وثقافة",
       catTrending: "الأكثر طلباً",
-      catAlpine: "طبيعة جبلية"
+      catAlpine: "طبيعة جبلية",
+      viewMore: "عرض المزيد من الرحلات الاستكشافية",
+      showingCount: "عرض",
+      ofTotal: "من أصل",
+      curatedJourneys: "رحلات حصرية منتقاة"
     },
     experienceSplit: {
       badge: "فلسفة زينتريفو",

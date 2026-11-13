@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getActiveDestinations } from '../data/travelData';
-import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers, X, Search } from 'lucide-react';
+import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers, X, Search, ChevronDown } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
+
+const INITIAL_CARD_COUNT = 9;
 
 export default function DestinationsGrid({ 
   currentTheme, 
@@ -22,6 +24,7 @@ export default function DestinationsGrid({
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentRegion, setCurrentRegion] = useState(selectedRegion || 'all');
   const [destinationsList, setDestinationsList] = useState(getActiveDestinations);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_CARD_COUNT);
 
   useEffect(() => {
     const handleSync = () => {
@@ -36,13 +39,15 @@ export default function DestinationsGrid({
   }, []);
 
   useEffect(() => {
-    if (selectedRegion) {
+    if (selectedRegion && selectedRegion !== currentRegion) {
       setCurrentRegion(selectedRegion);
+      setVisibleCount(INITIAL_CARD_COUNT);
     }
-  }, [selectedRegion]);
+  }, [selectedRegion, currentRegion]);
 
   const handleRegionChange = (region) => {
     setCurrentRegion(region);
+    setVisibleCount(INITIAL_CARD_COUNT);
     if (onClearSearchFilter) {
       onClearSearchFilter();
     }
@@ -102,6 +107,10 @@ export default function DestinationsGrid({
       ? regionFiltered 
       : regionFiltered.filter(d => (d.baseCategory || d.category) === activeCategory);
   }, [hasActiveSearch, searchFilter, localizedList, activeCategory, regionFiltered]);
+
+  const displayedDestinations = useMemo(() => {
+    return filteredDestinations.slice(0, visibleCount);
+  }, [filteredDestinations, visibleCount]);
 
   return (
     <section id="destinations" className="px-4 sm:px-8 py-16 scroll-mt-24">
@@ -201,6 +210,7 @@ export default function DestinationsGrid({
                 key={cat}
                 onClick={() => {
                   setActiveCategory(cat);
+                  setVisibleCount(INITIAL_CARD_COUNT);
                   if (onClearSearchFilter) onClearSearchFilter();
                 }}
                 className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
@@ -252,7 +262,10 @@ export default function DestinationsGrid({
 
             <button
               type="button"
-              onClick={() => onClearSearchFilter && onClearSearchFilter()}
+              onClick={() => {
+                setVisibleCount(INITIAL_CARD_COUNT);
+                if (onClearSearchFilter) onClearSearchFilter();
+              }}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
                 isSapphire
                   ? 'border-amber-500/40 text-amber-300 hover:bg-amber-400 hover:text-stone-950'
@@ -269,7 +282,7 @@ export default function DestinationsGrid({
 
         {/* Masonry / Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredDestinations.map((item) => (
+          {displayedDestinations.map((item) => (
             <div
               key={item.id}
               className={`group rounded-[28px] overflow-hidden border transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-2xl hover:-translate-y-1.5 ${
@@ -372,6 +385,34 @@ export default function DestinationsGrid({
             </div>
           ))}
         </div>
+
+        {/* View More Expeditions CTA */}
+        {filteredDestinations.length > visibleCount && (
+          <div className="mt-14 flex flex-col items-center justify-center gap-3 animate-fadeIn">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((prev) => prev + 9)}
+              className={`group px-8 py-3.5 rounded-full text-xs font-bold tracking-wider uppercase inline-flex items-center gap-2.5 transition-all duration-300 shadow-md cursor-pointer hover:-translate-y-0.5 ${
+                isSapphire
+                  ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 text-stone-950 shadow-amber-500/25 hover:shadow-amber-500/40 hover:from-amber-300 hover:to-amber-400'
+                  : isEmerald
+                    ? 'bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 text-stone-950 shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-300'
+                    : 'bg-stone-950 text-white shadow-stone-900/20 hover:bg-stone-800'
+              }`}
+            >
+              <span>{t('destinations.viewMore', 'View More Expeditions')}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                isSapphire || isEmerald ? 'bg-stone-950/20 text-stone-950' : 'bg-white/20 text-white'
+              }`}>
+                +{Math.min(9, filteredDestinations.length - visibleCount)}
+              </span>
+              <ChevronDown className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-0.5" />
+            </button>
+            <p className={`text-xs ${isSapphire || isEmerald ? 'text-stone-400' : 'text-stone-500'}`}>
+              {t('destinations.showingCount', 'Showing')} <span className="font-semibold">{displayedDestinations.length}</span> {t('destinations.ofTotal', 'of')} <span className="font-semibold">{filteredDestinations.length}</span> {t('destinations.curatedJourneys', 'curated journeys')}
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

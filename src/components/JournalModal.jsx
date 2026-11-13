@@ -14,7 +14,7 @@ import {
   Send,
   BookOpen
 } from 'lucide-react';
-import { blogArticles } from '../data/travelData';
+import { blogArticles, getActiveBlogArticles } from '../data/travelData';
 import { getBlogSlug } from '../lib/seoRoutes';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedArticlesList, getLocalizedArticle } from '../i18n/localizedTravelData';
@@ -32,6 +32,20 @@ export default function JournalModal({
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
 
+  const [articlesList, setArticlesList] = useState(getActiveBlogArticles);
+
+  useEffect(() => {
+    const handleSync = () => {
+      setArticlesList(getActiveBlogArticles());
+    };
+    window.addEventListener('zentrevo_blogs_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('zentrevo_blogs_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
   const [activeArticle, setActiveArticle] = useState(initialArticle);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -39,8 +53,8 @@ export default function JournalModal({
 
   // Synchronize with active language
   const localizedArticles = useMemo(() => {
-    return getLocalizedArticlesList(blogArticles, language);
-  }, [language]);
+    return getLocalizedArticlesList(articlesList, language);
+  }, [articlesList, language]);
 
   const currentArticle = useMemo(() => {
     if (!activeArticle) return null;

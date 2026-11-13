@@ -1,8 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, Plane, ChevronDown, Crown, X } from 'lucide-react';
+import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, Plane, ChevronDown, ChevronLeft, Crown, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { destinations, getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
+
+// Compute dynamic initial upcoming date range outside component for React compiler purity
+const computeInitialDates = () => {
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
+  const opts = { month: 'short', day: 'numeric' };
+  const year = end.getFullYear();
+  return {
+    text: `${start.toLocaleDateString('en-US', opts)} - ${end.toLocaleDateString('en-US', opts)}, ${year}`,
+    start,
+    end
+  };
+};
+
+const getPresetDates = (type) => {
+  const today = new Date();
+  let s, e;
+  if (type === '7days') {
+    s = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
+    e = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
+  } else if (type === '14days') {
+    s = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
+    e = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 21);
+  } else if (type === 'spring') {
+    s = new Date(today.getFullYear() + (today.getMonth() > 4 ? 1 : 0), 2, 15);
+    e = new Date(today.getFullYear() + (today.getMonth() > 4 ? 1 : 0), 3, 15);
+  } else if (type === 'summer') {
+    s = new Date(today.getFullYear() + (today.getMonth() > 7 ? 1 : 0), 5, 10);
+    e = new Date(today.getFullYear() + (today.getMonth() > 7 ? 1 : 0), 6, 10);
+  } else if (type === 'autumn') {
+    s = new Date(today.getFullYear() + (today.getMonth() > 10 ? 1 : 0), 8, 15);
+    e = new Date(today.getFullYear() + (today.getMonth() > 10 ? 1 : 0), 9, 15);
+  } else {
+    return { isFlexible: true };
+  }
+  return { s, e };
+};
 
 export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquiry }) {
   const { t, language } = useLanguage();
@@ -24,13 +62,25 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
     };
   }, []);
 
+  const [initialDates] = useState(computeInitialDates);
+
   // Search State
   const [selectedLocation, setSelectedLocation] = useState('Select Destination');
   const [selectedDestItem, setSelectedDestItem] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('Oct 28 - Nov 4, 2026');
+  const [selectedDate, setSelectedDate] = useState(initialDates.text);
   const [selectedGuests, setSelectedGuests] = useState('Select Travelers');
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
   const [guestsDropdownOpen, setGuestsDropdownOpen] = useState(false);
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+
+  // Calendar State
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [startDate, setStartDate] = useState(initialDates.start);
+  const [endDate, setEndDate] = useState(initialDates.end);
+  const [hoverDate, setHoverDate] = useState(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -38,11 +88,68 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
       if (!e.target.closest('.search-dropdown-menu')) {
         setLocationDropdownOpen(false);
         setGuestsDropdownOpen(false);
+        setDateDropdownOpen(false);
       }
     };
     window.addEventListener('click', handleOutsideClick);
     return () => window.removeEventListener('click', handleOutsideClick);
   }, []);
+
+  // Calendar Range Selection Logic
+  const handleDayClick = (dayDate) => {
+    if (!startDate || (startDate && endDate)) {
+      setStartDate(dayDate);
+      setEndDate(null);
+      const str = `${dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${dayDate.getFullYear()}`;
+      setSelectedDate(str);
+    } else if (startDate && !endDate) {
+      if (dayDate < startDate) {
+        setStartDate(dayDate);
+        setEndDate(null);
+        const str = `${dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${dayDate.getFullYear()}`;
+        setSelectedDate(str);
+      } else {
+        setEndDate(dayDate);
+        const opts = { month: 'short', day: 'numeric' };
+        const str = `${startDate.toLocaleDateString('en-US', opts)} - ${dayDate.toLocaleDateString('en-US', opts)}, ${dayDate.getFullYear()}`;
+        setSelectedDate(str);
+        setTimeout(() => setDateDropdownOpen(false), 300);
+      }
+    }
+  };
+
+  const handleApplyPreset = (type) => {
+    const result = getPresetDates(type);
+    if (result.isFlexible) {
+      setSelectedDate('Flexible / Any Season');
+      setStartDate(null);
+      setEndDate(null);
+      setDateDropdownOpen(false);
+      return;
+    }
+    const { s, e } = result;
+    setStartDate(s);
+    setEndDate(e);
+    const opts = { month: 'short', day: 'numeric' };
+    setSelectedDate(`${s.toLocaleDateString('en-US', opts)} - ${e.toLocaleDateString('en-US', opts)}, ${e.getFullYear()}`);
+    setCalendarMonth(new Date(s.getFullYear(), s.getMonth(), 1));
+    setDateDropdownOpen(false);
+  };
+
+  const isSameDay = (d1, d2) => {
+    if (!d1 || !d2) return false;
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+  };
+
+  const isBetweenDays = (d, start, end) => {
+    if (!start || !end) return false;
+    const time = d.getTime();
+    const sTime = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+    const eTime = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+    return time > sTime && time < eTime;
+  };
 
   // Carousel slide for the cut-corner card in Template 3
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -452,22 +559,164 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
 
           <div className="hidden md:block h-10 w-px bg-stone-300/40" />
 
-          {/* Field 2: Date */}
-          <div className="w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors">
-            <label htmlFor="hero-travel-dates" className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider block ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
+          {/* Field 2: Interactive Luxury Date Picker */}
+          <div 
+            className="relative w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
+            onClick={() => {
+              setDateDropdownOpen(!dateDropdownOpen);
+              setLocationDropdownOpen(false);
+              setGuestsDropdownOpen(false);
+            }}
+          >
+            <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
               <Calendar className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
               <span>{t('hero.travelDates')}</span>
-            </label>
-            <input 
-              id="hero-travel-dates"
-              name="travelDates"
-              aria-label={t('hero.travelDates', 'Travel Dates / Season')}
-              type="text" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-transparent text-sm font-medium focus:outline-none mt-1"
-              placeholder={t('hero.datePlaceholder', 'Select date range')}
-            />
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className={`text-sm truncate font-medium ${isSapphire || isEmerald ? 'text-stone-100' : 'text-stone-900'}`}>
+                {selectedDate}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${dateDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
+            </div>
+
+            {/* Interactive Luxury Datepicker Popover (Compact Edition) */}
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[265px] sm:w-[275px] rounded-2xl p-3 shadow-xl z-50 border backdrop-blur-2xl transition-all duration-200 ease-out origin-top ${
+                dateDropdownOpen 
+                  ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
+                  : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
+              } ${
+                isSapphire 
+                  ? 'bg-[#0c1a38]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90' 
+                  : isEmerald 
+                    ? 'bg-[#0d2b23]/98 border-emerald-800 text-stone-100 shadow-emerald-950/90' 
+                    : 'bg-white/98 border-stone-200 text-stone-900 shadow-xl'
+              }`}
+            >
+              {/* Month Header & Controls */}
+              <div className="flex items-center justify-between pb-2 border-b border-stone-200/20 mb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const prev = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+                    setCalendarMonth(prev);
+                  }}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    isSapphire || isEmerald 
+                      ? 'hover:bg-white/10 text-stone-300 hover:text-white' 
+                      : 'hover:bg-stone-100 text-stone-700 hover:text-stone-950'
+                  }`}
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                <span className="font-editorial text-xs font-bold tracking-tight">
+                  {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+                    setCalendarMonth(next);
+                  }}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    isSapphire || isEmerald 
+                      ? 'hover:bg-white/10 text-stone-300 hover:text-white' 
+                      : 'hover:bg-stone-100 text-stone-700 hover:text-stone-950'
+                  }`}
+                  aria-label="Next month"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 -rotate-90" />
+                </button>
+              </div>
+
+              {/* Day of Week Labels */}
+              <div className="grid grid-cols-7 gap-0.5 text-center text-[9px] uppercase font-mono font-bold tracking-wider mb-1 opacity-50">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                  <span key={d}>{d}</span>
+                ))}
+              </div>
+
+              {/* Calendar Days Matrix */}
+              <div className="grid grid-cols-7 gap-0.5 text-[11px] mb-2">
+                {Array.from({ length: new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay() }).map((_, i) => (
+                  <span key={`blank-${i}`} />
+                ))}
+
+                {Array.from({ length: new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate() }).map((_, i) => {
+                  const dayNum = i + 1;
+                  const currentDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), dayNum);
+                  const isSelectedStart = isSameDay(currentDay, startDate);
+                  const isSelectedEnd = isSameDay(currentDay, endDate);
+                  const inRange = isBetweenDays(currentDay, startDate, endDate);
+                  const inHoverRange = !endDate && startDate && hoverDate && hoverDate > startDate && isBetweenDays(currentDay, startDate, hoverDate);
+
+                  return (
+                    <button
+                      key={dayNum}
+                      type="button"
+                      onClick={() => handleDayClick(currentDay)}
+                      onMouseEnter={() => !endDate && setHoverDate(currentDay)}
+                      onMouseLeave={() => setHoverDate(null)}
+                      className={`h-6 w-6 sm:h-6.5 sm:w-6.5 mx-auto rounded-full flex items-center justify-center font-medium transition-all cursor-pointer relative text-[10.5px] leading-none ${
+                        isSelectedStart || isSelectedEnd
+                          ? isSapphire
+                            ? 'bg-amber-400 text-stone-950 font-bold shadow-xs scale-105'
+                            : isEmerald
+                              ? 'bg-emerald-400 text-stone-950 font-bold shadow-xs scale-105'
+                              : 'bg-stone-950 text-white font-bold shadow-xs scale-105'
+                          : inRange || inHoverRange
+                            ? isSapphire
+                              ? 'bg-amber-400/25 text-amber-200 font-semibold'
+                              : isEmerald
+                                ? 'bg-emerald-400/25 text-emerald-200 font-semibold'
+                                : 'bg-stone-200 text-stone-950 font-semibold'
+                            : isSapphire || isEmerald
+                              ? 'hover:bg-white/10 text-stone-200'
+                              : 'hover:bg-stone-100 text-stone-800'
+                      }`}
+                    >
+                      {dayNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick Luxury Season Presets (Compact) */}
+              <div className="pt-2 border-t border-stone-200/20">
+                <span className="text-[9px] font-mono uppercase tracking-wider font-bold block mb-1 opacity-60">
+                  Quick Windows:
+                </span>
+                <div className="grid grid-cols-3 gap-1">
+                  {[
+                    { id: '7days', label: '7 Days' },
+                    { id: '14days', label: '14 Days' },
+                    { id: 'spring', label: '🌸 Spring' },
+                    { id: 'summer', label: '☀️ Summer' },
+                    { id: 'autumn', label: '🍂 Autumn' },
+                    { id: 'flexible', label: '✨ Flexible' }
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleApplyPreset(p.id)}
+                      className={`px-1.5 py-0.5 rounded-lg text-[9.5px] font-medium transition-all cursor-pointer border text-center truncate ${
+                        isSapphire
+                          ? 'bg-[#091530] border-amber-500/30 text-stone-200 hover:border-amber-400 hover:text-amber-300'
+                          : isEmerald
+                            ? 'bg-emerald-950/60 border-emerald-700/50 text-stone-200 hover:border-emerald-500 hover:text-emerald-300'
+                            : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100 hover:text-stone-950'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="hidden md:block h-10 w-px bg-stone-300/40" />

@@ -566,3 +566,120 @@ export const getDestinationPrice = (destinationName, extraTrips = []) => {
 
   return 2500; // Default bespoke voyage baseline
 };
+
+const STORAGE_KEY_BLOGS = 'zentrevo_active_blogs';
+const CLOUD_SYNC_BLOGS_KEY = 'zentrevo_blogs_cloud_synced';
+
+export const getActiveBlogArticles = () => {
+  if (typeof window === 'undefined') return blogArticles;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_BLOGS);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Unable to load active blog articles from localStorage:', e);
+  }
+  return blogArticles;
+};
+
+export const syncBlogArticlesFromCloud = async () => {
+  if (typeof window === 'undefined') {
+    return { synced: false, articles: blogArticles };
+  }
+  try {
+    const res = await fetch('/api/blogs', { cache: 'no-store' });
+    if (!res.ok) {
+      return { synced: false, articles: getActiveBlogArticles() };
+    }
+    const data = await res.json();
+    if (!data?.success) {
+      return { synced: false, articles: getActiveBlogArticles() };
+    }
+
+    if (data.customized && Array.isArray(data.articles) && data.articles.length > 0) {
+      const serialized = JSON.stringify(data.articles);
+      const current = localStorage.getItem(STORAGE_KEY_BLOGS);
+      localStorage.setItem(CLOUD_SYNC_BLOGS_KEY, 'true');
+
+      if (current !== serialized) {
+        localStorage.setItem(STORAGE_KEY_BLOGS, serialized);
+        window.dispatchEvent(new CustomEvent('zentrevo_blogs_updated', { detail: data.articles }));
+      }
+      return {
+        synced: true,
+        customized: true,
+        source: data.source,
+        articles: data.articles
+      };
+    }
+
+    // Cloud is in clean default state
+    if (localStorage.getItem(CLOUD_SYNC_BLOGS_KEY) === 'true' && localStorage.getItem(STORAGE_KEY_BLOGS)) {
+      localStorage.removeItem(STORAGE_KEY_BLOGS);
+      localStorage.removeItem(CLOUD_SYNC_BLOGS_KEY);
+      window.dispatchEvent(new CustomEvent('zentrevo_blogs_updated', { detail: blogArticles }));
+    }
+
+    return {
+      synced: true,
+      customized: false,
+      source: data.source,
+      articles: getActiveBlogArticles()
+    };
+  } catch (e) {
+    console.warn('Cloud blogs sync notice:', e?.message || e);
+    return { synced: false, articles: getActiveBlogArticles() };
+  }
+};
+
+export const saveActiveBlogArticles = async (newArticles) => {
+  if (typeof window === 'undefined') return { localSaved: false, cloudSaved: false };
+  try {
+    localStorage.setItem(STORAGE_KEY_BLOGS, JSON.stringify(newArticles));
+    window.dispatchEvent(new CustomEvent('zentrevo_blogs_updated', { detail: newArticles }));
+  } catch (e) {
+    console.error('Failed to save active blogs locally:', e);
+  }
+
+  try {
+    const res = await fetch('/api/blogs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ articles: newArticles })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+      try { localStorage.setItem(CLOUD_SYNC_BLOGS_KEY, 'true'); } catch {}
+      return { localSaved: true, cloudSaved: true, source: data.source };
+    }
+    return { localSaved: true, cloudSaved: false, message: data.message };
+  } catch (e) {
+    console.warn('Cloud blogs persist fallback to local cache:', e?.message || e);
+    return { localSaved: true, cloudSaved: false, message: e?.message };
+  }
+};
+
+export const resetActiveBlogArticles = async () => {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(STORAGE_KEY_BLOGS);
+      localStorage.removeItem(CLOUD_SYNC_BLOGS_KEY);
+      window.dispatchEvent(new CustomEvent('zentrevo_blogs_updated', { detail: blogArticles }));
+    } catch {}
+  }
+  try {
+    const res = await fetch('/api/blogs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reset' })
+    });
+    const data = await res.json().catch(() => ({}));
+    return { localReset: true, cloudReset: !!(res.ok && data.success), source: data.source };
+  } catch (e) {
+    return { localReset: true, cloudReset: false, message: e?.message };
+  }
+};

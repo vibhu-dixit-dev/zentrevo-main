@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Star, Quote, ArrowRight, Volume2, VolumeX } from 'lucide-react';
-import { testimonials, blogArticles } from '../data/travelData';
+import { testimonials, getActiveBlogArticles } from '../data/travelData';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../i18n/translations';
 import { getLocalizedArticlesList } from '../i18n/localizedTravelData';
@@ -10,6 +10,20 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
+
+  const [articlesList, setArticlesList] = useState(getActiveBlogArticles);
+
+  useEffect(() => {
+    const handleSync = () => {
+      setArticlesList(getActiveBlogArticles());
+    };
+    window.addEventListener('zentrevo_blogs_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('zentrevo_blogs_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const containerRef = useRef(null);
   const videoRef = useRef(null);
@@ -127,9 +141,7 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
               preload="metadata"
               aria-label="Scenic mountain landscape video"
               className="w-full h-full object-cover object-bottom"
-            >
-              <track kind="captions" src="/captions/descriptions.vtt" srcLang="en" label="English Captions" default />
-            </video>
+            />
             
             {/* Cinematic Gradient Vignette - Softened so river and water ripples remain clearly visible */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/30 pointer-events-none" />
@@ -310,8 +322,8 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {getLocalizedArticlesList(blogArticles, language).slice(0, 3).map((article) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {getLocalizedArticlesList(articlesList, language).slice(0, 3).map((article) => (
               <div
                 key={article.id}
                 onClick={() => onOpenJournal && onOpenJournal(article)}

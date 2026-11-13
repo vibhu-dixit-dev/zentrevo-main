@@ -4,6 +4,7 @@ import { getDestinationSlug } from '../lib/seoRoutes';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedDestination } from '../i18n/localizedTravelData';
+import LiveWeatherWidget from './LiveWeatherWidget';
 
 export default function DetailModal({ destination, isOpen, onClose, onBookNow, currentTheme }) {
   const { formatPrice } = useCurrency();
@@ -128,6 +129,9 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
                 <span className="text-xs font-normal opacity-70"> {t('destinations.perGuest')}</span>
               </div>
             </div>
+
+            {/* Live Climate & Atmosphere Widget */}
+            <LiveWeatherWidget destination={localizedDest} currentTheme={currentTheme} />
 
             <div>
               <h4 className={`text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5 ${
