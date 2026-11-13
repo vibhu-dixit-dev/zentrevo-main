@@ -237,14 +237,16 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
             ) : (
               /* Travelio & Travel Style Editorial Headline */
               <>
-                <h1 className="font-editorial text-4xl sm:text-6xl lg:text-7xl font-normal tracking-tight text-stone-900 leading-[1.1] mb-6">
-                  {t('hero.editorialHeading1', "Your Journey To The World's")} <br />
-                  <span className="inline-flex items-center gap-3">
-                    {t('hero.editorialHeadingBest', 'Best')}
-                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-2xl bg-stone-900 text-white text-xs font-sans align-middle shadow-md border border-stone-700">
-                      {t('hero.editorialBadge', '🏔️ World Heritage')}
+                <h1 className="font-editorial text-4xl sm:text-6xl lg:text-7xl font-normal tracking-tight text-stone-900 leading-[1.12] mb-6 [text-wrap:balance]">
+                  {t('hero.editorialHeading1', "Your Journey To The World's")}{' '}
+                  <br className="hidden sm:inline" />
+                  <span className="inline-flex flex-wrap items-center">
+                    <span>{t('hero.editorialHeadingBest', 'Best')}</span>
+                    <span className="inline-flex items-center gap-2 align-middle mx-2 sm:mx-2.5 px-3.5 py-1 -translate-y-0.5 sm:-translate-y-1 rounded-full bg-stone-900/90 text-stone-100 text-xs sm:text-sm font-sans font-medium tracking-wide shadow-sm border border-amber-500/25">
+                      <span className="text-sm sm:text-base leading-none select-none" aria-hidden="true">🏔️</span>
+                      <span className="whitespace-nowrap">{t('hero.editorialBadge', 'World Heritage')}</span>
                     </span>
-                    {t('hero.editorialHeading2', 'Destinations')}
+                    <span>{t('hero.editorialHeading2', 'Destinations')}</span>
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg text-stone-600 max-w-xl font-normal leading-relaxed mb-8">
