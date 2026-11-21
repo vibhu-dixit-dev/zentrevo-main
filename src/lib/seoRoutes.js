@@ -116,25 +116,54 @@ export const DEFAULT_SEO = {
   ogImage: 'https://www.zentrevo.in/images/og-home.jpg'
 };
 
-// Determine the primary URL slug for any destination item
+// Determine the primary URL slug for any destination item (Clean short keyword route)
 export function getDestinationSlug(item) {
   if (!item) return '';
-  if (item.slug) return item.slug;
+
+  // 1. Explicit slug field set on destination
+  if (item.slug && typeof item.slug === 'string' && item.slug.trim()) {
+    return slugify(item.slug);
+  }
 
   const loc = (item.location || '').toLowerCase();
   const title = (item.title || '').toLowerCase();
 
-  // 1. Check known client destinations first
+  // 2. Check known client destinations first
   for (const [key, data] of Object.entries(CLIENT_DESTINATIONS_SEO)) {
     if (data.matchKeys.some(k => loc.includes(k) || title.includes(k))) {
       return key;
     }
   }
 
-  // 2. Custom destination fallback (from title or location)
+  // 3. Intelligent clean short keyword from location:
+  // e.g. "India (Kolkata)" -> "kolkata", "India (Bihar)" -> "bihar", "India(Manali)" -> "manali", "Egypt" -> "egypt"
+  if (item.location) {
+    const parenMatch = item.location.match(/\(([^)]+)\)/);
+    if (parenMatch && parenMatch[1].trim()) {
+      const parenCity = parenMatch[1].trim();
+      if (parenCity.length <= 25) {
+        return slugify(parenCity);
+      }
+    }
+    const cleanCity = item.location.split(',')[0].trim();
+    if (cleanCity && cleanCity.toLowerCase() !== 'india' && cleanCity.length <= 25) {
+      return slugify(cleanCity);
+    }
+  }
+
+  // 4. Short keyword from title lead before dash/colon/comma:
+  // e.g. "Kolkata Heritage Escape – Victoria..." -> "kolkata", "London Escape – Big Ben..." -> "london"
   if (item.title) {
+    const titleLead = item.title.split(/[–—\-:,|]/)[0].trim();
+    if (titleLead) {
+      const firstWord = titleLead.split(/\s+/)[0];
+      if (firstWord && firstWord.length > 2 && firstWord.length <= 20) {
+        return slugify(firstWord);
+      }
+    }
     return slugify(item.title);
   }
+
   return slugify(item.location || `trip-${item.id}`);
 }
 
@@ -157,10 +186,11 @@ export function findDestinationBySlug(slug, allDestinations = null) {
     if (match) return match;
   }
 
-  // 2. Exact match on slugify(title) or slugify(location) or id
+  // 2. Exact match on explicit slug, getDestinationSlug, slugify(title) or id
   const directMatch = list.find(d => {
     if (String(d.id) === cleanSlug) return true;
-    if (d.slug && d.slug === cleanSlug) return true;
+    if (d.slug && slugify(d.slug) === cleanSlug) return true;
+    if (getDestinationSlug(d) === cleanSlug) return true;
     if (slugify(d.title) === cleanSlug) return true;
     if (slugify(d.location) === cleanSlug) return true;
     return false;

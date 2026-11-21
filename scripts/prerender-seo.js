@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { destinations, blogArticles } from '../src/data/travelData.js';
+import { destinations, blogArticles, getActiveDestinations } from '../src/data/travelData.js';
 import { 
   CLIENT_DESTINATIONS_SEO, 
   BLOG_SLUGS_MAP, 
@@ -24,6 +24,34 @@ if (!fs.existsSync(TEMPLATE_PATH)) {
 }
 
 const templateHtml = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
+
+// Load authoritative destinations & blogs (Snapshot + Supabase Cloud Sync)
+let allDestinations = getActiveDestinations();
+let allBlogs = blogArticles;
+
+try {
+  const envPath = path.resolve(__dirname, '../.env');
+  const envText = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+  const sbUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || envText.match(/SUPABASE_URL=(.*)/)?.[1]?.trim();
+  const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || envText.match(/SUPABASE_SERVICE_ROLE_KEY=(.*)/)?.[1]?.trim() || envText.match(/VITE_SUPABASE_ANON_KEY=(.*)/)?.[1]?.trim();
+  
+  if (sbUrl && sbKey) {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(sbUrl, sbKey);
+    const { data: dBlob } = await supabase.storage.from('zentrevo-catalog').download('destinations.json');
+    if (dBlob) {
+      const text = await dBlob.text();
+      const parsed = JSON.parse(text);
+      const list = Array.isArray(parsed) ? parsed : (parsed?.destinations || null);
+      if (Array.isArray(list) && list.length > 0) {
+        allDestinations = list;
+        console.log(`[prerender-seo] Successfully synced ${list.length} live destinations from Supabase!`);
+      }
+    }
+  }
+} catch (e) {
+  // Graceful fallback to snapshot
+}
 
 // Helper to escape HTML characters
 function escapeHtml(str) {
@@ -230,7 +258,7 @@ routes.push({
 });
 
 // 7. Destination Specific Routes
-destinations.forEach((dest) => {
+allDestinations.forEach((dest) => {
   const primarySlug = getDestinationSlug(dest);
   const fullSlug = slugify(dest.title);
   const clientSeo = CLIENT_DESTINATIONS_SEO[primarySlug];

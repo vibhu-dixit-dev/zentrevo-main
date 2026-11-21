@@ -1,4 +1,9 @@
 import { convertPriceAmount, DEFAULT_EXCHANGE_RATES } from '../lib/currencyUtils.js';
+import cloudSnapshot from './cloudDestinationsSnapshot.js';
+
+const initialCatalog = Array.isArray(cloudSnapshot) 
+  ? cloudSnapshot 
+  : (Array.isArray(cloudSnapshot?.destinations) ? cloudSnapshot.destinations : null);
 
 export const destinations = [
   {
@@ -437,7 +442,8 @@ export const STORAGE_KEY_DESTINATIONS = 'zentrevo_custom_destinations';
 const CLOUD_SYNC_FLAG_KEY = 'zentrevo_cloud_catalog_synced';
 
 export const getActiveDestinations = () => {
-  if (typeof window === 'undefined') return destinations;
+  const fallback = initialCatalog && initialCatalog.length > 0 ? initialCatalog : destinations;
+  if (typeof window === 'undefined') return fallback;
   try {
     const stored = localStorage.getItem(STORAGE_KEY_DESTINATIONS);
     if (stored) {
@@ -449,7 +455,7 @@ export const getActiveDestinations = () => {
   } catch (e) {
     console.warn('Unable to load active destinations from localStorage:', e);
   }
-  return destinations;
+  return fallback;
 };
 
 /**
