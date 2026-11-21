@@ -216,6 +216,19 @@ routes.push({
   bodyDescription: "Transparent cancellation timelines, flexible rescheduling policies, and partner refund procedures."
 });
 
+// Admin Portal Route (Pre-rendered so Vercel never 404s on /admin)
+routes.push({
+  path: '/admin',
+  title: 'Admin Portal | Zentrevo',
+  description: 'Zentrevo administrative management console.',
+  canonical: `${BASE_URL}/admin`,
+  ogImage: `${BASE_URL}/images/og-home.jpg`,
+  ogType: 'website',
+  noIndex: true,
+  skipSitemap: true,
+  noBodyPrerender: true
+});
+
 // 7. Destination Specific Routes
 destinations.forEach((dest) => {
   const primarySlug = getDestinationSlug(dest);
@@ -383,6 +396,16 @@ function generateHtmlForRoute(route) {
     }
   }
 
+  // 3.5 Robots Meta Tag (for private/noIndex routes like /admin)
+  if (route.noIndex) {
+    const robotsTag = `<meta name="robots" content="noindex, nofollow" />`;
+    if (html.includes('name="robots"')) {
+      html = html.replace(/<meta\s+name=["']robots["'][^>]*>/is, robotsTag);
+    } else {
+      html = html.replace('</head>', `  ${robotsTag}\n</head>`);
+    }
+  }
+
   // 4. Replace Canonical Link
   const canonicalTag = `<link rel="canonical" href="${escapeHtml(route.canonical)}" />`;
   html = html.replace(/<link\s+rel=["']canonical["'][^>]*>/is, canonicalTag);
@@ -436,7 +459,7 @@ function generateHtmlForRoute(route) {
 
   // 8. Inject Pre-rendered Semantic Body inside <div id="root">
   // Crawlers and view-source users see the full readable content immediately
-  if (route.path !== '/') {
+  if (route.path !== '/' && !route.noBodyPrerender) {
     const preRenderedContent = `
     <div id="root">
       <header style="padding: 24px; max-width: 1200px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
@@ -516,8 +539,9 @@ for (const route of routes) {
   }
 }
 
-// Generate / Update dist/sitemap.xml
-const sitemapUrls = routes.map((r) => {
+// Generate / Update dist/sitemap.xml (excluding private routes like /admin)
+const publicRoutes = routes.filter(r => !r.skipSitemap);
+const sitemapUrls = publicRoutes.map((r) => {
   return `  <url>
     <loc>${escapeHtml(r.canonical)}</loc>
     <lastmod>${new Date().toISOString().slice(0, 10)}</lastmod>
@@ -533,4 +557,4 @@ ${sitemapUrls.join('\n')}
 
 fs.writeFileSync(path.join(DIST_DIR, 'sitemap.xml'), sitemapXml, 'utf-8');
 console.log(`[prerender-seo] Successfully generated ${generatedCount} static HTML files across ${routes.length} unique routes!`);
-console.log(`[prerender-seo] Successfully updated dist/sitemap.xml with ${routes.length} canonical URLs.`);
+console.log(`[prerender-seo] Successfully updated dist/sitemap.xml with ${publicRoutes.length} canonical URLs.`);
