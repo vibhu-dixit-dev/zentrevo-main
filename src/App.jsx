@@ -447,12 +447,28 @@ export default function App() {
         syncRouteWithModal(path);
       }
     });
-    syncBlogArticlesFromCloud();
+    syncBlogArticlesFromCloud().then((res) => {
+      if (!isMounted) return;
+      const path = window.location.pathname || '/';
+      if (res?.synced && (path.startsWith('/journal/') || path.startsWith('/blog/'))) {
+        syncRouteWithModal(path);
+      }
+    });
 
+    const handleBlogsUpdated = () => {
+      if (!isMounted) return;
+      const path = window.location.pathname || '/';
+      if (path.startsWith('/journal/') || path.startsWith('/blog/')) {
+        syncRouteWithModal(path);
+      }
+    };
+
+    window.addEventListener('zentrevo_blogs_updated', handleBlogsUpdated);
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('hashchange', handleLocationChange);
     return () => {
       isMounted = false;
+      window.removeEventListener('zentrevo_blogs_updated', handleBlogsUpdated);
       window.removeEventListener('popstate', handleLocationChange);
       window.removeEventListener('hashchange', handleLocationChange);
     };

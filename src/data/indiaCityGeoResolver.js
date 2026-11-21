@@ -2,6 +2,45 @@
 // Calibrated for 1486 x 1734 Surveyor Vector Projection
 // Projects any Indian city, town, or (lat, lng) directly into exact SVG (mapX, mapY) coordinates
 
+export const INDIAN_STATES_LIST = [
+  'Andaman & Nicobar Islands',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chandigarh',
+  'Chhattisgarh',
+  'Dadra & Nagar Haveli and Daman & Diu',
+  'Delhi NCR',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu & Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Ladakh',
+  'Lakshadweep',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Puducherry',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal'
+];
+
 export const KNOWN_INDIAN_CITIES = [
   // Northern Subcontinent & Himalayas
   {
@@ -368,6 +407,38 @@ export const KNOWN_INDIAN_CITIES = [
     mapX: 660,
     mapY: 795
   },
+  {
+    name: 'Gwalior & Orchha',
+    aliases: ['gwalior', 'orchha', 'chhatris', 'madhya pradesh heritage'],
+    shortTitle: 'G W A L I O R',
+    state: 'Madhya Pradesh',
+    lat: 26.2183,
+    lng: 78.1828,
+    mapX: 535,
+    mapY: 660
+  },
+
+  // Eastern Subcontinent (Bihar & Jharkhand)
+  {
+    name: 'Bodh Gaya & Nalanda',
+    aliases: ['bodh gaya', 'bodhgaya', 'nalanda', 'rajgir', 'bihar', 'mahabodhi', 'bihar heritage'],
+    shortTitle: 'B O D H   G A Y A',
+    state: 'Bihar',
+    lat: 24.6961,
+    lng: 84.9869,
+    mapX: 795,
+    mapY: 715
+  },
+  {
+    name: 'Patna & Vaishali',
+    aliases: ['patna', 'pataliputra', 'vaishali', 'kesaria'],
+    shortTitle: 'P A T N A',
+    state: 'Bihar',
+    lat: 25.5941,
+    lng: 85.1376,
+    mapX: 805,
+    mapY: 670
+  },
 
   // Southern Subcontinent
   {
@@ -625,65 +696,62 @@ function formatIndiaGpsPair(latVal, lngVal) {
 }
 
 // Auto-resolve any city or location string to calibrated India map metadata
-export function resolveIndiaCoordinates(locationStr = '', titleStr = '', customLat = null, customLng = null, customMapX = null, customMapY = null) {
+export function resolveIndiaCoordinates(
+  locationStr = '', 
+  titleStr = '', 
+  customLat = null, 
+  customLng = null, 
+  customMapX = null, 
+  customMapY = null,
+  explicitState = null
+) {
   const query = `${locationStr} ${titleStr}`.toLowerCase();
-  let matchedCity = null;
-  for (const city of KNOWN_INDIAN_CITIES) {
-    for (const alias of city.aliases) {
-      const regex = new RegExp(`\\b${alias}\\b`, 'i');
-      if (regex.test(query) || query.includes(alias)) {
-        matchedCity = city;
+
+  // 1. Identify target state (from explicitState or query)
+  let targetState = explicitState || null;
+  if (!targetState) {
+    for (const stateName of INDIAN_STATES_LIST) {
+      const sLower = stateName.toLowerCase();
+      if (query.includes(sLower) || (sLower === 'delhi ncr' && query.includes('delhi'))) {
+        targetState = stateName;
         break;
       }
     }
-    if (matchedCity) break;
   }
 
-  // 1. Direct explicit mapX and mapY if provided
-  if (customMapX !== null && customMapX !== undefined && customMapY !== null && customMapY !== undefined) {
-    const numericX = parseInt(customMapX, 10);
-    const numericY = parseInt(customMapY, 10);
-    if (!isNaN(numericX) && !isNaN(numericY)) {
-      return {
-        cityName: matchedCity?.name || locationStr || 'Custom Destination',
-        shortTitle: matchedCity?.shortTitle || (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
-        state: matchedCity?.state || 'India',
-        coordinates: (customLat && customLng) ? formatIndiaGpsPair(customLat, customLng) : (matchedCity ? formatIndiaGpsPair(matchedCity.lat, matchedCity.lng) : 'Custom Location'),
-        mapX: numericX,
-        mapY: numericY,
-        matched: true
-      };
+  // 2. Search known Indian city database
+  // If targetState is known, prioritize cities belonging to that state first!
+  let matchedCity = null;
+  if (targetState) {
+    for (const city of KNOWN_INDIAN_CITIES) {
+      if (city.state && city.state.toLowerCase() === targetState.toLowerCase()) {
+        for (const alias of city.aliases) {
+          const regex = new RegExp(`\\b${alias}\\b`, 'i');
+          if (regex.test(query)) {
+            matchedCity = city;
+            break;
+          }
+        }
+      }
+      if (matchedCity) break;
     }
   }
 
-  // 2. Direct GPS (lat, lng) if provided
-  if (customLat && customLng) {
-    const proj = projectLatLngToIndiaMap(customLat, customLng);
-    return {
-      cityName: matchedCity?.name || locationStr || 'Custom Destination',
-      shortTitle: matchedCity?.shortTitle || (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
-      state: matchedCity?.state || 'India',
-      coordinates: formatIndiaGpsPair(customLat, customLng),
-      mapX: proj.mapX,
-      mapY: proj.mapY,
-      matched: true
-    };
+  // If no city matched within targetState (or no explicitState was given), search all cities
+  if (!matchedCity && !explicitState) {
+    for (const city of KNOWN_INDIAN_CITIES) {
+      for (const alias of city.aliases) {
+        const regex = new RegExp(`\\b${alias}\\b`, 'i');
+        if (regex.test(query)) {
+          matchedCity = city;
+          break;
+        }
+      }
+      if (matchedCity) break;
+    }
   }
 
-  // 3. Search known Indian city database
-  if (matchedCity) {
-    return {
-      cityName: matchedCity.name,
-      shortTitle: matchedCity.shortTitle,
-      state: matchedCity.state,
-      coordinates: formatIndiaGpsPair(matchedCity.lat, matchedCity.lng),
-      mapX: matchedCity.mapX,
-      mapY: matchedCity.mapY,
-      matched: true
-    };
-  }
-
-  // 4. Fallback: Search by state name
+  // 3. Fallback database for all States / UTs centroid coordinates
   const stateFallbacks = [
     { state: 'Rajasthan', x: 330, y: 650, lat: 27.0238, lng: 74.2179 },
     { state: 'Himachal Pradesh', x: 465, y: 360, lat: 31.8, lng: 77.2 },
@@ -697,19 +765,111 @@ export function resolveIndiaCoordinates(locationStr = '', titleStr = '', customL
     { state: 'Goa', x: 312, y: 1265, lat: 15.29, lng: 74.12 },
     { state: 'Uttar Pradesh', x: 620, y: 640, lat: 26.84, lng: 80.94 },
     { state: 'Madhya Pradesh', x: 530, y: 790, lat: 22.97, lng: 78.65 },
-    { state: 'West Bengal', x: 1010, y: 820, lat: 22.98, lng: 87.85 },
-    { state: 'Assam', x: 1240, y: 650, lat: 26.20, lng: 92.93 },
-    { state: 'Odisha', x: 860, y: 940, lat: 20.95, lng: 85.09 },
+    { state: 'West Bengal', x: 910, y: 820, lat: 22.98, lng: 87.85 },
+    { state: 'Assam', x: 1140, y: 620, lat: 26.20, lng: 92.93 },
+    { state: 'Odisha', x: 830, y: 910, lat: 20.95, lng: 85.09 },
     { state: 'Telangana', x: 540, y: 1130, lat: 18.11, lng: 79.01 },
     { state: 'Andhra Pradesh', x: 580, y: 1250, lat: 15.91, lng: 79.74 },
     { state: 'Bihar', x: 800, y: 670, lat: 25.09, lng: 85.31 },
     { state: 'Jammu & Kashmir', x: 345, y: 225, lat: 34.08, lng: 74.80 },
-    { state: 'Ladakh', x: 485, y: 215, lat: 34.15, lng: 77.58 }
+    { state: 'Ladakh', x: 485, y: 215, lat: 34.15, lng: 77.58 },
+    { state: 'Sikkim', x: 855, y: 540, lat: 27.5330, lng: 88.5122 },
+    { state: 'Meghalaya', x: 1100, y: 650, lat: 25.4670, lng: 91.3662 },
+    { state: 'Arunachal Pradesh', x: 1180, y: 530, lat: 28.2180, lng: 94.7278 },
+    { state: 'Nagaland', x: 1230, y: 600, lat: 26.1584, lng: 94.5624 },
+    { state: 'Manipur', x: 1220, y: 680, lat: 24.6637, lng: 93.9063 },
+    { state: 'Mizoram', x: 1200, y: 740, lat: 23.1645, lng: 92.9376 },
+    { state: 'Tripura', x: 1140, y: 740, lat: 23.9408, lng: 91.9882 },
+    { state: 'Jharkhand', x: 770, y: 770, lat: 23.6102, lng: 85.2799 },
+    { state: 'Chhattisgarh', x: 660, y: 870, lat: 21.2787, lng: 81.8661 },
+    { state: 'Haryana', x: 430, y: 480, lat: 29.0588, lng: 76.0856 },
+    { state: 'Delhi NCR', x: 460, y: 510, lat: 28.6139, lng: 77.2090 },
+    { state: 'Chandigarh', x: 445, y: 408, lat: 30.7333, lng: 76.7794 },
+    { state: 'Andaman & Nicobar Islands', x: 1320, y: 1470, lat: 11.7401, lng: 92.6586 },
+    { state: 'Lakshadweep', x: 270, y: 1470, lat: 10.5667, lng: 72.6417 },
+    { state: 'Puducherry', x: 580, y: 1410, lat: 11.9416, lng: 79.8083 },
+    { state: 'Dadra & Nagar Haveli and Daman & Diu', x: 280, y: 940, lat: 20.4283, lng: 72.8397 }
   ];
 
+  // 4. Resolve State Fallback if targetState is present
+  const matchedStateFallback = targetState 
+    ? stateFallbacks.find(sf => sf.state.toLowerCase() === targetState.toLowerCase())
+    : null;
+
+  // 5. Handle customMapX and customMapY with sanity check:
+  // If targetState is specified (e.g. Bihar), verify that customMapX is in a plausible region
+  // (e.g. not Gujarat coords mapX: 220 when state is Bihar x: 800)
+  if (customMapX !== null && customMapX !== undefined && customMapY !== null && customMapY !== undefined) {
+    const numericX = parseInt(customMapX, 10);
+    const numericY = parseInt(customMapY, 10);
+    if (!isNaN(numericX) && !isNaN(numericY)) {
+      let isStaleCoord = false;
+      if (matchedStateFallback) {
+        // If coordinate distance from state centroid is more than 350px, it's stale from a duplicated card!
+        const distFromStateCenter = Math.hypot(numericX - matchedStateFallback.x, numericY - matchedStateFallback.y);
+        if (distFromStateCenter > 350) {
+          isStaleCoord = true;
+        }
+      }
+      if (!isStaleCoord) {
+        return {
+          cityName: matchedCity?.name || (locationStr || '').split(',')[0].trim() || 'Custom Destination',
+          shortTitle: matchedCity?.shortTitle || (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
+          state: targetState || matchedCity?.state || 'India',
+          coordinates: (customLat && customLng) ? formatIndiaGpsPair(customLat, customLng) : (matchedCity ? formatIndiaGpsPair(matchedCity.lat, matchedCity.lng) : 'Custom Location'),
+          mapX: numericX,
+          mapY: numericY,
+          matched: true
+        };
+      }
+    }
+  }
+
+  // 6. Direct GPS (lat, lng) if provided
+  if (customLat && customLng) {
+    const proj = projectLatLngToIndiaMap(customLat, customLng);
+    return {
+      cityName: matchedCity?.name || (locationStr || '').split(',')[0].trim() || 'Custom Destination',
+      shortTitle: matchedCity?.shortTitle || (locationStr || titleStr || 'I N D I A').toUpperCase().split('').join(' '),
+      state: targetState || matchedCity?.state || 'India',
+      coordinates: formatIndiaGpsPair(customLat, customLng),
+      mapX: proj.mapX,
+      mapY: proj.mapY,
+      matched: true
+    };
+  }
+
+  // 7. Matched city found
+  if (matchedCity) {
+    return {
+      cityName: matchedCity.name,
+      shortTitle: matchedCity.shortTitle,
+      state: targetState || matchedCity.state,
+      coordinates: formatIndiaGpsPair(matchedCity.lat, matchedCity.lng),
+      mapX: matchedCity.mapX,
+      mapY: matchedCity.mapY,
+      matched: true
+    };
+  }
+
+  // 8. State Fallback found
+  if (matchedStateFallback) {
+    const cleanLoc = (locationStr || '').split(',')[0].trim() || matchedStateFallback.state;
+    return {
+      cityName: cleanLoc,
+      shortTitle: cleanLoc.toUpperCase().split('').join(' '),
+      state: matchedStateFallback.state,
+      coordinates: `${matchedStateFallback.lat.toFixed(4)}° N / ${matchedStateFallback.lng.toFixed(4)}° E`,
+      mapX: matchedStateFallback.x,
+      mapY: matchedStateFallback.y,
+      matched: true
+    };
+  }
+
+  // 9. Query text search across all stateFallbacks
   for (const sf of stateFallbacks) {
     if (query.includes(sf.state.toLowerCase())) {
-      const cleanLoc = locationStr.split(',')[0].trim() || sf.state;
+      const cleanLoc = (locationStr || '').split(',')[0].trim() || sf.state;
       return {
         cityName: cleanLoc,
         shortTitle: cleanLoc.toUpperCase().split('').join(' '),
@@ -722,7 +882,7 @@ export function resolveIndiaCoordinates(locationStr = '', titleStr = '', customL
     }
   }
 
-  // 5. Ultimate fallback if totally unknown: Central India point
+  // 10. Ultimate fallback if totally unknown: Central India point
   const cleanLoc = (locationStr || titleStr || 'India').split(',')[0].trim();
   return {
     cityName: cleanLoc,
@@ -736,30 +896,34 @@ export function resolveIndiaCoordinates(locationStr = '', titleStr = '', customL
 }
 
 // Generates map destination pointers strictly corresponding to the cards given in the portal
+// with Anti-Stacking Pin Dispersal so ALL 17 cards have their own clearly visible golden beacons!
 export function getUnifiedIndiaMapDestinations(activeTrips) {
   if (!Array.isArray(activeTrips)) return [];
 
   const nationalTrips = activeTrips.filter(t => (t.region || '').toLowerCase() === 'national');
   if (nationalTrips.length === 0) return [];
 
-  return nationalTrips.map(trip => {
+  // 1. Initial resolution of each trip
+  const resolvedList = nationalTrips.map(trip => {
+    const explicitState = trip.state || null;
     const resolved = resolveIndiaCoordinates(
       trip.location, 
       trip.title, 
       trip.lat, 
       trip.lng, 
       trip.mapX, 
-      trip.mapY
+      trip.mapY,
+      explicitState
     );
 
     return {
       id: `dest-${trip.id}`,
       name: trip.title,
       shortTitle: resolved.shortTitle,
-      state: resolved.state,
+      state: trip.state || resolved.state,
       coordinates: resolved.coordinates,
-      mapX: trip.mapX ? parseInt(trip.mapX, 10) : resolved.mapX,
-      mapY: trip.mapY ? parseInt(trip.mapY, 10) : resolved.mapY,
+      mapX: resolved.mapX,
+      mapY: resolved.mapY,
       isAvailableOnPortal: true,
       destinationId: trip.id,
       price: typeof trip.price === 'number' 
@@ -774,4 +938,43 @@ export function getUnifiedIndiaMapDestinations(activeTrips) {
       highlights: Array.isArray(trip.highlights) ? trip.highlights : []
     };
   });
+
+  // 2. Anti-Stacking Pin Dispersal:
+  // Detect overlapping or close pins (within 35px radius) and gently disperse them radially
+  // so EVERY SINGLE CARD has its own distinct, clickable, illuminated beacon on the map!
+  const finalDestinations = [];
+  const placedPoints = [];
+
+  resolvedList.forEach((dest, idx) => {
+    let finalX = dest.mapX;
+    let finalY = dest.mapY;
+
+    // Check collisions with placed points within 35px
+    const collisions = placedPoints.filter(p => {
+      const dist = Math.hypot(p.x - finalX, p.y - finalY);
+      return dist < 35;
+    });
+
+    if (collisions.length > 0) {
+      // Disperse radially around original point in a staggered orbital cluster
+      const angle = (collisions.length * (Math.PI / 3)) + ((idx % 2) * 0.4);
+      const radius = 28 + (Math.floor(collisions.length / 6) * 16);
+      finalX = Math.round(dest.mapX + Math.cos(angle) * radius);
+      finalY = Math.round(dest.mapY + Math.sin(angle) * radius);
+
+      // Clamp inside map boundaries
+      finalX = Math.max(90, Math.min(1380, finalX));
+      finalY = Math.max(160, Math.min(1680, finalY));
+    }
+
+    placedPoints.push({ x: finalX, y: finalY });
+
+    finalDestinations.push({
+      ...dest,
+      mapX: finalX,
+      mapY: finalY
+    });
+  });
+
+  return finalDestinations;
 }

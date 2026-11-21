@@ -31,7 +31,10 @@ import {
   Smartphone,
   Monitor,
   AtSign,
-  BookOpen
+  BookOpen,
+  UploadCloud,
+  Link2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { 
   destinations as initialDestinations, 
@@ -46,9 +49,10 @@ import {
   resetActiveBlogArticles,
   syncBlogArticlesFromCloud
 } from '../data/travelData';
-import { resolveIndiaCoordinates } from '../data/indiaCityGeoResolver';
+import { resolveIndiaCoordinates, INDIAN_STATES_LIST } from '../data/indiaCityGeoResolver';
 import { resolveWorldCoordinates } from '../data/worldCityGeoResolver';
 import { supabase } from '../lib/supabaseClient';
+import { slugify, getBlogSlug } from '../lib/seoRoutes';
 import {
   DEFAULT_EXCHANGE_RATES as DEFAULT_RATES,
   CURRENCY_SYMBOLS,
@@ -56,6 +60,37 @@ import {
   formatStoredAdminPrice,
   formatEditableAdminPrice
 } from '../lib/currencyUtils';
+
+// Helper to compress uploaded images client-side into lightweight high-res data URLs
+const compressImageFile = (file, maxWidth = 1600, quality = 0.85) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = event.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', userEmail = 'contact@zentrevo.in' }) {
   const isSalesRole = userRole === 'sales';
@@ -175,6 +210,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
 
   const initialBlogForm = {
     title: '',
+    slug: '',
     destination: '',
     category: 'Adventure & Seclusion',
     date: 'November 13, 2026',
@@ -191,6 +227,113 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   };
 
   const [blogFormData, setBlogFormData] = useState(initialBlogForm);
+  const [blogImageInputMode, setBlogImageInputMode] = useState('upload'); // 'upload' | 'url'
+  const [destImageInputMode, setDestImageInputMode] = useState('upload'); // 'upload' | 'url'
+  const [isUploadingBlogImage, setIsUploadingBlogImage] = useState(false);
+  const [isUploadingDestImage, setIsUploadingDestImage] = useState(false);
+
+  // File Upload Handlers for Stories & Destinations
+  const handleBlogImageFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (JPG, PNG, WebP).');
+      return;
+    }
+
+    setIsUploadingBlogImage(true);
+    try {
+      let imageUrl = null;
+      if (supabase) {
+        try {
+          const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const fileName = `stories/${Date.now()}-${safeName}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('zentrevo-catalog')
+            .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('zentrevo-catalog')
+              .getPublicUrl(fileName);
+            if (publicUrlData?.publicUrl) {
+              imageUrl = publicUrlData.publicUrl;
+            }
+          }
+        } catch (storageErr) {
+          console.warn('Supabase storage upload bypassed:', storageErr);
+        }
+      }
+
+      if (!imageUrl) {
+        imageUrl = await compressImageFile(file, 1600, 0.85);
+      }
+
+      setBlogFormData(prev => ({
+        ...prev,
+        image: imageUrl,
+        imageAlt: prev.imageAlt || file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
+      }));
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      alert('Could not process image file. Please try another image or use an image URL.');
+    } finally {
+      setIsUploadingBlogImage(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleDestImageFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (JPG, PNG, WebP).');
+      return;
+    }
+
+    setIsUploadingDestImage(true);
+    try {
+      let imageUrl = null;
+      if (supabase) {
+        try {
+          const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const fileName = `destinations/${Date.now()}-${safeName}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('zentrevo-catalog')
+            .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('zentrevo-catalog')
+              .getPublicUrl(fileName);
+            if (publicUrlData?.publicUrl) {
+              imageUrl = publicUrlData.publicUrl;
+            }
+          }
+        } catch (storageErr) {
+          console.warn('Supabase storage upload bypassed:', storageErr);
+        }
+      }
+
+      if (!imageUrl) {
+        imageUrl = await compressImageFile(file, 1600, 0.85);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        image: imageUrl,
+        imageAlt: prev.imageAlt || file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
+      }));
+    } catch (err) {
+      console.error('Destination image upload failed:', err);
+      alert('Could not process image file. Please try another image or use an image URL.');
+    } finally {
+      setIsUploadingDestImage(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     const handleSyncBlogs = () => {
@@ -255,6 +398,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   const emptyForm = {
     title: '',
     location: '',
+    state: '',
     region: 'international',
     badge: 'Luxury Escapes',
     tagColor: 'bg-stone-900 text-white',
@@ -1197,6 +1341,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     setFormData({
       title: trip.title || '',
       location: trip.location || '',
+      state: trip.state || '',
       region: trip.region || 'international',
       badge: trip.badge || 'Luxury Escapes',
       tagColor: trip.tagColor || 'bg-stone-900 text-white',
@@ -1247,15 +1392,16 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         formData.lat, 
         formData.lng, 
         formData.mapX, 
-        formData.mapY
+        formData.mapY,
+        formData.state
       );
       const [rawLat = '', rawLng = ''] = (resolved.coordinates || '').split('/');
       geoCoords = {
-        mapX: formData.mapX ? parseInt(formData.mapX, 10) : resolved.mapX,
-        mapY: formData.mapY ? parseInt(formData.mapY, 10) : resolved.mapY,
+        mapX: resolved.mapX,
+        mapY: resolved.mapY,
         lat: parseSignedCoord(formData.lat || rawLat),
         lng: parseSignedCoord(formData.lng || rawLng),
-        state: resolved.state,
+        state: formData.state || resolved.state,
         shortTitle: resolved.shortTitle
       };
     } else {
@@ -1383,6 +1529,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     setEditingArticleId(null);
     setBlogFormData({
       ...initialBlogForm,
+      slug: '',
       date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     });
     setIsBlogModalOpen(true);
@@ -1396,6 +1543,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
 
     setBlogFormData({
       title: article.title || '',
+      slug: article.slug || getBlogSlug(article) || '',
       destination: article.destination || '',
       category: article.category || 'Adventure & Seclusion',
       date: article.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
@@ -1428,8 +1576,11 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       ? blogFormData.highlights.split(/\n|,/).map(h => h.trim()).filter(Boolean)
       : [];
 
+    const finalSlug = slugify(blogFormData.slug || getBlogSlug(blogFormData) || blogFormData.title);
+
     const articlePayload = {
       id: blogModalMode === 'edit' && editingArticleId ? editingArticleId : Date.now(),
+      slug: finalSlug,
       title: blogFormData.title.trim(),
       destination: blogFormData.destination.trim() || 'Global Expedition',
       category: blogFormData.category || 'Adventure & Seclusion',
@@ -2543,10 +2694,15 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
 
                       {/* Top Left: Country & Duration Tags */}
-                      <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
+                      <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 flex-wrap max-w-[75%]">
                         <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/95 text-stone-900 shadow-sm backdrop-blur-md">
                           {trip.location}
                         </span>
+                        {trip.state && (trip.region || '').toLowerCase() === 'national' && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-400 text-stone-950 shadow-sm">
+                            {trip.state}
+                          </span>
+                        )}
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-stone-950/70 text-white backdrop-blur-md">
                           {trip.duration}
                         </span>
@@ -3767,6 +3923,11 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                       {/* Content Details */}
                       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                         <div className="space-y-2">
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-amber-900 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md w-fit">
+                            <span className="text-stone-400 select-none">/journal/</span>
+                            <span className="font-bold">{article.slug || getBlogSlug(article)}</span>
+                          </div>
+
                           <h3 className="font-editorial text-base sm:text-lg font-bold text-stone-950 line-clamp-2 leading-snug group-hover:text-amber-800 transition-colors">
                             {article.title}
                           </h3>
@@ -3806,6 +3967,23 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                           >
                             <Edit3 className="w-3 h-3 text-stone-600" />
                             <span>Edit Story</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const slug = article.slug || getBlogSlug(article);
+                              const fullUrl = `https://www.zentrevo.in/journal/${slug}`;
+                              if (navigator.clipboard) {
+                                navigator.clipboard.writeText(fullUrl);
+                                showToast(`Copied route URL: /journal/${slug}`);
+                              }
+                            }}
+                            className="p-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors cursor-pointer"
+                            title="Copy short URL route"
+                            aria-label="Copy short URL route"
+                          >
+                            <Link2 className="w-3.5 h-3.5" />
                           </button>
 
                           <button
@@ -4048,11 +4226,36 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                   </select>
                   <span className="text-[10px] text-stone-500 mt-1 block">Powers National/International switch</span>
                 </div>
+
+                {formData.region === 'national' && (
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Indian State / UT *</span>
+                      </span>
+                      <span className="text-[10px] text-amber-800 font-mono font-bold bg-amber-100 px-1.5 py-0.5 rounded">Map Anchor</span>
+                    </label>
+                    <select
+                      value={formData.state || ''}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      className="w-full bg-white border border-amber-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 transition-all font-semibold cursor-pointer"
+                    >
+                      <option value="">-- Auto-detect from Location --</option>
+                      {INDIAN_STATES_LIST.map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                    <span className="text-[10px] text-stone-500 mt-1 block">
+                      Anchors this card directly to its exact state on the Sovereign India Map
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Live Interactive Map Geo-Resolution Badge */}
               {formData.region === 'national' ? (() => {
-                const geo = resolveIndiaCoordinates(formData.location, formData.title, formData.lat, formData.lng, formData.mapX, formData.mapY);
+                const geo = resolveIndiaCoordinates(formData.location, formData.title, formData.lat, formData.lng, formData.mapX, formData.mapY, formData.state);
                 return (
                   <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-stone-800 space-y-2 animate-fadeIn">
                     <div className="flex items-center justify-between gap-2">
@@ -4163,19 +4366,119 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 );
               })()}
 
-              {/* Cover Image URL & Instant Photo Picker */}
-              <div>
-                <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
-                  Cover Photography URL *
-                </label>
-                <input
-                  type="url"
-                  required
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all"
-                />
+              {/* Cover Image Dual Mode (Upload Image or Image URL) & Instant Photo Picker */}
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block">
+                    Cover Photography *
+                  </label>
+
+                  {/* Dual Mode Switcher: Upload Image vs Image URL */}
+                  <div className="inline-flex items-center p-0.5 rounded-xl bg-stone-100 border border-stone-200 text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setDestImageInputMode('upload')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        destImageInputMode === 'upload'
+                          ? 'bg-stone-900 text-white shadow-xs font-semibold'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload Image</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDestImageInputMode('url')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        destImageInputMode === 'url'
+                          ? 'bg-stone-900 text-white shadow-xs font-semibold'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                      <span>Image URL</span>
+                    </button>
+                  </div>
+                </div>
+
+                {destImageInputMode === 'upload' ? (
+                  <div>
+                    {/* File Upload Dropzone */}
+                    <label 
+                      htmlFor="dest-cover-image-upload"
+                      className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group ${
+                        formData.image 
+                          ? 'border-emerald-300 bg-emerald-50/40 hover:bg-emerald-50/70' 
+                          : 'border-stone-300 hover:border-stone-500 bg-stone-50/70 hover:bg-stone-50'
+                      }`}
+                    >
+                      <input
+                        id="dest-cover-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleDestImageFileUpload}
+                        className="hidden"
+                        disabled={isUploadingDestImage}
+                      />
+
+                      {isUploadingDestImage ? (
+                        <div className="flex items-center gap-2 py-2">
+                          <RefreshCw className="w-5 h-5 text-stone-600 animate-spin" />
+                          <span className="text-xs font-semibold text-stone-700">Processing & optimizing image...</span>
+                        </div>
+                      ) : formData.image ? (
+                        <div className="flex items-center justify-between w-full px-2">
+                          <div className="flex items-center gap-3 text-left">
+                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-white border border-stone-200 shrink-0">
+                              <img src={formData.image} alt="Thumbnail" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="truncate max-w-[200px] sm:max-w-[280px]">
+                              <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5 text-emerald-600" /> Image Attached
+                              </span>
+                              <span className="text-[10px] text-stone-500">Click to change file from device</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setFormData(prev => ({ ...prev, image: '' }));
+                            }}
+                            className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold px-2 py-1 rounded-lg hover:bg-rose-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="py-2">
+                          <div className="w-10 h-10 rounded-full bg-stone-200/80 flex items-center justify-center mx-auto mb-2 text-stone-600 group-hover:scale-110 transition-transform">
+                            <UploadCloud className="w-5 h-5" />
+                          </div>
+                          <span className="text-xs font-bold text-stone-800 block">
+                            Click to upload destination photo or drag & drop
+                          </span>
+                          <span className="text-[11px] text-stone-500 block mt-0.5">
+                            JPG, PNG, WEBP, AVIF (auto-optimized)
+                          </span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="url"
+                      required
+                      value={formData.image}
+                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                    />
+                  </div>
+                )}
 
                 {/* Instant Curated Photo Presets */}
                 <div className="mt-2.5">
@@ -4321,6 +4624,51 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 </div>
               </div>
 
+              {/* URL Route Keyword / Custom Slug Box */}
+              <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <label className="text-xs font-semibold text-stone-800 uppercase tracking-wider flex items-center gap-2">
+                    <span>URL Route Keyword / Custom Slug</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-900 font-mono">
+                      SEO Short URL
+                    </span>
+                  </label>
+                  <span className="text-[11px] text-stone-500">
+                    Keyword displayed in the browser address bar
+                  </span>
+                </div>
+
+                <div className="flex items-center rounded-xl bg-white border border-stone-300 focus-within:border-stone-900 focus-within:ring-1 focus-within:ring-stone-900 transition-all overflow-hidden px-3.5 py-2 text-xs">
+                  <span className="text-stone-400 font-mono select-none font-medium mr-1 shrink-0">/journal/</span>
+                  <input
+                    type="text"
+                    value={blogFormData.slug || ''}
+                    onChange={(e) => setBlogFormData({ ...blogFormData, slug: slugify(e.target.value) })}
+                    placeholder={slugify(blogFormData.destination?.split(',')[0] || blogFormData.title?.split(' ').slice(0, 3).join('-') || 'keyword')}
+                    className="w-full bg-transparent text-xs text-stone-900 font-mono focus:outline-none font-semibold"
+                  />
+                  {blogFormData.slug && (
+                    <button
+                      type="button"
+                      onClick={() => setBlogFormData({ ...blogFormData, slug: '' })}
+                      className="text-stone-400 hover:text-stone-700 text-[10px] font-mono px-1.5 py-0.5 rounded hover:bg-stone-100 transition-colors cursor-pointer shrink-0 ml-1"
+                      title="Clear to auto-generate"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-stone-500 pt-0.5">
+                  <span className="font-mono text-[11px] truncate">
+                    Live Route: <span className="text-amber-800 font-semibold">https://www.zentrevo.in/journal/{blogFormData.slug || slugify(blogFormData.destination?.split(',')[0] || blogFormData.title?.split(' ').slice(0, 3).join('-') || 'custom-keyword')}</span>
+                  </span>
+                  <span className="text-[10px] text-stone-400">
+                    If left empty, a short keyword route is auto-derived from destination or title
+                  </span>
+                </div>
+              </div>
+
               {/* Row 2: Category, Read Time, Date */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -4417,48 +4765,159 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 </div>
               </div>
 
-              {/* Row 4: Photography / Cover Image */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-                <div className="sm:col-span-2 space-y-3">
-                  <div>
-                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
-                      Cover Photography Image URL
-                    </label>
-                    <input
-                      type="url"
-                      value={blogFormData.image}
-                      onChange={(e) => setBlogFormData({ ...blogFormData, image: e.target.value })}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
-                      Image Alt Text (SEO & Accessibility)
-                    </label>
-                    <input
-                      type="text"
-                      value={blogFormData.imageAlt}
-                      onChange={(e) => setBlogFormData({ ...blogFormData, imageAlt: e.target.value })}
-                      placeholder="e.g. Nubra Valley Ladakh remote high altitude solitude"
-                      className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
-                    />
+              {/* Row 4: Photography / Cover Image with Dual Option (Upload Image or Image URL) */}
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block">
+                    Cover Photography
+                  </label>
+                  
+                  {/* Dual Mode Switcher: Upload Image vs Image URL */}
+                  <div className="inline-flex items-center p-0.5 rounded-xl bg-stone-100 border border-stone-200 text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setBlogImageInputMode('upload')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        blogImageInputMode === 'upload'
+                          ? 'bg-stone-900 text-white shadow-xs font-semibold'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload Image</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBlogImageInputMode('url')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        blogImageInputMode === 'url'
+                          ? 'bg-stone-900 text-white shadow-xs font-semibold'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                      <span>Image URL</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Live Image Preview */}
-                <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 relative flex items-center justify-center">
-                  {blogFormData.image ? (
-                    <img
-                      src={blogFormData.image}
-                      alt="Story preview"
-                      className="w-full h-full object-cover"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                  ) : (
-                    <span className="text-[10px] text-stone-400 font-medium">Cover Preview</span>
-                  )}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                  <div className="sm:col-span-2 space-y-3">
+                    {blogImageInputMode === 'upload' ? (
+                      <div>
+                        {/* File Upload Dropzone */}
+                        <label 
+                          htmlFor="blog-cover-image-upload"
+                          className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group ${
+                            blogFormData.image 
+                              ? 'border-emerald-300 bg-emerald-50/40 hover:bg-emerald-50/70' 
+                              : 'border-stone-300 hover:border-stone-500 bg-stone-50/70 hover:bg-stone-50'
+                          }`}
+                        >
+                          <input
+                            id="blog-cover-image-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleBlogImageFileUpload}
+                            className="hidden"
+                            disabled={isUploadingBlogImage}
+                          />
+
+                          {isUploadingBlogImage ? (
+                            <div className="flex items-center gap-2 py-2">
+                              <RefreshCw className="w-5 h-5 text-stone-600 animate-spin" />
+                              <span className="text-xs font-semibold text-stone-700">Processing & optimizing image...</span>
+                            </div>
+                          ) : blogFormData.image ? (
+                            <div className="flex items-center justify-between w-full px-2">
+                              <div className="flex items-center gap-3 text-left">
+                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-white border border-stone-200 shrink-0">
+                                  <img src={blogFormData.image} alt="Thumbnail" className="w-full h-full object-cover" />
+                                </div>
+                                <div className="truncate max-w-[200px] sm:max-w-[260px]">
+                                  <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
+                                    <Check className="w-3.5 h-3.5 text-emerald-600" /> Image Attached
+                                  </span>
+                                  <span className="text-[10px] text-stone-500">Click to change file from device</span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setBlogFormData(prev => ({ ...prev, image: '' }));
+                                }}
+                                className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold px-2 py-1 rounded-lg hover:bg-rose-50"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="py-2">
+                              <div className="w-10 h-10 rounded-full bg-stone-200/80 flex items-center justify-center mx-auto mb-2 text-stone-600 group-hover:scale-110 transition-transform">
+                                <UploadCloud className="w-5 h-5" />
+                              </div>
+                              <span className="text-xs font-bold text-stone-800 block">
+                                Click to upload image or drag & drop
+                              </span>
+                              <span className="text-[11px] text-stone-500 block mt-0.5">
+                                JPG, PNG, WEBP, AVIF (auto-optimized)
+                              </span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="text-[11px] font-semibold text-stone-600 uppercase tracking-wider block mb-1">
+                          Cover Photography Image URL
+                        </label>
+                        <input
+                          type="url"
+                          value={blogFormData.image}
+                          onChange={(e) => setBlogFormData({ ...blogFormData, image: e.target.value })}
+                          placeholder="https://images.unsplash.com/photo-..."
+                          className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
+                        Image Alt Text (SEO & Accessibility)
+                      </label>
+                      <input
+                        type="text"
+                        value={blogFormData.imageAlt}
+                        onChange={(e) => setBlogFormData({ ...blogFormData, imageAlt: e.target.value })}
+                        placeholder="e.g. Machu Picchu Inca citadel in Peru with stone terraces"
+                        className="w-full bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Image Preview */}
+                  <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 relative flex items-center justify-center shadow-xs">
+                    {blogFormData.image ? (
+                      <>
+                        <img
+                          src={blogFormData.image}
+                          alt="Story preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                        <span className="absolute bottom-2 right-2 text-[9px] font-bold bg-black/70 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">
+                          Live Preview
+                        </span>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-stone-400">
+                        <ImageIcon className="w-5 h-5 opacity-60" />
+                        <span className="text-[10px] font-medium">Cover Preview</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

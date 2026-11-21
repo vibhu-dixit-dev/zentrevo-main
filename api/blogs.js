@@ -19,6 +19,7 @@ function isMissingTableError(error) {
 function normalizeRowToArticle(row) {
   return {
     id: row.id,
+    slug: row.slug || '',
     title: row.title,
     destination: row.destination,
     category: row.category,
@@ -43,6 +44,7 @@ function normalizeArticleToRow(article, index) {
   return {
     id: Number(article.id) || Date.now() + index,
     sort_order: index,
+    slug: article.slug || '',
     title: article.title || 'Untitled Narrative',
     destination: article.destination || 'Global Expedition',
     category: article.category || 'Adventure & Seclusion',
@@ -181,8 +183,13 @@ export default async function handler(req, res) {
         if (!probeErr) {
           await supabase.from('blogs').delete().gte('id', 0);
           const rows = payloadArticles.map(normalizeArticleToRow);
-          const { error: insertErr } = await supabase.from('blogs').insert(rows);
-          if (!insertErr) {
+          let { error: insertErr } = await supabase.from('blogs').insert(rows);
+          if (insertErr && String(insertErr.message || '').includes('slug')) {
+            // Retry without slug column if PostgreSQL table does not have a slug column
+            const rowsWithoutSlug = rows.map(({ slug, ...rest }) => rest);
+            const { error: retryErr } = await supabase.from('blogs').insert(rowsWithoutSlug);
+            if (!retryErr) tableSaved = true;
+          } else if (!insertErr) {
             tableSaved = true;
           }
         }

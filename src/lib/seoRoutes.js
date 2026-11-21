@@ -1,4 +1,4 @@
-import { destinations, blogArticles, getActiveDestinations } from '../data/travelData';
+import { destinations, blogArticles, getActiveDestinations, getActiveBlogArticles } from '../data/travelData.js';
 
 // Slugify helper: transforms text into a clean URL slug
 export function slugify(text) {
@@ -86,20 +86,32 @@ export const CLIENT_DESTINATIONS_SEO = {
   }
 };
 
-// Map article slugs
+// Map article slugs (Concise keyword routes)
 export const BLOG_SLUGS_MAP = {
+  1: 'remote-destinations',
+  2: 'art-of-slow-travel',
+  3: 'kyoto-ceramicists',
+  4: 'alpine-sanctuaries',
+  5: 'mewar-royal-kitchens',
+  6: 'serengeti-safari',
+  7: 'machu-picchu'
+};
+
+// Legacy slug aliases to ensure existing links/bookmarks continue to work
+export const LEGACY_BLOG_SLUGS_MAP = {
   1: 'remote-destinations-2026',
   2: 'art-of-slow-travel',
   3: 'master-ceramicists-in-kyoto',
   4: 'alpine-sanctuaries-engadin-valley',
   5: 'secret-royal-kitchens-of-mewar',
-  6: 'great-migration-by-starlight'
+  6: 'great-migration-by-starlight',
+  7: 'machu-picchu-travel-guide-inca-trail-tickets-and-the-best-time-to-visit-perus-lost-city-in-the-clouds'
 };
 
 // Default Home SEO
 export const DEFAULT_SEO = {
-  title: 'Zentrevo | Trips Planned by People, Not Templates',
-  description: "Share your dates and budget. A real planner builds your trip, guides your visa and stays on WhatsApp until you're home. Quote in 24 hours.",
+  title: 'Zentrevo – Best Travel and Tourism Company in India',
+  description: "Zentrevo is a trusted travel company in India, offering domestic and international tour packages, holiday planning, and unforgettable travel experiences worldwide.",
   canonical: 'https://www.zentrevo.in/',
   ogImage: 'https://www.zentrevo.in/images/og-home.jpg'
 };
@@ -164,34 +176,92 @@ export function findDestinationBySlug(slug, allDestinations = null) {
   }) || null;
 }
 
-// Determine slug for a blog article
+// Determine slug for a blog article (Clean short keyword route)
 export function getBlogSlug(article) {
   if (!article) return '';
-  if (BLOG_SLUGS_MAP[article.id]) {
+
+  // 1. Explicit slug field set on article
+  if (article.slug && typeof article.slug === 'string' && article.slug.trim()) {
+    return slugify(article.slug);
+  }
+
+  // 2. Preset curated ID map
+  if (article.id && BLOG_SLUGS_MAP[article.id]) {
     return BLOG_SLUGS_MAP[article.id];
   }
-  return slugify(article.title);
+
+  // 3. Known keywords in title or destination
+  const titleLower = (article.title || '').toLowerCase();
+  const destLower = (article.destination || '').toLowerCase();
+  if (titleLower.includes('machu picchu') || destLower.includes('machu picchu')) {
+    return 'machu-picchu';
+  }
+
+  // 4. Clean concise keyword from primary destination (first chunk before comma)
+  if (article.destination) {
+    const primaryDest = article.destination.split(',')[0].trim();
+    if (primaryDest && primaryDest.length <= 25) {
+      return slugify(primaryDest);
+    }
+  }
+
+  // 5. Short keyword from title (first 3 words)
+  if (article.title) {
+    const words = article.title.trim().split(/\s+/).slice(0, 3).join(' ');
+    if (words) {
+      return slugify(words);
+    }
+  }
+
+  return slugify(article.title || `story-${article.id || 'article'}`);
 }
 
-// Find an article from a slug
-export function findArticleBySlug(slug) {
+// Find an article from a slug (supports short keywords, legacy long slugs, and IDs)
+export function findArticleBySlug(slug, allArticles = null) {
   if (!slug) return null;
   const cleanSlug = slug.toLowerCase().replace(/^\/(journal|blog)\/?/, '').replace(/\/$/, '').trim();
   if (!cleanSlug) return null;
 
-  // 1. Check ID in BLOG_SLUGS_MAP
+  const list = allArticles || (typeof window !== 'undefined' ? getActiveBlogArticles() : blogArticles);
+
+  // 1. Direct match on article.slug
+  const directSlugMatch = list.find(a => a.slug && slugify(a.slug) === cleanSlug);
+  if (directSlugMatch) return directSlugMatch;
+
+  // 2. Check ID in BLOG_SLUGS_MAP
   for (const [id, mappedSlug] of Object.entries(BLOG_SLUGS_MAP)) {
     if (mappedSlug === cleanSlug) {
-      const found = blogArticles.find(a => a.id === Number(id));
+      const found = list.find(a => a.id === Number(id));
       if (found) return found;
     }
   }
 
-  // 2. Direct match by id or slugified title
-  return blogArticles.find(a => {
+  // 3. Check ID in LEGACY_BLOG_SLUGS_MAP (backward compatibility with old long URLs)
+  for (const [id, legacySlug] of Object.entries(LEGACY_BLOG_SLUGS_MAP)) {
+    if (legacySlug === cleanSlug) {
+      const found = list.find(a => a.id === Number(id));
+      if (found) return found;
+    }
+  }
+
+  // 4. Check getBlogSlug(a) for each article
+  const getBlogSlugMatch = list.find(a => getBlogSlug(a) === cleanSlug);
+  if (getBlogSlugMatch) return getBlogSlugMatch;
+
+  // 5. Direct match by id or slugified title
+  const exactTitleMatch = list.find(a => {
     if (String(a.id) === cleanSlug) return true;
     if (slugify(a.title) === cleanSlug) return true;
-    return slugify(a.title).includes(cleanSlug) || cleanSlug.includes(slugify(a.title));
+    return false;
+  });
+  if (exactTitleMatch) return exactTitleMatch;
+
+  // 6. Substring match fallback (handles partial match or long URLs containing the keyword)
+  return list.find(a => {
+    const fullTitleSlug = slugify(a.title);
+    const destSlug = slugify(a.destination || '');
+    return fullTitleSlug.includes(cleanSlug) || cleanSlug.includes(fullTitleSlug) ||
+           (destSlug && (destSlug.includes(cleanSlug) || cleanSlug.includes(destSlug)));
   }) || null;
 }
 

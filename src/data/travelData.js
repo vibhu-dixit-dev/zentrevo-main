@@ -107,6 +107,7 @@ export const destinations = [
     id: 7,
     title: "Udaipur Lake Palace & Mewar Royal Heritage",
     location: "Rajasthan, India",
+    state: "Rajasthan",
     region: "national",
     badge: "Royal Heritage",
     tagColor: "bg-amber-500 text-stone-950",
@@ -124,6 +125,7 @@ export const destinations = [
     id: 8,
     title: "Ladakh High Altitude & Nubra Glamping",
     location: "Ladakh, India",
+    state: "Ladakh",
     region: "national",
     badge: "Alpine Nature",
     tagColor: "bg-sky-500 text-stone-950",
@@ -141,6 +143,7 @@ export const destinations = [
     id: 9,
     title: "Kerala Backwaters & Spice Highlands",
     location: "Kerala, India",
+    state: "Kerala",
     region: "national",
     badge: "Serene Waterways",
     tagColor: "bg-emerald-500 text-stone-950",
@@ -158,6 +161,7 @@ export const destinations = [
     id: 10,
     title: "Kashmir Valley & Dal Lake Cedar Houseboat",
     location: "Kashmir, India",
+    state: "Jammu & Kashmir",
     region: "national",
     badge: "Cultural",
     tagColor: "bg-rose-500 text-stone-950",
@@ -232,6 +236,7 @@ export const testimonials = [
 export const blogArticles = [
   {
     id: 1,
+    slug: "remote-destinations",
     title: "Remote Destinations and Hidden Hideaways in 2026",
     category: "Adventure & Seclusion",
     date: "October 18, 2026",
@@ -259,6 +264,7 @@ export const blogArticles = [
   },
   {
     id: 2,
+    slug: "art-of-slow-travel",
     title: "The Art of Slow Travel: Why 14 Days in One Valley Beats 5 Countries",
     category: "Culture & Philosophy",
     date: "October 12, 2026",
@@ -286,6 +292,7 @@ export const blogArticles = [
   },
   {
     id: 3,
+    slug: "kyoto-ceramicists",
     title: "Behind the Scenes with Master Ceramicists in Kyoto",
     category: "Artisan Heritage",
     date: "September 29, 2026",
@@ -313,6 +320,7 @@ export const blogArticles = [
   },
   {
     id: 4,
+    slug: "alpine-sanctuaries",
     title: "Alpine Sanctuaries: Silence and Starlight in the Engadin Valley",
     category: "Wellness Sanctuary",
     date: "September 14, 2026",
@@ -340,6 +348,7 @@ export const blogArticles = [
   },
   {
     id: 5,
+    slug: "mewar-royal-kitchens",
     title: "The Secret Royal Kitchens of Mewar: Culinary Secrets of Udaipur",
     category: "Culinary Expeditions",
     date: "August 28, 2026",
@@ -367,6 +376,7 @@ export const blogArticles = [
   },
   {
     id: 6,
+    slug: "serengeti-safari",
     title: "The Great Migration by Starlight: Twilight Safaris in the Serengeti",
     category: "Wildlife & Conservation",
     date: "August 10, 2026",
@@ -390,6 +400,35 @@ export const blogArticles = [
       "Silent electric vehicle night drives guided by veteran Maasai naturalists.",
       "Dawn hot-air balloon drift over the Mara River with champagne breakfast on landing.",
       "Direct engagement with anti-poaching rangers and private conservancy leaders."
+    ]
+  },
+  {
+    id: 7,
+    slug: "machu-picchu",
+    title: "Machu Picchu Travel Guide: Inca Trail, Tickets, and the Best Time to Visit Peru's Lost City in the Clouds",
+    category: "Adventure & Seclusion",
+    date: "November 16, 2026",
+    readTime: "8 min read",
+    author: {
+      name: "Elena Rostova",
+      role: "Private Expedition Curator",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
+    },
+    destination: "Machu Picchu, Sacred Valley, and Cusco, Peru (Aguas Calientes, Ollantaytambo, and the Inca Trail)",
+    excerpt: "A practical guide to Peru's most famous site, covering tickets, the Inca Trail, altitude, the best time to go, and how to plan a calm, well-timed visit.",
+    image: "https://images.unsplash.com/photo-1587595431973-160d0d94add1?auto=format&fit=crop&w=1200&q=80",
+    imageAlt: "Inca citadel of Machu Picchu in Peru with stone terraces and Huayna Picchu",
+    pullQuote: "Machu Picchu is not a ruin you look at. It is a mountain you are invited to stand inside.",
+    content: [
+      "Machu Picchu sits in cloud forest at 2,430 meters above sea level, framed between two steep granite peaks—Huayna Picchu and Machu Picchu Mountain—above the Urubamba River. The site was built around 1450 under Inca emperor Pachacuti and abandoned roughly a century later during the Spanish conquest.",
+      "The most important logistical rule for visiting Machu Picchu is that circuits and tickets are strictly regulated. The Peruvian Ministry of Culture requires booking permits months in advance, especially for the Classic Inca Trail and Circuit 2 (the classic postcard view). Our private curators coordinate circuit permits, Belmond Hiram Bingham luxury train reservations from Poroy or Ollantaytambo, and private Quechua-speaking historian guides.",
+      "Acclimatization in Cusco (3,400m) or the lower-altitude Sacred Valley (2,870m) is essential before ascending to the citadel. Staying at least two nights in the Sacred Valley allows your body to adjust naturally while exploring Maras salt pans and Moray circular agricultural terraces.",
+      "Early morning mist lifts around 7:30 AM to reveal the ancient granite ashlar stonework. Standing among the terraces as dawn illuminates the Intihuatana sundial stone and Temple of the Sun is an experience that transcends ordinary travel."
+    ],
+    highlights: [
+      "Guaranteed Circuit 1 or Circuit 2 panoramic citadel access with private historian.",
+      "Belmond Hiram Bingham luxury vintage train journey through the Urubamba gorge.",
+      "Acclimatization stay at private Sacred Valley luxury hacienda with organic Andean gastronomy."
     ]
   }
 ];

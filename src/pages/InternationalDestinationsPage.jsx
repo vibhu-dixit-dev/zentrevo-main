@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Globe2, 
   ArrowUpRight, 
@@ -14,8 +14,6 @@ import { getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
-
-const WorldInteractiveMap = lazy(() => import('../components/WorldInteractiveMap'));
 
 export default function InternationalDestinationsPage({
   currentTheme = 'editorial',
@@ -86,19 +84,6 @@ export default function InternationalDestinationsPage({
   const filteredDestinations = activeCategory === 'All'
     ? internationalDestinations
     : internationalDestinations.filter(d => (d.baseCategory || d.category) === activeCategory);
-
-  const handleSelectDestinationById = (id) => {
-    const found = destinationsList.find(d => d.id === id || String(d.id) === String(id));
-    if (found && onSelectDestination) {
-      onSelectDestination(found);
-    }
-  };
-
-  const handleRequestCustomTrip = (placeName) => {
-    if (onOpenInquiry) {
-      onOpenInquiry(`Custom Global Trip: ${placeName}`);
-    }
-  };
 
   return (
     <div className={`min-h-screen font-sans-clean transition-colors duration-500 ${
@@ -192,23 +177,7 @@ export default function InternationalDestinationsPage({
           </div>
         </div>
 
-        {/* 1. The Interactive World Map Section */}
-        <section aria-label="Interactive World Map" className="mb-12">
-          <Suspense
-            fallback={
-              <div className="h-[460px] rounded-2xl border border-amber-500/20 bg-[#071022] flex items-center justify-center text-amber-300/80 text-xs font-mono uppercase tracking-[0.25em]">
-                Loading Interactive Map...
-              </div>
-            }
-          >
-            <WorldInteractiveMap 
-              onSelectDestinationById={handleSelectDestinationById}
-              onRequestCustomTrip={handleRequestCustomTrip}
-            />
-          </Suspense>
-        </section>
-
-        {/* 2. Visa Guidance Reassurance Card */}
+        {/* 1. Visa Guidance Reassurance Card */}
         <section aria-label="Visa Guidance Banner" className="mb-14">
           <div className={`rounded-3xl p-6 sm:p-8 border flex flex-col md:flex-row items-start md:items-center justify-between gap-6 ${
             isSapphire
@@ -255,7 +224,7 @@ export default function InternationalDestinationsPage({
           </div>
         </section>
 
-        {/* 3. Curated International Destinations Cards Grid */}
+        {/* 2. Curated International Destinations Cards Grid */}
         <section id="international-grid" className="scroll-mt-24 mb-20">
           {/* Subheading & Filter Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 pb-4 border-b border-stone-200/40">

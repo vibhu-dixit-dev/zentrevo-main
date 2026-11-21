@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender-seo.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },
