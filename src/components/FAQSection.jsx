@@ -3,20 +3,66 @@ import { ChevronDown, HelpCircle, MessageCircle, ArrowRight } from 'lucide-react
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../i18n/translations';
 
-export default function FAQSection({ currentTheme, onOpenInquiry }) {
+function renderAnswerText(text, onNavigate) {
+  if (!text) return null;
+  const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
+  return parts.map((part, i) => {
+    const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (match) {
+      return (
+        <a
+          key={i}
+          href={match[2]}
+          onClick={(e) => {
+            if (onNavigate && match[2].startsWith('/')) {
+              e.preventDefault();
+              onNavigate(match[2]);
+            }
+          }}
+          className="font-semibold text-amber-500 underline hover:text-amber-400"
+        >
+          {match[1]}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
+export default function FAQSection({ currentTheme, onOpenInquiry, onNavigate }) {
   const { t, language } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
 
+  // First FAQ accordion open by default
   const [openIndex, setOpenIndex] = useState(0);
 
   const faqs = (translations[language] && translations[language].faq && translations[language].faq.items) 
     ? translations[language].faq.items 
     : translations.en.faq.items;
 
+  // JSON-LD Structured Data matching FAQ text exactly
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqs.map(faq => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.a.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 (https://www.zentrevo.in$2)')
+      }
+    }))
+  };
+
   return (
     <section id="faq" className="px-4 sm:px-8 py-16 scroll-mt-24">
+      {/* FAQPage Structured Data (JSON-LD) for Search Engine Rich Accordions */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2 max-w-xl mx-auto">
@@ -66,7 +112,7 @@ export default function FAQSection({ currentTheme, onOpenInquiry }) {
 
                 {isOpen && (
                   <div className="px-4 sm:px-5 pb-5 pt-0 text-xs sm:text-sm leading-relaxed opacity-85 border-t border-stone-200/10 mt-1">
-                    <p className="pt-3">{faq.a}</p>
+                    <p className="pt-3">{renderAnswerText(faq.a, onNavigate)}</p>
                   </div>
                 )}
               </div>

@@ -296,7 +296,7 @@ export function findArticleBySlug(slug, allArticles = null) {
 }
 
 // Helper to update Document Meta tags dynamically for SEO
-export function updateDocumentSeo({ title, description, canonical, ogImage, ogType = 'website' }) {
+export function updateDocumentSeo({ title, description, canonical, ogImage, ogType = 'website', robots }) {
   if (typeof document === 'undefined') return;
 
   // Title
@@ -313,6 +313,19 @@ export function updateDocumentSeo({ title, description, canonical, ogImage, ogTy
   }
   if (description) {
     descMeta.setAttribute('content', description);
+  }
+
+  // Robots meta tag (supports noindex, nofollow for Thank You pages)
+  let robotsMeta = document.querySelector('meta[name="robots"]');
+  if (robots) {
+    if (!robotsMeta) {
+      robotsMeta = document.createElement('meta');
+      robotsMeta.setAttribute('name', 'robots');
+      document.head.appendChild(robotsMeta);
+    }
+    robotsMeta.setAttribute('content', robots);
+  } else if (robotsMeta) {
+    robotsMeta.setAttribute('content', 'index, follow');
   }
 
   // Canonical
@@ -353,6 +366,7 @@ export function resetDocumentSeo() {
     title: DEFAULT_SEO.title,
     description: DEFAULT_SEO.description,
     canonical: DEFAULT_SEO.canonical,
-    ogImage: DEFAULT_SEO.ogImage
+    ogImage: DEFAULT_SEO.ogImage,
+    robots: 'index, follow'
   });
 }

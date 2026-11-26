@@ -185,6 +185,13 @@ export default function BookingInquirySection({
 
       if ((response.ok && data.success) || supabaseSaved) {
         setSubmitted(true);
+        const isVisaInquiry = (formData.destination || '').toLowerCase().includes('visa');
+        const thankYouUrl = isVisaInquiry ? '/thank-you?type=visa' : '/thank-you?type=quote';
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.href = thankYouUrl;
+          }
+        }, 500);
       } else {
         if (data.message && data.message.includes('SMTP_PASS')) {
           setErrorMessage('Vercel SMTP configuration pending: Please add SMTP_PASS in Vercel settings.');
@@ -196,6 +203,13 @@ export default function BookingInquirySection({
       if (supabaseSaved) {
         // Even if local/server email endpoint is offline, data is securely stored in Supabase!
         setSubmitted(true);
+        const isVisaInquiry = (formData.destination || '').toLowerCase().includes('visa');
+        const thankYouUrl = isVisaInquiry ? '/thank-you?type=visa' : '/thank-you?type=quote';
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.href = thankYouUrl;
+          }
+        }, 500);
       } else {
         console.error('Submission error:', err);
         setErrorMessage(err.message || 'Could not connect with concierge servers. Please connect directly via WhatsApp or Phone below.');

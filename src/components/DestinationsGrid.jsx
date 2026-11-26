@@ -4,6 +4,7 @@ import { ArrowUpRight, Star, Clock, Sparkles, Crown, Globe2, MapPin, Layers, X, 
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
+import { getActiveCategories, syncCategoriesFromCloud } from '../data/categoriesData';
 
 const INITIAL_CARD_COUNT = 9;
 
@@ -25,6 +26,20 @@ export default function DestinationsGrid({
   const [currentRegion, setCurrentRegion] = useState(selectedRegion || 'all');
   const [destinationsList, setDestinationsList] = useState(getActiveDestinations);
   const [visibleCount, setVisibleCount] = useState(INITIAL_CARD_COUNT);
+  const [activeCategories, setActiveCategories] = useState(() => getActiveCategories());
+
+  useEffect(() => {
+    syncCategoriesFromCloud().then((cats) => {
+      if (Array.isArray(cats) && cats.length > 0) setActiveCategories(cats);
+    });
+
+    const handleCats = (e) => {
+      const updated = e.detail || getActiveCategories();
+      if (Array.isArray(updated) && updated.length > 0) setActiveCategories(updated);
+    };
+    window.addEventListener('zentrevo_categories_updated', handleCats);
+    return () => window.removeEventListener('zentrevo_categories_updated', handleCats);
+  }, []);
 
   useEffect(() => {
     const handleSync = () => {
@@ -56,7 +71,9 @@ export default function DestinationsGrid({
     }
   };
 
-  const categories = ['All', 'Luxury Escapes', 'Cultural', 'Trending', 'Alpine Nature'];
+  const categories = useMemo(() => {
+    return ['All', ...activeCategories];
+  }, [activeCategories]);
 
   const categoryLabels = {
     All: t('destinations.catAll', 'All'),
@@ -81,7 +98,7 @@ export default function DestinationsGrid({
 
   // 1. Apply Hero Search Filter if active
   const hasActiveSearch = Boolean(
-    searchFilter && (searchFilter.destinationId || searchFilter.destinationTitle || searchFilter.destinationLocation || searchFilter.label)
+    searchFilter && (searchFilter.destinationId || searchFilter.destinationTitle || searchFilter.destinationLocation || searchFilter.label || searchFilter.query)
   );
 
   // 2. Filter by Region (National vs International vs All)
@@ -98,14 +115,32 @@ export default function DestinationsGrid({
         }
         const qTitle = (searchFilter.destinationTitle || '').toLowerCase();
         const qLoc = (searchFilter.destinationLocation || '').toLowerCase();
+        const qRaw = (searchFilter.query || searchFilter.label || '').toLowerCase().trim();
         const dTitle = (d.title || '').toLowerCase();
         const dLoc = (d.location || '').toLowerCase();
-        return (qTitle && dTitle.includes(qTitle)) || (qLoc && dLoc.includes(qLoc));
+        const dState = (d.state || '').toLowerCase();
+        const dCountry = (d.country || '').toLowerCase();
+        const dHighlights = Array.isArray(d.highlights) ? d.highlights.join(' ').toLowerCase() : '';
+        const dDesc = (d.description || '').toLowerCase();
+
+        if (qTitle && dTitle.includes(qTitle)) return true;
+        if (qLoc && dLoc.includes(qLoc)) return true;
+        if (qRaw) {
+          return (
+            dTitle.includes(qRaw) ||
+            dLoc.includes(qRaw) ||
+            dState.includes(qRaw) ||
+            dCountry.includes(qRaw) ||
+            dHighlights.includes(qRaw) ||
+            dDesc.includes(qRaw)
+          );
+        }
+        return false;
       });
     }
     return activeCategory === 'All' 
       ? regionFiltered 
-      : regionFiltered.filter(d => (d.baseCategory || d.category) === activeCategory);
+      : regionFiltered.filter(d => (d.baseCategory || d.category || d.badge) === activeCategory);
   }, [hasActiveSearch, searchFilter, localizedList, activeCategory, regionFiltered]);
 
   const displayedDestinations = useMemo(() => {
@@ -203,8 +238,8 @@ export default function DestinationsGrid({
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Category Filter Pills (Scrollable with all active categories) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-none w-full max-w-full">
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -213,7 +248,7 @@ export default function DestinationsGrid({
                   setVisibleCount(INITIAL_CARD_COUNT);
                   if (onClearSearchFilter) onClearSearchFilter();
                 }}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer shrink-0 whitespace-nowrap ${
                   activeCategory === cat
                     ? isSapphire
                       ? 'bg-amber-400 text-stone-950 shadow-md shadow-amber-500/25 font-bold'
@@ -250,7 +285,7 @@ export default function DestinationsGrid({
                 <span>Filtered Result</span>
               </span>
               <span className="font-semibold">
-                {searchFilter.label || searchFilter.destinationTitle || searchFilter.destinationLocation}
+                {searchFilter.query || searchFilter.label || searchFilter.destinationTitle || searchFilter.destinationLocation}
               </span>
               {searchFilter.date && (
                 <span className="opacity-75">• {searchFilter.date}</span>

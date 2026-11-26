@@ -18,6 +18,7 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
   const [, setSubmitError] = useState('');
 
   const handleLinkClick = (path) => (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
     e.preventDefault();
     if (onNavigate) {
       onNavigate(path);
@@ -82,6 +83,11 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
 
     setSubscribed(true);
     setIsSubmitting(false);
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/thank-you?type=newsletter';
+      }
+    }, 600);
   };
 
   const handleCycleTheme = () => {
@@ -153,11 +159,51 @@ export default function Footer({ currentTheme, onSelectTheme, onNavigate }) {
               {t('footer.colExpeditions', 'Expeditions')}
             </h3>
             <ul className="space-y-2.5 text-xs text-stone-300">
-              <li><a href="/destinations/italy" onClick={handleLinkClick('/destinations/italy')} className="hover:text-amber-400 transition-colors">Amalfi Coast, Italy</a></li>
-              <li><a href="/destinations/japan" onClick={handleLinkClick('/destinations/japan')} className="hover:text-amber-400 transition-colors">Kyoto Temples, Japan</a></li>
-              <li><a href="/destinations/switzerland" onClick={handleLinkClick('/destinations/switzerland')} className="hover:text-amber-400 transition-colors">Swiss Glacier Rail</a></li>
-              <li><a href="/destinations/turkey" onClick={handleLinkClick('/destinations/turkey')} className="hover:text-amber-400 transition-colors">Cappadocia Valley</a></li>
-              <li><a href="/destinations/bali" onClick={handleLinkClick('/destinations/bali')} className="hover:text-amber-400 transition-colors">Bali River Sanctum</a></li>
+              <li>
+                <a 
+                  href="/blog/" 
+                  onClick={handleLinkClick('/blog/')} 
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  Blog
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/national-tour-packages/" 
+                  onClick={handleLinkClick('/national-tour-packages/')} 
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  National (Domestic Tours)
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/international-tour-packages/" 
+                  onClick={handleLinkClick('/international-tour-packages/')} 
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  International (International Tours)
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/visa/" 
+                  onClick={handleLinkClick('/visa/')} 
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  Visa
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/sitemap.html" 
+                  onClick={handleLinkClick('/sitemap.html')} 
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  Sitemap
+                </a>
+              </li>
             </ul>
           </div>
 

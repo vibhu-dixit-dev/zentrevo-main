@@ -13,6 +13,7 @@ import {
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getActiveDestinations } from '../data/travelData';
+import { getActiveCategories, syncCategoriesFromCloud } from '../data/categoriesData';
 import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
 import { INDIAN_STATES_LIST } from '../data/indiaCityGeoResolver';
 import { useCurrency } from '../context/CurrencyContext';
@@ -39,6 +40,20 @@ export default function NationalDestinationsPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedState, setSelectedState] = useState('All');
   const [destinationsList, setDestinationsList] = useState(getActiveDestinations);
+  const [activeCategories, setActiveCategories] = useState(() => getActiveCategories());
+
+  useEffect(() => {
+    syncCategoriesFromCloud().then((cats) => {
+      if (Array.isArray(cats) && cats.length > 0) setActiveCategories(cats);
+    });
+
+    const handleCats = (e) => {
+      const updated = e.detail || getActiveCategories();
+      if (Array.isArray(updated) && updated.length > 0) setActiveCategories(updated);
+    };
+    window.addEventListener('zentrevo_categories_updated', handleCats);
+    return () => window.removeEventListener('zentrevo_categories_updated', handleCats);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -76,13 +91,16 @@ export default function NationalDestinationsPage({
     return localizedList.filter(d => (d.region || 'international') === 'national');
   }, [localizedList]);
 
-  const categories = ['All', 'Luxury Escapes', 'Cultural', 'Alpine Nature'];
+  const categories = useMemo(() => {
+    return ['All', ...activeCategories];
+  }, [activeCategories]);
 
   const categoryLabels = {
     All: t('destinations.catAll', 'All'),
     'Luxury Escapes': t('destinations.catLuxury', 'Luxury Escapes'),
     Cultural: t('destinations.catCultural', 'Cultural'),
-    'Alpine Nature': t('destinations.catAlpine', 'Alpine Nature')
+    'Alpine Nature': t('destinations.catAlpine', 'Alpine Nature'),
+    Trending: t('destinations.catTrending', 'Trending')
   };
 
   // Extract all states represented in the current National catalog with trip counts
@@ -112,7 +130,7 @@ export default function NationalDestinationsPage({
   const filteredDestinations = useMemo(() => {
     return nationalDestinations.filter(d => {
       // 1. Category match
-      const matchesCategory = activeCategory === 'All' || (d.baseCategory || d.category) === activeCategory;
+      const matchesCategory = activeCategory === 'All' || (d.baseCategory || d.category || d.badge) === activeCategory;
       if (!matchesCategory) return false;
 
       const dState = (d.state || '').toLowerCase();
@@ -257,13 +275,13 @@ export default function NationalDestinationsPage({
                 </span>
               </div>
 
-              {/* Category Pills */}
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Category Pills (Scrollable with all active categories) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none max-w-full sm:max-w-2xl">
                 {categories.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                       activeCategory === cat
                         ? isSapphire
                           ? 'bg-amber-400 text-stone-950 shadow-md shadow-amber-500/20'

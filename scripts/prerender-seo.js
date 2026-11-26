@@ -25,6 +25,14 @@ if (!fs.existsSync(TEMPLATE_PATH)) {
 
 const templateHtml = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
 
+// Mirror dist/index.html to api/_template.html so the serverless SSR function can always read it
+try {
+  const apiTemplatePath = path.resolve(__dirname, '../api/_template.html');
+  fs.writeFileSync(apiTemplatePath, templateHtml, 'utf8');
+} catch (e) {
+  console.warn('[prerender-seo] Note: could not write api/_template.html:', e.message);
+}
+
 // Load authoritative destinations & blogs (Snapshot + Supabase Cloud Sync)
 let allDestinations = getActiveDestinations();
 let allBlogs = blogArticles;
@@ -38,16 +46,46 @@ try {
   if (sbUrl && sbKey) {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(sbUrl, sbKey);
-    const { data: dBlob } = await supabase.storage.from('zentrevo-catalog').download('destinations.json');
-    if (dBlob) {
-      const text = await dBlob.text();
-      const parsed = JSON.parse(text);
-      const list = Array.isArray(parsed) ? parsed : (parsed?.destinations || null);
-      if (Array.isArray(list) && list.length > 0) {
-        allDestinations = list;
-        console.log(`[prerender-seo] Successfully synced ${list.length} live destinations from Supabase!`);
+
+    // 1. Sync live destinations (table or storage)
+    try {
+      const { data: dTable } = await supabase.from('destinations').select('*').order('sort_order', { ascending: true });
+      if (Array.isArray(dTable) && dTable.length > 0) {
+        allDestinations = dTable;
+        console.log(`[prerender-seo] Successfully synced ${dTable.length} live destinations from Supabase table!`);
+      } else {
+        const { data: dBlob } = await supabase.storage.from('zentrevo-catalog').download('destinations.json');
+        if (dBlob) {
+          const text = await dBlob.text();
+          const parsed = JSON.parse(text);
+          const list = Array.isArray(parsed) ? parsed : (parsed?.destinations || null);
+          if (Array.isArray(list) && list.length > 0) {
+            allDestinations = list;
+            console.log(`[prerender-seo] Successfully synced ${list.length} live destinations from Supabase storage!`);
+          }
+        }
       }
-    }
+    } catch {}
+
+    // 2. Sync live blogs / articles (table or storage)
+    try {
+      const { data: bTable } = await supabase.from('blogs').select('*').order('sort_order', { ascending: true });
+      if (Array.isArray(bTable) && bTable.length > 0) {
+        allBlogs = bTable;
+        console.log(`[prerender-seo] Successfully synced ${bTable.length} live blogs from Supabase table!`);
+      } else {
+        const { data: bBlob } = await supabase.storage.from('zentrevo-catalog').download('blogs.json');
+        if (bBlob) {
+          const text = await bBlob.text();
+          const parsed = JSON.parse(text);
+          const list = Array.isArray(parsed) ? parsed : (parsed?.articles || null);
+          if (Array.isArray(list) && list.length > 0) {
+            allBlogs = list;
+            console.log(`[prerender-seo] Successfully synced ${list.length} live blogs from Supabase storage!`);
+          }
+        }
+      }
+    } catch {}
   }
 } catch (e) {
   // Graceful fallback to snapshot
@@ -80,20 +118,93 @@ routes.push({
   changefreq: 'daily',
   schema: {
     "@context": "https://schema.org",
-    "@type": "TravelAgency",
-    "name": "Zentrevo",
-    "url": `${BASE_URL}/`,
-    "email": "contact@zentrevo.in",
-    "telephone": "+91-8619928710",
-    "areaServed": "IN",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "Sector 49",
-      "addressLocality": "Gurugram",
-      "addressRegion": "Haryana",
-      "postalCode": "122018",
-      "addressCountry": "IN"
-    }
+    "@graph": [
+      {
+        "@type": "TravelAgency",
+        "name": "Zentrevo",
+        "url": `${BASE_URL}/`,
+        "email": "contact@zentrevo.in",
+        "telephone": "+91-8619928710",
+        "areaServed": "IN",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Sector 49",
+          "addressLocality": "Gurugram",
+          "addressRegion": "Haryana",
+          "postalCode": "122018",
+          "addressCountry": "IN"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How does Zentrevo plan a trip for me?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You tell us where you want to go, when, and roughly what you like to spend. A real person (not a bot) puts your plan together and sends you a quote within 24 hours. We stay on WhatsApp with you until you are home."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I change the plan after I get the quote?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, as many times as needed. Want a better hotel, one more day, or no sightseeing on day 3? Just tell your planner, before you pay."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do you guarantee my visa?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No, and be careful of anyone who does. Only the embassy decides. We tell you exactly which documents to prepare, check your forms and help with the appointment, so you avoid mistakes."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Are prices in rupees or dollars? What is included?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Prices show in INR by default, and you can switch currency on the site. Every quote lists what is included (hotels, transfers, activities) and what is not (visa fees, meals, shopping). No hidden charges. If anything changes, we tell you before you pay."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I pay, and is it safe?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You can pay securely by UPI (Google Pay, PhonePe, Paytm), NEFT / IMPS bank transfer, or major credit/debit cards. You get a receipt and written confirmation for every payment. We require a 30% advance deposit to confirm bookings, with the balance due 21 to 30 days before departure (or upon visa approval)."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What if I need to cancel?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "It depends on the airline and hotels booked. We explain the exact refund rules in your quote before you pay. Full policy: Cancellation & Refund Policy (https://www.zentrevo.in/cancellation-and-refund)."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Are there any hidden charges?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. If something in the price changes, we will tell you before you pay, not after."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What if something goes wrong during my trip?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Message your planner on WhatsApp and we will sort it out with you, whether it is a delayed flight, a hotel issue or a change of plan. Our 24/7 round-the-clock emergency concierge is reachable anytime at +91 86199 28710."
+            }
+          }
+        ]
+      }
+    ]
   },
   bodyTitle: "Zentrevo – Best Travel and Tourism Company in India",
   bodyDescription: "Zentrevo is a trusted travel company in India, offering domestic and international tour packages, holiday planning, and unforgettable travel experiences worldwide."
@@ -102,7 +213,7 @@ routes.push({
 // 2. National Destinations
 routes.push({
   path: '/destinations/national',
-  aliases: ['/national-destinations', '/national'],
+  aliases: ['/national-destinations', '/national', '/national-tour-packages'],
   title: 'Curated Domestic Expeditions | India | Zentrevo',
   description: 'Handpicked royal heritage palaces, high-altitude Himalayan glamping, and serene cedar houseboats across India tailored around your pace.',
   keywords: 'india luxury tours, royal rajasthan heritage, ladakh glamping, kerala cedar houseboats, kashmir dal lake, luxury travel india',
@@ -122,7 +233,7 @@ routes.push({
 // 3. International Destinations
 routes.push({
   path: '/destinations/international',
-  aliases: ['/international-destinations', '/international'],
+  aliases: ['/international-destinations', '/international', '/international-tour-packages'],
   title: 'International Curated Expeditions | Zentrevo',
   description: 'Explore bespoke international luxury retreats, private yacht charters, and alpine journeys across Italy, Japan, Switzerland, Bali, and beyond.',
   keywords: 'international luxury travel, custom overseas trips from india, bespoke travel designer, private jet charters, europe luxury tours',
@@ -244,12 +355,41 @@ routes.push({
   bodyDescription: "Transparent cancellation timelines, flexible rescheduling policies, and partner refund procedures."
 });
 
+// HTML Sitemap Route
+routes.push({
+  path: '/sitemap.html',
+  aliases: ['/sitemap'],
+  title: 'HTML Sitemap & Navigation Index | Zentrevo Curated Journeys',
+  description: 'Comprehensive directory of national domestic tour packages, international bespoke expeditions, travel journals, and visa guidance across Zentrevo.',
+  keywords: 'zentrevo sitemap, html sitemap, travel directory, national tour packages, international tour packages, travel journals, visa concierge',
+  canonical: `${BASE_URL}/sitemap.html`,
+  ogImage: `${BASE_URL}/images/og-home.jpg`,
+  ogType: 'website',
+  priority: 0.8,
+  changefreq: 'daily',
+  bodyTitle: "HTML Sitemap & Navigation Index",
+  bodyDescription: "Direct navigation links to all curated domestic expeditions across India, international luxury retreats, travel journal dispatches, visa concierge services, and official company policies."
+});
+
 // Admin Portal Route (Pre-rendered so Vercel never 404s on /admin)
 routes.push({
   path: '/admin',
   title: 'Admin Portal | Zentrevo',
   description: 'Zentrevo administrative management console.',
   canonical: `${BASE_URL}/admin`,
+  ogImage: `${BASE_URL}/images/og-home.jpg`,
+  ogType: 'website',
+  noIndex: true,
+  skipSitemap: true,
+  noBodyPrerender: true
+});
+
+// Thank You Confirmation Route (Protected with noindex, kept out of sitemap)
+routes.push({
+  path: '/thank-you',
+  title: 'Inquiry Received | Zentrevo Curated Journeys',
+  description: 'Thank you for connecting with Zentrevo. Your travel consultation request is confirmed.',
+  canonical: `${BASE_URL}/thank-you`,
   ogImage: `${BASE_URL}/images/og-home.jpg`,
   ogType: 'website',
   noIndex: true,
@@ -328,7 +468,7 @@ allDestinations.forEach((dest) => {
 });
 
 // 8. Journal / Blog Article Routes
-blogArticles.forEach((article) => {
+allBlogs.forEach((article) => {
   const primarySlug = getBlogSlug(article);
   const canonical = `${BASE_URL}/journal/${primarySlug}`;
   const title = `${article.title} | Zentrevo Journal`;
@@ -551,6 +691,16 @@ for (const route of routes) {
 
   for (const p of allPaths) {
     if (!p) continue;
+
+    // If path already ends with .html (e.g. sitemap.html), write directly as file
+    if (p.endsWith('.html')) {
+      const htmlFilePath = path.join(DIST_DIR, p);
+      ensureDirSync(path.dirname(htmlFilePath));
+      fs.writeFileSync(htmlFilePath, pageHtml, 'utf-8');
+      generatedCount++;
+      continue;
+    }
+
     const targetDir = path.join(DIST_DIR, p);
     ensureDirSync(targetDir);
 

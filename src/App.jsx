@@ -20,6 +20,8 @@ const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const CancellationRefund = lazy(() => import('./pages/CancellationRefund'));
 const NationalDestinationsPage = lazy(() => import('./pages/NationalDestinationsPage'));
 const InternationalDestinationsPage = lazy(() => import('./pages/InternationalDestinationsPage'));
+const SitemapPage = lazy(() => import('./pages/SitemapPage'));
+const ThankYouPage = lazy(() => import('./pages/ThankYouPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const AdminLogin = lazy(() => import('./components/AdminLogin'));
 
@@ -54,6 +56,7 @@ import {
   resetDocumentSeo 
 } from './lib/seoRoutes';
 import { syncDestinationsFromCloud, syncBlogArticlesFromCloud } from './data/travelData';
+import { syncCategoriesFromCloud } from './data/categoriesData';
 
 export default function App() {
   // Admin Session State
@@ -111,12 +114,12 @@ export default function App() {
 
   const handleHeroSearchFilter = useCallback((filter) => {
     if (!filter) return;
-    const hasDestinationChoice = Boolean(filter.destinationId || filter.destinationTitle || filter.destinationLocation || filter.label);
+    const hasDestinationChoice = Boolean(filter.destinationId || filter.destinationTitle || filter.destinationLocation || filter.label || filter.query);
     if (hasDestinationChoice) {
       setHeroSearchFilter(filter);
       setSelectedRegion('all');
-      if (filter.destinationTitle || filter.destinationLocation) {
-        setPreselectedDestination(filter.destinationTitle || filter.destinationLocation);
+      if (filter.destinationTitle || filter.destinationLocation || filter.query) {
+        setPreselectedDestination(filter.destinationTitle || filter.destinationLocation || filter.query);
       }
     } else {
       setHeroSearchFilter(null);
@@ -306,36 +309,58 @@ export default function App() {
       return;
     }
 
-    // 1. Legal Standalone Pages
-    if (path.startsWith('/privacy-policy') || path.startsWith('/terms-of-service') || path.startsWith('/cancellation-and-refund')) {
+    // 1. Legal Standalone Pages, Sitemap & Thank You Confirmation
+    if (
+      path.startsWith('/privacy-policy') || 
+      path.startsWith('/terms-of-service') || 
+      path.startsWith('/cancellation-and-refund') ||
+      path.startsWith('/sitemap') ||
+      path.startsWith('/thank-you')
+    ) {
       setIsDetailModalOpen(false);
       setIsJournalModalOpen(false);
       setIsVisaModalOpen(false);
+      if (path.startsWith('/sitemap')) {
+        updateDocumentSeo({
+          title: 'HTML Sitemap & Navigation Index | Zentrevo Curated Journeys',
+          description: 'Comprehensive directory of national domestic tour packages, international bespoke expeditions, travel journals, and visa guidance.',
+          canonical: 'https://www.zentrevo.in/sitemap.html',
+          ogImage: DEFAULT_SEO.ogImage
+        });
+      }
       return;
     }
 
     // 1.5. Dedicated Regional Destination Pages
-    if (path === '/destinations/national' || path === '/destinations/national/' || path === '/national' || path === '/national/') {
+    if (
+      path === '/destinations/national' || path === '/destinations/national/' || 
+      path === '/national' || path === '/national/' ||
+      path === '/national-tour-packages' || path === '/national-tour-packages/'
+    ) {
       setIsDetailModalOpen(false);
       setIsJournalModalOpen(false);
       setIsVisaModalOpen(false);
       updateDocumentSeo({
-        title: 'National Journeys & Interactive Map of India | Zentrevo',
-        description: 'Explore the sovereign map of India with hand-carved houseboats in Kashmir, Himalayan domes in Ladakh, and Lake Pichola palace suites.',
-        canonical: 'https://www.zentrevo.in/destinations/national',
+        title: 'National (Domestic Tours) & Interactive Map of India | Zentrevo',
+        description: 'Explore curated domestic expeditions across India: royal palaces in Rajasthan, Himalayan retreats, and serene backwaters.',
+        canonical: 'https://www.zentrevo.in/national-tour-packages/',
         ogImage: DEFAULT_SEO.ogImage
       });
       return;
     }
 
-    if (path === '/destinations/international' || path === '/destinations/international/' || path === '/international' || path === '/international/') {
+    if (
+      path === '/destinations/international' || path === '/destinations/international/' || 
+      path === '/international' || path === '/international/' ||
+      path === '/international-tour-packages' || path === '/international-tour-packages/'
+    ) {
       setIsDetailModalOpen(false);
       setIsJournalModalOpen(false);
       setIsVisaModalOpen(false);
       updateDocumentSeo({
-        title: 'International Curated Escapes | Zentrevo',
+        title: 'International (International Tours) & Curated Escapes | Zentrevo',
         description: 'Bespoke global expeditions across Amalfi Coast cliffs, Kyoto zen sanctuaries, Swiss alpine railways, and Cappadocia balloon valleys.',
-        canonical: 'https://www.zentrevo.in/destinations/international',
+        canonical: 'https://www.zentrevo.in/international-tour-packages/',
         ogImage: DEFAULT_SEO.ogImage
       });
       return;
@@ -454,6 +479,7 @@ export default function App() {
         syncRouteWithModal(path);
       }
     });
+    syncCategoriesFromCloud();
 
     const handleBlogsUpdated = () => {
       if (!isMounted) return;
@@ -497,6 +523,37 @@ export default function App() {
     return (
       <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
         <CancellationRefund onNavigateHome={() => navigateTo('/')} currentTheme={currentTheme} />
+      </Suspense>
+    );
+  }
+  if (
+    currentPath === '/sitemap.html' || 
+    currentPath === '/sitemap.html/' || 
+    currentPath === '/sitemap' || 
+    currentPath === '/sitemap/'
+  ) {
+    return (
+      <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+        <SitemapPage 
+          onNavigateHome={() => navigateTo('/')} 
+          onNavigate={navigateTo}
+          currentTheme={currentTheme} 
+        />
+      </Suspense>
+    );
+  }
+  if (currentPath === '/thank-you' || currentPath.startsWith('/thank-you')) {
+    return (
+      <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+        <ThankYouPage 
+          currentTheme={currentTheme}
+          onSelectTheme={handleSelectTheme}
+          onNavigateHome={() => navigateTo('/')}
+          onNavigate={navigateTo}
+          onOpenInquiry={handleScrollToInquiry}
+          onOpenJournal={handleOpenJournal}
+          onOpenVisa={handleOpenVisa}
+        />
       </Suspense>
     );
   }
@@ -591,13 +648,17 @@ export default function App() {
     currentPath === '/destinations/national' || 
     currentPath === '/destinations/national/' || 
     currentPath === '/national' || 
-    currentPath === '/national/';
+    currentPath === '/national/' ||
+    currentPath === '/national-tour-packages' || 
+    currentPath === '/national-tour-packages/';
 
   const isInternationalRoute = 
     currentPath === '/destinations/international' || 
     currentPath === '/destinations/international/' || 
     currentPath === '/international' || 
-    currentPath === '/international/';
+    currentPath === '/international/' ||
+    currentPath === '/international-tour-packages' || 
+    currentPath === '/international-tour-packages/';
 
   if (isNationalRoute) {
     return (
@@ -817,6 +878,7 @@ export default function App() {
         <FAQSection 
           currentTheme={currentTheme}
           onOpenInquiry={handleScrollToInquiry}
+          onNavigate={navigateTo}
         />
 
         {/* Booking & Inquiry Form */}

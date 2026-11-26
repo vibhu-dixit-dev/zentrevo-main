@@ -41,6 +41,8 @@ export const translations = {
       conciergeTitle: "24/7 Concierge",
       conciergeSub: "Always on WhatsApp",
       selectDestination: "Select Destination",
+      searchDestination: "Search Destination",
+      searchPlaceholder: "e.g. Kolkata, Japan, Bali, Swiss...",
       travelDates: "Travel Dates / Season",
       travelersCount: "Travelers / Party Size",
       searchJourneysBtn: "Find Journeys",
@@ -189,24 +191,36 @@ export const translations = {
       askPlannerBtn: "Ask a Planner",
       items: [
         {
-          q: "How does Zentrevo plan custom trips from India?",
-          a: "Tell us when, where, and how you like to travel. A real travel planner builds your trip, itemizes clear prices with no surprises, guides your visa step-by-step, and stays with you on WhatsApp until you're safely home. You receive your tailored itinerary and quote within 24 hours."
+          q: "How does Zentrevo plan a trip for me?",
+          a: "You tell us where you want to go, when, and roughly what you like to spend. A real person (not a bot) puts your plan together and sends you a quote within 24 hours. We stay on WhatsApp with you until you are home."
         },
         {
-          q: "Do you guarantee visa approval for Indian passport holders?",
-          a: "Visa guidance and document support. The embassy decides approval. We provide document checklists, appointment scheduling guidance, and confirmed travel vouchers in good faith, but we never promise or guarantee visa issuance. Sovereign embassies and consulates alone decide approvals."
+          q: "Can I change the plan after I get the quote?",
+          a: "Yes, as many times as needed. Want a better hotel, one more day, or no sightseeing on day 3? Just tell your planner, before you pay."
         },
         {
-          q: "Are prices in Indian Rupees (₹) or US Dollars ($), and what is included?",
-          a: "Yes. For travelers in India, our itineraries display transparent pricing in Indian Rupees (₹) per person. For travelers in the US and globally, rates automatically display in US Dollars ($), and you can switch currencies anytime from the top navigation bar. Each itinerary clearly itemizes accommodations, private transfers, daily breakfasts, curated excursions, and 24/7 on-ground concierge support with zero hidden charges."
+          q: "Do you guarantee my visa?",
+          a: "No, and be careful of anyone who does. Only the embassy decides. We tell you exactly which documents to prepare, check your forms and help with the appointment, so you avoid mistakes."
         },
         {
-          q: "Which destinations does Zentrevo specialize in?",
-          a: "We curate custom trips from India for Bali, Japan, Switzerland, Italy, Turkey, and Kerala, alongside domestic high-altitude expeditions in Ladakh, Mewar royal retreats in Udaipur, and Kashmir cedar houseboats."
+          q: "Are prices in rupees or dollars? What is included?",
+          a: "Prices show in INR by default, and you can switch currency on the site. Every quote lists what is included (hotels, transfers, activities) and what is not (visa fees, meals, shopping). No hidden charges. If anything changes, we tell you before you pay."
         },
         {
-          q: "What is Zentrevo's cancellation and refund policy?",
-          a: "Cancellations made 30 or more days prior to travel receive up to an 85% to 90% refund (minus committed third-party flight and hotel non-recoverable booking costs). Approved refunds are returned to your original payment method within 7 to 10 business days."
+          q: "How do I pay, and is it safe?",
+          a: "You can pay securely by UPI (Google Pay, PhonePe, Paytm), NEFT / IMPS bank transfer, or major credit/debit cards. You get a receipt and written confirmation for every payment. We require a 30% advance deposit to confirm bookings, with the balance due 21 to 30 days before departure (or upon visa approval)."
+        },
+        {
+          q: "What if I need to cancel?",
+          a: "It depends on the airline and hotels booked. We explain the exact refund rules in your quote before you pay. Full policy: [Cancellation & Refund Policy](/cancellation-and-refund)."
+        },
+        {
+          q: "Are there any hidden charges?",
+          a: "No. If something in the price changes, we will tell you before you pay, not after."
+        },
+        {
+          q: "What if something goes wrong during my trip?",
+          a: "Message your planner on WhatsApp and we will sort it out with you, whether it is a delayed flight, a hotel issue or a change of plan. Our 24/7 round-the-clock emergency concierge is reachable anytime at +91 86199 28710."
         }
       ]
     },
@@ -446,6 +460,8 @@ export const translations = {
       conciergeTitle: "24/7 私人管家",
       conciergeSub: "WhatsApp 全程待命",
       selectDestination: "选择目的地",
+      searchDestination: "搜索目的地",
+      searchPlaceholder: "例如：加尔各答、日本、巴厘岛、瑞士...",
       travelDates: "出发月份 / 季节",
       travelersCount: "出行人数",
       searchJourneysBtn: "查找专属行程",
@@ -594,24 +610,36 @@ export const translations = {
       askPlannerBtn: "咨询规划师",
       items: [
         {
-          q: "Zentrevo 如何为旅行者定制专属行程？",
-          a: "只需告诉我们您的出发时间、目的地以及您期望的旅行方式。专属旅行规划师将为您量身定制行程，以完全透明且无任何隐性费用的方式详细列明报价，全程指导签证办理，并在 WhatsApp 上全天候陪伴直到您平安返程。您将在24小时内收到您的专属定制行程单与精准报价。"
+          q: "Zentrevo 如何为我规划行程？",
+          a: "只需告诉我们您的目的地、出行时间与预算范围。专属旅行规划师（非机器人）将为您精心规划，并在24小时内发送详细报价。我们会在 WhatsApp 上全程陪伴，直至您平安返程。"
+        },
+        {
+          q: "收到报价后我还可以修改行程吗？",
+          a: "可以，修改次数不限。想要升级酒店、延长一天或调整第3天的游览？在付款前随时告诉您的规划师即可。"
         },
         {
           q: "你们是否承诺或保证签证必定获签？",
-          a: "我们提供专业的签证指导与材料准备支持，签证结果由使领馆全权裁决。我们秉持诚信为您提供专属清单、预约协助与官方确认的酒店行程单，但绝不做出任何保签承诺。签证签发权唯一归属主权国家使领馆。"
+          a: "不能，请务必警惕任何承诺保签的人。签证结果完全由主权国家使领馆决定。我们会告诉您准备哪些材料、审核您的申请表并协助预约，确保避免常见错误。"
         },
         {
-          q: "报价是以人民币、印度卢比 (₹) 还是美元 ($) 结算，包含哪些服务？",
-          a: "是的。系统会自动根据您的所在地区以卢比 (₹) 或美元 ($) 显示透明价格，您也可以随时在顶部导航栏切换货币。每份行程均清晰列明私享酒店住宿、私人专车接送、每日早餐、精选定制体验以及全天候 24/7 地面管家服务，绝无任何隐藏收费。"
+          q: "报价是卢比还是美元？包含哪些费用？",
+          a: "默认以印度卢比 (INR ₹) 显示，您也可以随时在网站顶部切换货币。每份报价均详细列明包含项（酒店、交通、活动）与不含项（签证费、个人餐饮、购物）。绝无任何隐性费用。如有变动，我们会在您付款前明确说明。"
         },
         {
-          q: "Zentrevo 最擅长哪些目的地的专属定制？",
-          a: "我们专精于意大利阿马尔菲、日本京都、瑞士阿尔卑斯、土耳其卡帕多奇亚、巴厘岛秘境，以及拉达克高海拔探险、乌代布尔皇家宫殿隐世度假与克什米尔古香雪松船屋。"
+          q: "如何付款？支付是否安全？",
+          a: "您可以通过 UPI、银行转账或主流信用卡/借记卡安全付款。每笔付款均提供正规收据与书面确认。确认预订时需支付30%定金，余款在出行前21至30天（或签证获批后）付清。"
         },
         {
-          q: "Zentrevo 的取消与退款政策是怎样的？",
-          a: "出行前30天及以上提出的取消，最高可获 85% 至 90% 的退款（扣除航空公司与酒店不可退还的第三方硬成本）。审核通过的退款将在 7 至 10 个工作日内原路退回您的支付账户。"
+          q: "如果需要取消怎么办？",
+          a: "具体取决于所预订的航司与酒店政策。付款前我们会在报价单中明确说明具体退款规则。完整政策请参阅：[退改政策](/cancellation-and-refund)。"
+        },
+        {
+          q: "是否有任何隐藏费用？",
+          a: "绝对没有。如果价格有任何变动，我们会在您付款之前告知，绝不会在付款之后追加收费。"
+        },
+        {
+          q: "旅行途中遇到突发问题怎么办？",
+          a: "随时在 WhatsApp 上向您的专属规划师发送消息，无论是航班延误、酒店问题还是临时调整行程，我们都会协助解决。我们的 24/7 全天候紧急礼宾热线随时待命：+91 86199 28710。"
         }
       ]
     },
@@ -851,6 +879,8 @@ export const translations = {
       conciergeTitle: "Conserje 24/7",
       conciergeSub: "Siempre en WhatsApp",
       selectDestination: "Seleccionar Destino",
+      searchDestination: "Buscar Destino",
+      searchPlaceholder: "ej. Calcuta, Japón, Bali, Suiza...",
       travelDates: "Fechas / Temporada",
       travelersCount: "Número de Viajeros",
       searchJourneysBtn: "Buscar Expediciones",
@@ -999,24 +1029,36 @@ export const translations = {
       askPlannerBtn: "Consultar Diseñador",
       items: [
         {
-          q: "¿Cómo diseña Zentrevo los viajes a medida?",
-          a: "Indíquenos cuándo, adónde y cómo prefiere viajar. Un diseñador de viajes personal creará su itinerario, desglosará tarifas claras y transparentes sin sorpresas, le guiará paso a paso con los visados y permanecerá con usted en WhatsApp hasta su regreso seguro. Recibirá su propuesta personalizada en 24 horas."
+          q: "¿Cómo planifica Zentrevo un viaje para mí?",
+          a: "Díganos adónde desea viajar, en qué fechas y cuál es su presupuesto aproximado. Un diseñador humano (no un bot) preparará su plan y le enviará un presupuesto en 24 horas. Nos mantenemos a su lado por WhatsApp hasta su regreso seguro."
+        },
+        {
+          q: "¿Puedo modificar el itinerario tras recibir el presupuesto?",
+          a: "Sí, tantas veces como sea necesario. ¿Desea un hotel superior, un día más o retirar actividades en el día 3? Solo coménteselo a su diseñador antes de realizar el pago."
         },
         {
           q: "¿Garantizan la aprobación del visado?",
-          a: "Ofrecemos orientación y soporte documental; la embajada soberana decide la aprobación. Facilitamos listas de requisitos, asistencia en citas y reservas confirmadas, pero nunca garantizamos la concesión. La potestad exclusiva corresponde al consulado o embajada."
+          a: "No, y desconfíe de quien se lo prometa. La decisión corresponde en exclusiva a la embajada. Le indicamos la documentación exacta, revisamos sus formularios y le asistimos con las citas para evitar errores."
         },
         {
-          q: "¿Los precios se muestran en rupias (₹) o dólares ($), y qué está incluido?",
-          a: "Sí. Para viajeros internacionales los precios se muestran en dólares estadounidenses ($) y para la India en rupias (₹), pudiendo alternar en cualquier momento desde la barra superior. Cada itinerario detalla alojamiento, traslados privados, desayunos, excursiones exclusivas y conserje 24/7 sin cargos sorpresa."
+          q: "¿Los precios están en rupias o dólares? ¿Qué está incluido?",
+          a: "Por defecto se muestran en INR (₹), pudiendo alternar divisas en el menú superior. Cada propuesta desglosa con exactitud qué se incluye (hoteles, traslados, experiencias) y qué no (tasas consulares, comidas, compras). Sin costes ocultos; cualquier variación se le notificará antes del pago."
         },
         {
-          q: "¿En qué destinos se especializa Zentrevo?",
-          a: "Diseñamos viajes exclusivos a Bali, Japón, Suiza, Italia, Turquía y Kerala, además de expediciones de alta montaña en Ladakh, retiros reales en Udaipur y casas flotantes de cedro en Cachemira."
+          q: "¿Cómo puedo pagar y es un proceso seguro?",
+          a: "Puede abonar mediante UPI, transferencia bancaria o tarjetas de crédito/débito. Recibirá recibo y confirmación por escrito de cada abono. Solicitamos un anticipo del 30% para confirmar reservas y el resto entre 21 y 30 días antes de la salida (o tras la concesión del visado)."
         },
         {
-          q: "¿Cuál es la política de cancelación y reembolso?",
-          a: "Las cancelaciones con 30 o más días de antelación reciben entre un 85% y un 90% de reembolso (descontando costes no recuperables de aerolíneas u hoteles). Los reembolsos aprobados se procesan en 7 a 10 días laborables."
+          q: "¿Qué ocurre si necesito cancelar?",
+          a: "Depende de las políticas de la aerolínea y hoteles reservados. Le explicaremos las condiciones exactas en su presupuesto antes del pago. Política completa: [Política de Cancelación y Reembolso](/cancellation-and-refund)."
+        },
+        {
+          q: "¿Existen cargos o suplementos ocultos?",
+          a: "No. Si cualquier concepto de precio cambia, se lo comunicaremos siempre antes de que efectúe el pago, nunca después."
+        },
+        {
+          q: "¿Qué sucede si surge algún contratiempo durante mi viaje?",
+          a: "Escriba a su diseñador en WhatsApp y lo resolveremos juntos de inmediato, ya sea un retraso en vuelos, una incidencia hotelera o un cambio de plan. Nuestro servicio de conserje de emergencias 24/7 está localizable en el +91 86199 28710."
         }
       ]
     },
@@ -1256,6 +1298,8 @@ export const translations = {
       conciergeTitle: "مساعد خاص 24/7",
       conciergeSub: "متاح دائماً عبر واتساب",
       selectDestination: "اختر الوجهة المفضلة",
+      searchDestination: "ابحث عن الوجهة",
+      searchPlaceholder: "مثل: كولكاتا، اليابان، بالي، سويسرا...",
       travelDates: "الموعد أو الموسم المفضل",
       travelersCount: "عدد المسافرين",
       searchJourneysBtn: "البحث عن الرحلات",
@@ -1404,24 +1448,36 @@ export const translations = {
       askPlannerBtn: "تحدث مع المستشار",
       items: [
         {
-          q: "كيف تصمم زينتريفو الرحلات الاستكشافية المخصصة؟",
-          a: "أخبرنا بالموعد، والوجهة، وأسلوب السفر المفضل لديك. سيقوم مستشار سفر حقيقي بتصميم رحلتك، وتوضيح الأسعار بشفافية كاملة دون أي تكاليف خفية، وتوجيهك خطوة بخطوة في إجراءات التأشيرة، والبقاء معك عبر واتساب حتى عودتك سالماً. ستصلك خطة رحلتك وعرض السعر خلال 24 ساعة."
+          q: "كيف تصمم زينتريفو خطة رحلتي؟",
+          a: "أخبرنا بالوجهة، والتوقيت، وميزانيتك التقريبية. سيقوم مستشار سفر حقيقي (وليس روبوت) بإعداد خطة رحلتك وإرسال عرض السعر خلال 24 ساعة، ونبقى معك عبر واتساب حتى عودتك سالماً إلى بيتك."
         },
         {
-          q: "هل تضمنون الحصول على تأشيرة السفر والموافقة عليها؟",
-          a: "نقدم التوجيه والدعم الوثائقي، والقرار النهائي يعود للسفارة. نوفر قوائم المستندات، والمساعدة في المواعيد، وحجوزات الفنادق المؤكدة بحسن نية، ولكننا لا نعد أو نضمن إصدار التأشيرة، فالقرار السيادي محصور حصراً بالسفارات والقنصليات."
+          q: "هل يمكنني تعديل الخطة بعد استلام عرض السعر؟",
+          a: "نعم، قدر ما تشاء وبلا حدود. هل ترغب في فندق أفضل، أو يوم إضافي، أو إلغاء جولة اليوم الثالث؟ فقط أخبر مستشار سفرك قبل الدفع."
         },
         {
-          q: "هل الأسعار بالروبية الهندية (₹) أم بالدولار الأمريكي ($)، وما الذي تشمله؟",
-          a: "نعم، تعرض الأسعار بالدولار الأمريكي ($) أو بالروبية (₹) حسب موقعك، ويمكنك التبديل بينهما في أي وقت من الشريط العلوي. يتضمن كل مسار إقامة فاخرة، وتوصيلات خاصة، ووجبات إفطار يومية، وجولات حصرية، ومساعد كونسيرج على الأرض 24/7 دون أي رسوم خفية."
+          q: "هل تضمنون الحصول على تأشيرة السفر؟",
+          a: "لا، واحذر من أي جهة تَعِدُك بذلك. السفارة المعنية وحدها صاحبة القرار. نحن نحدد لك المستندات المطلوبة بدقة، ونراجع استماراتك، ونساعدك في حجز المواعيد لتجنب أي أخطاء."
         },
         {
-          q: "ما هي الوجهات الرئيسية التي تتخصص فيها زينتريفو؟",
-          a: "نحن متخصصون في بالي، واليابان، وسويسرا، وإيطاليا، وتركيا، وكيرلا، إلى جانب الرحلات الاستكشافية في جبال لاداخ، والقصور الملكية في أودايبور، والمنازل العائمة في كشمير."
+          q: "هل الأسعار بالروبية أم بالدولار؟ وماذا تشمل؟",
+          a: "تظهر الأسعار افتراضياً بالروبية الهندية (₹)، ويمكنك تبديل العملة من أعلى الموقع. يوضح كل عرض سعر بدقة ما هو مشمول (الفنادق، التنقلات، الأنشطة) وما هو غير مشمول (رسوم التأشيرة، الوجبات، التسوق). لا توجد أي رسوم خفية، وأي تغيير نخبرك به قبل الدفع."
         },
         {
-          q: "ما هي سياسة الإلغاء والاسترداد لدى زينتريفو؟",
-          a: "الإلغاء قبل 30 يوماً أو أكثر من السفر يحصل على استرداد يتراوح بين 85% إلى 90% (بعد خصم تكاليف الطيران والفنادق غير القابلة للاسترداد). يتم إرجاع المبالغ المعتمدة خلال 7 إلى 10 أيام عمل."
+          q: "كيف أدفع، وهل الدفع آمن؟",
+          a: "يمكنك الدفع بأمان عبر UPI، أو التحويل البنكي، أو بطاقات الائتمان/الخصم المباشر. ستحصل على إيصال رسمي وتأكيد كتابي لكل دفعة. نطلب عربوناً بنسبة 30% لتأكيد الحجوزات، مع سداد المتبقي قبل 21 إلى 30 يوماً من السفر (أو بعد صدور التأشيرة)."
+        },
+        {
+          q: "ماذا لو احتجت إلى إلغاء الحجز؟",
+          a: "يعتمد ذلك على سياسات الطيران والفنادق المحجوزة. نشرح لك شروط الاسترداد الدقيقة في عرض السعر قبل الدفع. السياسة الكاملة: [سياسة الإلغاء والاسترجاع](/cancellation-and-refund)."
+        },
+        {
+          q: "هل توجد أي تكاليف أو رسوم خفية؟",
+          a: "كلا على الإطلاق. إذا تغير أي عنصر في السعر فسنخبرك به دائماً قبل أن تدفع، وليس بعد ذلك."
+        },
+        {
+          q: "ماذا لو طرأ أمر غير متوقع خلال رحلتي؟",
+          a: "راسل مستشار رحلتك مباشرة عبر واتساب وسنتولى معالجته معك فوراً، سواء كان تأخر طيران، أو مشكلة فندقية، أو تغييراً في الجدول. كونسيرج الطوارئ متاح 24/7 عبر: +91 86199 28710."
         }
       ]
     },

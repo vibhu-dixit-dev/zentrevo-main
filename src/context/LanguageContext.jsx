@@ -6,31 +6,37 @@ const LanguageContext = createContext();
 // Instant 0ms Zero-Flicker Browser & Timezone Detection
 const detectInitialLanguage = () => {
   try {
-    // 1. Check if user already manually selected a language previously
-    const saved = localStorage.getItem('zentrevo_language');
-    if (saved && ['en', 'zh', 'es', 'ar'].includes(saved)) {
-      return { language: saved, isManual: true };
+    // 1. Explicit URL parameter for testing/direct links (e.g. ?lang=zh, ?lang=es, ?lang=ar, ?lang=en)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlLang = params.get('lang');
+      if (urlLang && ['en', 'zh', 'es', 'ar'].includes(urlLang.toLowerCase())) {
+        return { language: urlLang.toLowerCase(), isManual: true };
+      }
     }
 
     // 2. Instant client-side browser languages list (e.g., ['zh-CN', 'zh', 'en'])
-    const browserLangs = navigator.languages || [navigator.language || ''];
+    const browserLangs = (typeof navigator !== 'undefined' && (navigator.languages || [navigator.language || ''])) || [];
+    
+    // Check if the primary/preferred browser language is Chinese, Spanish, or Arabic
     for (const rawLang of browserLangs) {
       const langLower = String(rawLang).toLowerCase();
       if (langLower.startsWith('zh')) return { language: 'zh', isManual: false };
       if (langLower.startsWith('es')) return { language: 'es', isManual: false };
       if (langLower.startsWith('ar')) return { language: 'ar', isManual: false };
-      if (langLower.startsWith('en')) return { language: 'en', isManual: false };
     }
 
-    // 3. Instant client-side timezone heuristic (0ms, no network lag)
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    // 3. Instant client-side timezone heuristic (0ms, zero flicker, runs before first paint)
+    const tz = (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
     if (
       tz.includes('Shanghai') ||
       tz.includes('Chongqing') ||
       tz.includes('Urumqi') ||
+      tz.includes('Harbin') ||
       tz.includes('Taipei') ||
       tz.includes('Hong_Kong') ||
-      tz.includes('Macau')
+      tz.includes('Macau') ||
+      tz.includes('China')
     ) {
       return { language: 'zh', isManual: false };
     }
@@ -42,7 +48,13 @@ const detectInitialLanguage = () => {
       tz.includes('Bogota') ||
       tz.includes('Santiago') ||
       tz.includes('Lima') ||
-      tz.includes('Caracas')
+      tz.includes('Caracas') ||
+      tz.includes('Montevideo') ||
+      tz.includes('Asuncion') ||
+      tz.includes('Guatemala') ||
+      tz.includes('Havana') ||
+      tz.includes('Panama') ||
+      tz.includes('Costa_Rica')
     ) {
       return { language: 'es', isManual: false };
     }
@@ -54,9 +66,11 @@ const detectInitialLanguage = () => {
       tz.includes('Doha') ||
       tz.includes('Kuwait') ||
       tz.includes('Muscat') ||
+      tz.includes('Bahrain') ||
       tz.includes('Baghdad') ||
       tz.includes('Amman') ||
-      tz.includes('Beirut')
+      tz.includes('Beirut') ||
+      tz.includes('Casablanca')
     ) {
       return { language: 'ar', isManual: false };
     }
@@ -71,7 +85,7 @@ const detectInitialLanguage = () => {
 export const LanguageProvider = ({ children }) => {
   const initial = detectInitialLanguage();
   const [language, setLanguageState] = useState(initial.language);
-  const [isManualOverride, setIsManualOverride] = useState(initial.isManual);
+  const [hasUrlOverride] = useState(initial.isManual);
 
   // Apply HTML lang and direction (RTL for Arabic, LTR for others)
   useEffect(() => {
@@ -87,9 +101,9 @@ export const LanguageProvider = ({ children }) => {
     }
   }, [language]);
 
-  // Background Edge/Geo Verification (Refine language if not explicitly overridden by user)
+  // Background Edge/Geo Verification (Refine language based on real geolocation header)
   useEffect(() => {
-    if (isManualOverride) return;
+    if (hasUrlOverride) return;
 
     let isMounted = true;
     const verifyCountryLanguage = async () => {
@@ -114,16 +128,16 @@ export const LanguageProvider = ({ children }) => {
         }
 
         if (isMounted && country) {
-          // Chinese territories
+          // Chinese territories (China, Taiwan, Hong Kong, Macau)
           if (['CN', 'TW', 'HK', 'MO'].includes(country)) {
             setLanguageState('zh');
           }
-          // Spanish-speaking nations
-          else if (['ES', 'MX', 'AR', 'CO', 'CL', 'PE', 'VE', 'EC', 'GT', 'CU', 'BO', 'DO', 'HN', 'PY', 'SV', 'NI', 'CR', 'PA', 'UY'].includes(country)) {
+          // Spanish-speaking nations (Spain, Mexico, Argentina, Colombia, etc.)
+          else if (['ES', 'MX', 'AR', 'CO', 'CL', 'PE', 'VE', 'EC', 'GT', 'CU', 'BO', 'DO', 'HN', 'PY', 'SV', 'NI', 'CR', 'PA', 'UY', 'PR'].includes(country)) {
             setLanguageState('es');
           }
-          // Arabic-speaking nations
-          else if (['AE', 'SA', 'EG', 'QA', 'KW', 'OM', 'BH', 'JO', 'LB', 'IQ', 'MA', 'DZ', 'TN'].includes(country)) {
+          // Arabic-speaking nations (UAE, Saudi Arabia, Egypt, Qatar, Kuwait, Oman, Bahrain, etc.)
+          else if (['AE', 'SA', 'EG', 'QA', 'KW', 'OM', 'BH', 'JO', 'LB', 'IQ', 'MA', 'DZ', 'TN', 'LY', 'SD', 'YE', 'SY', 'PS'].includes(country)) {
             setLanguageState('ar');
           }
         }
@@ -134,7 +148,7 @@ export const LanguageProvider = ({ children }) => {
 
     verifyCountryLanguage();
     return () => { isMounted = false; };
-  }, [isManualOverride]);
+  }, [hasUrlOverride]);
 
   // Manual language switcher
   const setLanguage = useCallback((newLang) => {

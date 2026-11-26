@@ -3,6 +3,165 @@ import { X, Send, Sparkles, Crown, Compass } from 'lucide-react';
 import { askGroqChatbot } from '../services/groqService';
 import { useLanguage } from '../context/LanguageContext';
 
+function renderInlineFormatting(text) {
+  if (!text) return null;
+  // Match bold **text** or [link](url)
+  const parts = text.split(/(\*\*[^*]+?\*\*|\[[^\]]+?\]\([^)]+?\))/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-bold text-inherit">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) {
+      return (
+        <a
+          key={i}
+          href={linkMatch[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-amber-400 font-semibold inline-flex items-center gap-0.5"
+        >
+          {linkMatch[1]}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
+function ChatMessageContent({ content }) {
+  if (!content) return null;
+
+  // Split lines
+  const rawLines = content.split('\n');
+  const blocks = [];
+  let currentTable = null;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+
+    // Check if line is a table row (starts and ends with | or contains multiple |)
+    const isTableRow = line.startsWith('|') && line.endsWith('|') && line.includes('|');
+    const isDelimiterRow = isTableRow && /^\|[-:\s|]+\|$/.test(line);
+
+    if (isTableRow) {
+      if (!currentTable) {
+        currentTable = { headers: [], rows: [] };
+        // Parse header row
+        const cells = line.slice(1, -1).split('|').map(c => c.trim());
+        currentTable.headers = cells;
+      } else if (isDelimiterRow) {
+        // Delimiter line, ignore
+        continue;
+      } else {
+        // Normal table row
+        const cells = line.slice(1, -1).split('|').map(c => c.trim());
+        currentTable.rows.push(cells);
+      }
+    } else {
+      if (currentTable) {
+        blocks.push({ type: 'table', data: currentTable });
+        currentTable = null;
+      }
+      if (line) {
+        blocks.push({ type: 'line', text: line });
+      } else {
+        blocks.push({ type: 'spacing' });
+      }
+    }
+  }
+
+  if (currentTable) {
+    blocks.push({ type: 'table', data: currentTable });
+  }
+
+  return (
+    <div className="space-y-1.5 leading-relaxed text-xs">
+      {blocks.map((block, idx) => {
+        if (block.type === 'table') {
+          const { headers, rows } = block.data;
+          return (
+            <div key={idx} className="my-2 overflow-x-auto rounded-xl border border-stone-300/40 dark:border-white/10 shadow-sm bg-black/5 dark:bg-white/5 max-w-full">
+              <table className="w-full text-left text-[11px] border-collapse min-w-[260px]">
+                {headers.length > 0 && (
+                  <thead className="bg-stone-200/60 dark:bg-white/10 border-b border-stone-300/40 dark:border-white/10 font-bold">
+                    <tr>
+                      {headers.map((h, hIdx) => (
+                        <th key={hIdx} className="px-2.5 py-1.5 whitespace-nowrap">
+                          {renderInlineFormatting(h)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                )}
+                <tbody className="divide-y divide-stone-200/40 dark:divide-white/5">
+                  {rows.map((row, rIdx) => (
+                    <tr key={rIdx} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="px-2.5 py-1.5 align-top opacity-95">
+                          {renderInlineFormatting(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        if (block.type === 'spacing') {
+          return <div key={idx} className="h-1" />;
+        }
+
+        const text = block.text;
+
+        // Check if list item (* or - or •)
+        if (/^[-*•]\s+/.test(text)) {
+          const cleanText = text.replace(/^[-*•]\s+/, '');
+          return (
+            <div key={idx} className="flex items-start gap-1.5 pl-1 py-0.5">
+              <span className="text-amber-500 font-bold leading-none mt-1 shrink-0">•</span>
+              <div className="flex-1">{renderInlineFormatting(cleanText)}</div>
+            </div>
+          );
+        }
+
+        // Check if numbered list item (1. 2.)
+        const numMatch = text.match(/^(\d+)\.\s+(.+)$/);
+        if (numMatch) {
+          return (
+            <div key={idx} className="flex items-start gap-1.5 pl-1 py-0.5">
+              <span className="font-bold text-amber-500 text-[10px] shrink-0 mt-0.5">{numMatch[1]}.</span>
+              <div className="flex-1">{renderInlineFormatting(numMatch[2])}</div>
+            </div>
+          );
+        }
+
+        // Check if header (### or ## or #)
+        if (/^#{1,3}\s+/.test(text)) {
+          const headingText = text.replace(/^#{1,3}\s+/, '');
+          return (
+            <p key={idx} className="font-bold tracking-tight pt-1 text-[13px]">
+              {renderInlineFormatting(headingText)}
+            </p>
+          );
+        }
+
+        return (
+          <p key={idx} className="py-0.5">
+            {renderInlineFormatting(text)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatbotWidget({ currentTheme }) {
   const { t } = useLanguage();
   const isEmerald = currentTheme === 'emerald';
@@ -180,13 +339,13 @@ export default function ChatbotWidget({ currentTheme }) {
                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[85%] p-3.5 rounded-2xl whitespace-pre-line leading-relaxed shadow-sm border ${
+                  className={`max-w-[88%] p-3.5 rounded-2xl leading-relaxed shadow-sm border ${
                     msg.role === 'user'
                       ? `${persona.userBubbleBg} rounded-tr-sm`
                       : `${persona.aiBubbleBg} rounded-tl-sm`
                   }`}
                 >
-                  {msg.content}
+                  <ChatMessageContent content={msg.content} />
                 </div>
               </div>
             ))}

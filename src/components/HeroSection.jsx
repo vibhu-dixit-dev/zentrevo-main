@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, Plane, ChevronDown, ChevronLeft, Crown, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, MapPin, Calendar, Users, ArrowUpRight, ArrowRight, Play, ChevronDown, ChevronLeft, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { destinations, getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList } from '../i18n/localizedTravelData';
@@ -64,14 +64,42 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
 
   const [initialDates] = useState(computeInitialDates);
 
-  // Search State
-  const [selectedLocation, setSelectedLocation] = useState('Select Destination');
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDestItem, setSelectedDestItem] = useState(null);
   const [selectedDate, setSelectedDate] = useState(initialDates.text);
   const [selectedGuests, setSelectedGuests] = useState('Select Travelers');
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [guestsDropdownOpen, setGuestsDropdownOpen] = useState(false);
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+
+  // Suggestions list based on searchQuery or popular destinations
+  const searchSuggestions = useMemo(() => {
+    const list = getLocalizedDestinationsList(activeDestList.length ? activeDestList : destinations, language);
+    const q = (searchQuery || '').trim().toLowerCase();
+    if (!q) {
+      // Top 6 popular / featured escapes when search box is empty
+      return list.slice(0, 6);
+    }
+    return list.filter((d) => {
+      const title = (d.title || '').toLowerCase();
+      const loc = (d.location || '').toLowerCase();
+      const state = (d.state || '').toLowerCase();
+      const country = (d.country || '').toLowerCase();
+      const region = (d.region || '').toLowerCase();
+      const cat = (d.category || d.baseCategory || '').toLowerCase();
+      const highlights = Array.isArray(d.highlights) ? d.highlights.join(' ').toLowerCase() : '';
+      return (
+        title.includes(q) ||
+        loc.includes(q) ||
+        state.includes(q) ||
+        country.includes(q) ||
+        region.includes(q) ||
+        cat.includes(q) ||
+        highlights.includes(q)
+      );
+    }).slice(0, 8);
+  }, [activeDestList, language, searchQuery]);
 
   // Calendar State
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -86,7 +114,7 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (!e.target.closest('.search-dropdown-menu')) {
-        setLocationDropdownOpen(false);
+        setSearchDropdownOpen(false);
         setGuestsDropdownOpen(false);
         setDateDropdownOpen(false);
       }
@@ -184,12 +212,14 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
   };
 
   const handleSearchClick = () => {
+    const trimmedQuery = searchQuery.trim();
     if (onSearchFilter) {
       onSearchFilter({
         destinationId: selectedDestItem ? selectedDestItem.id : null,
-        destinationTitle: selectedDestItem ? selectedDestItem.title : '',
-        destinationLocation: selectedDestItem ? selectedDestItem.location : '',
-        label: selectedLocation !== 'Select Destination' ? selectedLocation : '',
+        destinationTitle: selectedDestItem ? selectedDestItem.title : trimmedQuery,
+        destinationLocation: selectedDestItem ? selectedDestItem.location : trimmedQuery,
+        label: trimmedQuery || (selectedDestItem ? `${selectedDestItem.location} (${selectedDestItem.title})` : ''),
+        query: trimmedQuery,
         date: selectedDate,
         guests: selectedGuests !== 'Select Travelers' ? selectedGuests : ''
       });
@@ -267,28 +297,9 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
 
         {/* Inner Hero Content Grid */}
         <div className="relative z-20 px-6 sm:px-12 lg:px-16 pt-10 sm:pt-14 pb-6 sm:pb-8">
-          {/* Top Tag & Flight Status */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase border backdrop-blur-md shadow-sm transition-all">
-              {isSapphire ? (
-                <div className="flex items-center gap-2 text-amber-300 border-amber-500/40 bg-[#061025]/60">
-                  <Crown className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{t('hero.badgeSapphire', 'Royal Sovereign Expeditions • Curated Heritage & Trust')}</span>
-                </div>
-              ) : isEmerald ? (
-                <div className="flex items-center gap-2 text-emerald-300 border-emerald-700/50 bg-emerald-950/40">
-                  <Plane className="w-3.5 h-3.5 text-emerald-400 rotate-45" />
-                  <span>{t('hero.badgeEmerald', 'Bespoke Journeys • Summer / Autumn 2026')}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-stone-700 border-stone-200 bg-white/80">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                  <span>{t('hero.badge', 'Handcrafted Private Expeditions')}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Template 2 Proof Counter: 20k+ Happy Travelers */}
+          {/* Top Social Proof */}
+          <div className="flex items-center justify-end mb-6 sm:mb-8">
+            {/* Template 2 Proof Counter: One Planner • One WhatsApp Chat */}
             <div className={`hidden sm:flex items-center gap-3 px-4 py-1.5 rounded-full border backdrop-blur-md text-xs font-medium ${
               isSapphire 
                 ? 'bg-[#091530]/60 border-amber-500/30 text-stone-200' 
@@ -494,66 +505,138 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
                 : 'bg-white/95 backdrop-blur-xl border-stone-200/90 text-stone-900 shadow-xl'
           }`}
         >
-          {/* Field 1: Location */}
-          <div className="relative w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
-               onClick={() => {
-                 setLocationDropdownOpen(!locationDropdownOpen);
-                 setGuestsDropdownOpen(false);
-               }}>
-            <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
-              <MapPin className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
-              <span>{t('hero.selectDestination')}</span>
+          {/* Field 1: Search Destination Input & Autocomplete */}
+          <div 
+            className="relative w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
+            onClick={() => {
+              setSearchDropdownOpen(true);
+              setDateDropdownOpen(false);
+              setGuestsDropdownOpen(false);
+            }}
+          >
+            <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-1 ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
+              <Search className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />
+              <span>{t('hero.searchDestination', 'Search Destination')}</span>
             </div>
-            <div className="flex items-center justify-between mt-1">
-              <span className={`text-sm truncate ${selectedLocation === 'Select Destination' ? (isSapphire || isEmerald ? 'text-stone-400 font-normal' : 'text-stone-600 font-normal') : 'font-medium'}`}>
-                {selectedLocation === 'Select Destination' ? t('hero.selectDestination') : selectedLocation}
-              </span>
-              <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${locationDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
+            <div className="relative flex items-center justify-between">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSelectedDestItem(null);
+                  setSearchDropdownOpen(true);
+                }}
+                onFocus={() => {
+                  setSearchDropdownOpen(true);
+                  setDateDropdownOpen(false);
+                  setGuestsDropdownOpen(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setSearchDropdownOpen(false);
+                    handleSearchClick();
+                  }
+                }}
+                placeholder={t('hero.searchPlaceholder', 'e.g. Kolkata, Japan, Bali, Swiss...')}
+                className={`w-full bg-transparent text-sm font-medium outline-none pr-6 placeholder:font-normal ${
+                  isSapphire || isEmerald 
+                    ? 'text-white placeholder:text-stone-400' 
+                    : 'text-stone-900 placeholder:text-stone-400'
+                }`}
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSearchQuery('');
+                    setSelectedDestItem(null);
+                  }}
+                  className="p-1 rounded-full text-stone-400 hover:text-stone-200 transition-colors shrink-0"
+                  title="Clear search"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <ChevronDown className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-300 ${searchDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
+              )}
             </div>
 
-            <div className={`absolute top-full left-0 mt-3 w-72 rounded-2xl p-2 shadow-2xl z-50 border max-h-60 overflow-y-auto backdrop-blur-xl transition-all duration-200 ease-out origin-top ${
-              locationDropdownOpen 
+            {/* Suggestions & Autocomplete Dropdown */}
+            <div className={`absolute top-full left-0 mt-3 w-72 sm:w-80 md:w-96 rounded-2xl p-2 shadow-2xl z-50 border max-h-72 overflow-y-auto backdrop-blur-xl transition-all duration-200 ease-out origin-top ${
+              searchDropdownOpen 
                 ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' 
                 : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
             } ${
               isSapphire ? 'bg-[#0c1a38]/98 border-amber-500/40 text-stone-100 shadow-blue-950/90' : isEmerald ? 'bg-[#0d2b23]/98 border-emerald-800 text-stone-100 shadow-emerald-950/90' : 'bg-white/98 border-stone-200 text-stone-900 shadow-2xl'
             }`}>
-              {[
-                { id: null, label: t('hero.selectDestination', 'Select Destination'), item: null },
-                ...getLocalizedDestinationsList(activeDestList.length ? activeDestList : destinations, language).map(d => ({
-                  id: d.id,
-                  label: `${d.location} (${d.title})`,
-                  item: d
-                }))
-              ].map((opt, idx) => (
-                <button
-                  key={opt.id || 'default'}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (idx === 0) {
-                      setSelectedLocation('Select Destination');
-                      setSelectedDestItem(null);
-                    } else {
-                      setSelectedLocation(opt.label);
-                      setSelectedDestItem(opt.item);
-                    }
-                    setLocationDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 text-xs rounded-xl transition-colors cursor-pointer ${
-                    (idx === 0 ? selectedLocation === 'Select Destination' : selectedDestItem?.id === opt.id)
-                      ? isSapphire
-                        ? 'bg-amber-400/20 text-amber-300 font-semibold'
-                        : isEmerald
-                          ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
-                          : 'bg-stone-900 text-white font-semibold'
-                      : isSapphire || isEmerald
-                        ? 'hover:bg-white/10 text-stone-200'
-                        : 'hover:bg-stone-100 text-stone-800'
-                  } ${idx === 0 ? 'italic text-stone-400 font-normal' : ''}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-stone-400 font-semibold border-b border-stone-500/20 mb-1">
+                <span>{searchQuery.trim() ? 'Matching Destinations' : 'Popular Escapes'}</span>
+              </div>
+
+              {searchSuggestions.length > 0 ? (
+                searchSuggestions.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const displayVal = d.location || d.title;
+                      setSearchQuery(displayVal);
+                      setSelectedDestItem(d);
+                      setSearchDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-2 text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-2.5 ${
+                      selectedDestItem?.id === d.id
+                        ? isSapphire
+                          ? 'bg-amber-400/20 text-amber-300 font-semibold'
+                          : isEmerald
+                            ? 'bg-emerald-500/20 text-emerald-300 font-semibold'
+                            : 'bg-stone-900 text-white font-semibold'
+                        : isSapphire || isEmerald
+                          ? 'hover:bg-white/10 text-stone-200'
+                          : 'hover:bg-stone-100 text-stone-800'
+                    }`}
+                  >
+                    {d.image ? (
+                      <img 
+                        src={d.image} 
+                        alt={d.title || d.location} 
+                        className="w-8 h-8 rounded-lg object-cover shrink-0 border border-white/10" 
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-stone-500/20 flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-stone-400" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold truncate text-xs flex items-center gap-1.5">
+                        <span>{d.location}</span>
+                        {d.region && (
+                          <span className={`text-[9px] uppercase px-1.5 py-0.2 rounded font-mono font-medium ${
+                            d.region === 'national' 
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                              : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                          }`}>
+                            {d.region}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] truncate opacity-70 font-normal">
+                        {d.title}
+                      </div>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-4 text-center text-xs opacity-70">
+                  <p>No destination matching &ldquo;{searchQuery}&rdquo;</p>
+                  <p className="mt-1 text-[10px] opacity-60">Press &ldquo;Find Journeys&rdquo; to search across all itineraries.</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -564,7 +647,7 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
             className="relative w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
             onClick={() => {
               setDateDropdownOpen(!dateDropdownOpen);
-              setLocationDropdownOpen(false);
+              setSearchDropdownOpen(false);
               setGuestsDropdownOpen(false);
             }}
           >
@@ -725,7 +808,8 @@ export default function HeroSection({ currentTheme, onSearchFilter, onOpenInquir
           <div className="relative w-full md:w-1/3 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
                onClick={() => {
                  setGuestsDropdownOpen(!guestsDropdownOpen);
-                 setLocationDropdownOpen(false);
+                 setSearchDropdownOpen(false);
+                 setDateDropdownOpen(false);
                }}>
             <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-700'}`}>
               <Users className={`w-3.5 h-3.5 ${isSapphire ? 'text-amber-400' : 'text-emerald-500'}`} />

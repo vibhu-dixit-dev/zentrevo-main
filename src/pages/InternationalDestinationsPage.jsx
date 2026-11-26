@@ -6,7 +6,10 @@ import {
   Clock, 
   Send, 
   ArrowLeft,
-  FileCheck2
+  FileCheck2,
+  Search,
+  X,
+  SlidersHorizontal
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -14,6 +17,7 @@ import { getActiveDestinations } from '../data/travelData';
 import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
 import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
+import { getActiveCategories, syncCategoriesFromCloud } from '../data/categoriesData';
 
 export default function InternationalDestinationsPage({
   currentTheme = 'editorial',
@@ -33,7 +37,23 @@ export default function InternationalDestinationsPage({
   const isDark = isEmerald || isSapphire;
 
   const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('All');
   const [destinationsList, setDestinationsList] = useState(getActiveDestinations);
+  const [activeCategories, setActiveCategories] = useState(() => getActiveCategories());
+
+  useEffect(() => {
+    syncCategoriesFromCloud().then((cats) => {
+      if (Array.isArray(cats) && cats.length > 0) setActiveCategories(cats);
+    });
+
+    const handleCats = (e) => {
+      const updated = e.detail || getActiveCategories();
+      if (Array.isArray(updated) && updated.length > 0) setActiveCategories(updated);
+    };
+    window.addEventListener('zentrevo_categories_updated', handleCats);
+    return () => window.removeEventListener('zentrevo_categories_updated', handleCats);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -71,7 +91,9 @@ export default function InternationalDestinationsPage({
     return localizedList.filter(d => (d.region || 'international') === 'international');
   }, [localizedList]);
 
-  const categories = ['All', 'Luxury Escapes', 'Cultural', 'Alpine Nature', 'Trending'];
+  const categories = useMemo(() => {
+    return ['All', ...activeCategories];
+  }, [activeCategories]);
 
   const categoryLabels = {
     All: t('destinations.catAll', 'All'),
@@ -81,9 +103,62 @@ export default function InternationalDestinationsPage({
     Trending: t('destinations.catTrending', 'Trending')
   };
 
-  const filteredDestinations = activeCategory === 'All'
-    ? internationalDestinations
-    : internationalDestinations.filter(d => (d.baseCategory || d.category) === activeCategory);
+  // Extract all countries represented in the current International catalog with trip counts
+  const availableCountries = useMemo(() => {
+    const counts = {};
+    internationalDestinations.forEach(d => {
+      let country = d.country;
+      if (!country && d.location) {
+        const parts = d.location.split(',');
+        country = parts[parts.length - 1].trim();
+      }
+      if (country) {
+        country = country.replace(/\(.*\)/, '').trim();
+        counts[country] = (counts[country] || 0) + 1;
+      }
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [internationalDestinations]);
+
+  // Combined Filtering: Category + Country Chip + Search Bar (Just like National)
+  const filteredDestinations = useMemo(() => {
+    return internationalDestinations.filter(d => {
+      // 1. Category match
+      const matchesCategory = activeCategory === 'All' || (d.baseCategory || d.category || d.badge) === activeCategory;
+      if (!matchesCategory) return false;
+
+      // 2. Selected Country chip match
+      if (selectedCountry !== 'All') {
+        const cLower = selectedCountry.toLowerCase();
+        const dCountry = (d.country || '').toLowerCase();
+        const dLoc = (d.location || '').toLowerCase();
+        const dTitle = (d.title || '').toLowerCase();
+        const matchesCountry = dCountry.includes(cLower) || dLoc.includes(cLower) || dTitle.includes(cLower);
+        if (!matchesCountry) return false;
+      }
+
+      // 3. Search query match (filters by Country, City, Title, Description, or Highlights)
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const dCountry = (d.country || '').toLowerCase();
+        const dLoc = (d.location || '').toLowerCase();
+        const dTitle = (d.title || '').toLowerCase();
+        const dDesc = (d.description || '').toLowerCase();
+        const dHighlights = Array.isArray(d.highlights) ? d.highlights.join(' ').toLowerCase() : '';
+
+        const matchesSearch = 
+          dCountry.includes(q) || 
+          dLoc.includes(q) || 
+          dTitle.includes(q) || 
+          dDesc.includes(q) || 
+          dHighlights.includes(q);
+
+        if (!matchesSearch) return false;
+      }
+
+      return true;
+    });
+  }, [internationalDestinations, activeCategory, selectedCountry, searchQuery]);
 
   return (
     <div className={`min-h-screen font-sans-clean transition-colors duration-500 ${
@@ -227,40 +302,137 @@ export default function InternationalDestinationsPage({
         {/* 2. Curated International Destinations Cards Grid */}
         <section id="international-grid" className="scroll-mt-24 mb-20">
           {/* Subheading & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 pb-4 border-b border-stone-200/40">
-            <div>
-              <h2 className={`font-editorial text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
-                {t('destinations.heading', 'Global Itineraries')}
-              </h2>
-              <span className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                {filteredDestinations.length} {t('destinations.destinationsAvailable', 'exclusive journeys available')}
-              </span>
+          <div className="flex flex-col gap-4 mb-8 pb-4 border-b border-stone-200/40">
+            {/* Row 1: Heading & Category Pills */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className={`font-editorial text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-stone-950'}`}>
+                  {t('destinations.heading', 'Global Itineraries')}
+                </h2>
+                <span className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                  {selectedCountry !== 'All' || searchQuery ? (
+                    <span>
+                      Showing <strong className="text-amber-500 font-bold">{filteredDestinations.length}</strong> journeys {selectedCountry !== 'All' ? `in ${selectedCountry}` : ''} {searchQuery ? `matching "${searchQuery}"` : ''}
+                    </span>
+                  ) : (
+                    `${filteredDestinations.length} ${t('destinations.destinationsAvailable', 'exclusive journeys available')}`
+                  )}
+                </span>
+              </div>
+
+              {/* Category Pills (Scrollable with all active categories) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none max-w-full sm:max-w-2xl">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                      activeCategory === cat
+                        ? isSapphire
+                          ? 'bg-amber-400 text-stone-950 shadow-md shadow-amber-500/20'
+                          : isEmerald
+                            ? 'bg-emerald-400 text-stone-950 shadow-md shadow-emerald-500/20'
+                            : 'bg-stone-950 text-white shadow-md shadow-stone-900/20'
+                        : isSapphire
+                          ? 'bg-[#0a142c] text-stone-300 border border-amber-500/30 hover:border-amber-400'
+                          : isEmerald
+                            ? 'bg-[#0a241d] text-stone-300 border border-emerald-800/40 hover:border-emerald-500'
+                            : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-400'
+                    }`}
+                  >
+                    {categoryLabels[cat] || cat}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Category Pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              {categories.map((cat) => (
+            {/* Row 2: Search by Country & Destination Bar (Just like National page) */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by Country, City or Destination (e.g. Japan, Switzerland, Italy, Bali, London...)"
+                  className={`w-full pl-10 pr-9 py-2.5 rounded-2xl text-xs font-medium transition-all focus:outline-none border shadow-sm ${
+                    isDark 
+                      ? 'bg-[#09152b] border-amber-500/30 text-white placeholder-stone-400 focus:border-amber-400' 
+                      : 'bg-white border-stone-300 text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:ring-1 focus:ring-stone-900'
+                  }`}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-0.5 rounded cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {(selectedCountry !== 'All' || searchQuery) && (
                 <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                    activeCategory === cat
-                      ? isSapphire
-                        ? 'bg-amber-400 text-stone-950 shadow-md shadow-amber-500/20'
-                        : isEmerald
-                          ? 'bg-emerald-400 text-stone-950 shadow-md shadow-emerald-500/20'
-                          : 'bg-stone-950 text-white shadow-md shadow-stone-900/20'
-                      : isSapphire
-                        ? 'bg-[#0a142c] text-stone-300 border border-amber-500/30 hover:border-amber-400'
-                        : isEmerald
-                          ? 'bg-[#0a241d] text-stone-300 border border-emerald-800/40 hover:border-emerald-500'
-                          : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-400'
+                  type="button"
+                  onClick={() => {
+                    setSelectedCountry('All');
+                    setSearchQuery('');
+                  }}
+                  className="px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Reset Filters</span>
+                </button>
+              )}
+            </div>
+
+            {/* Row 3: Quick Country Filter Chips */}
+            {availableCountries.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none text-xs">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400 shrink-0 mr-1 flex items-center gap-1">
+                  <SlidersHorizontal className="w-3 h-3 text-amber-500" />
+                  <span>Countries:</span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedCountry('All')}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                    selectedCountry === 'All'
+                      ? 'bg-amber-400 text-stone-950 font-bold shadow-sm'
+                      : isDark
+                        ? 'bg-[#09152b] text-stone-300 border border-stone-700/60 hover:border-amber-400/50'
+                        : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-400'
                   }`}
                 >
-                  {categoryLabels[cat] || cat}
+                  All ({internationalDestinations.length})
                 </button>
-              ))}
-            </div>
+
+                {availableCountries.map(([countryName, count]) => (
+                  <button
+                    key={countryName}
+                    type="button"
+                    onClick={() => setSelectedCountry(selectedCountry === countryName ? 'All' : countryName)}
+                    className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                      selectedCountry === countryName
+                        ? 'bg-amber-400 text-stone-950 font-bold shadow-sm ring-1 ring-amber-500'
+                        : isDark
+                          ? 'bg-[#09152b] text-stone-300 border border-stone-700/60 hover:border-amber-400/50'
+                          : 'bg-white text-stone-600 border border-stone-200 hover:border-stone-400'
+                    }`}
+                  >
+                    <span>{countryName}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      selectedCountry === countryName ? 'bg-stone-950/20 text-stone-950' : 'bg-stone-200/60 text-stone-600'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Cards Grid - Refined & Compact 3-Column Layout */}
@@ -371,6 +543,38 @@ export default function InternationalDestinationsPage({
               </div>
             ))}
           </div>
+
+          {/* Empty Search / Filter State */}
+          {filteredDestinations.length === 0 && (
+            <div className={`text-center py-16 px-4 rounded-3xl border mt-4 ${
+              isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-stone-50 border-stone-200 text-stone-900'
+            }`}>
+              <p className="text-base font-serif font-bold mb-2">No international expeditions found matching your search</p>
+              <p className="text-xs text-stone-400 max-w-md mx-auto mb-6">
+                Looking for a private journey in this country or region? Our private curators design bespoke itineraries for any international destination worldwide.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCountry('All');
+                    setSearchQuery('');
+                    setActiveCategory('All');
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-stone-900 text-white hover:bg-stone-800 transition-colors cursor-pointer"
+                >
+                  Reset All Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenInquiry && onOpenInquiry(`Custom Expedition: ${searchQuery || selectedCountry}`)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-400 text-stone-950 hover:bg-amber-300 transition-colors cursor-pointer"
+                >
+                  Commission This Destination
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* 3. Bespoke Global Commission Banner */}

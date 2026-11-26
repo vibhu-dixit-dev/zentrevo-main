@@ -34,8 +34,17 @@ import {
   BookOpen,
   UploadCloud,
   Link2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ArrowUp,
+  ArrowDown,
+  Tag
 } from 'lucide-react';
+import {
+  getActiveCategories,
+  saveActiveCategories,
+  syncCategoriesFromCloud,
+  DEFAULT_CATEGORIES
+} from '../data/categoriesData';
 import { 
   destinations as initialDestinations, 
   getActiveDestinations, 
@@ -372,17 +381,93 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   const [editingTripId, setEditingTripId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Badge Category Dropdown State (Smooth Luxury Menu)
+  // Badge Category State & Management (Supports 15+ presets + Custom User Management)
   const [badgeDropdownOpen, setBadgeDropdownOpen] = useState(false);
   const badgeDropdownRef = useRef(null);
+  const [badgeCategories, setBadgeCategories] = useState(() => getActiveCategories());
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [editingCatIndex, setEditingCatIndex] = useState(null);
+  const [editingCatText, setEditingCatText] = useState('');
 
-  const badgeCategories = [
-    'Mediterranean',
-    'Cultural',
-    'Alpine Nature',
-    'Luxury Escapes',
-    'Trending'
-  ];
+  useEffect(() => {
+    syncCategoriesFromCloud().then((cats) => {
+      if (Array.isArray(cats) && cats.length > 0) {
+        setBadgeCategories(cats);
+      }
+    });
+
+    const handleCatsUpdated = (e) => {
+      const updated = e.detail || getActiveCategories();
+      if (Array.isArray(updated) && updated.length > 0) {
+        setBadgeCategories(updated);
+      }
+    };
+    window.addEventListener('zentrevo_categories_updated', handleCatsUpdated);
+    return () => window.removeEventListener('zentrevo_categories_updated', handleCatsUpdated);
+  }, []);
+
+  const handleAddCategory = async () => {
+    const trimmed = newCategoryInput.trim();
+    if (!trimmed) return;
+    if (badgeCategories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+      setToastMessage('Category already exists!');
+      setTimeout(() => setToastMessage(''), 3000);
+      return;
+    }
+    const updated = [...badgeCategories, trimmed];
+    setBadgeCategories(updated);
+    setNewCategoryInput('');
+    await saveActiveCategories(updated);
+    setToastMessage(`Category "${trimmed}" added!`);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleSaveEditCategory = async (index) => {
+    const trimmed = editingCatText.trim();
+    if (!trimmed) return;
+    const updated = [...badgeCategories];
+    updated[index] = trimmed;
+    setBadgeCategories(updated);
+    setEditingCatIndex(null);
+    setEditingCatText('');
+    await saveActiveCategories(updated);
+    setToastMessage(`Category updated to "${trimmed}"!`);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleDeleteCategory = async (index) => {
+    if (badgeCategories.length <= 1) {
+      setToastMessage('At least one category must remain.');
+      setTimeout(() => setToastMessage(''), 3000);
+      return;
+    }
+    const catName = badgeCategories[index];
+    const updated = badgeCategories.filter((_, i) => i !== index);
+    setBadgeCategories(updated);
+    await saveActiveCategories(updated);
+    setToastMessage(`Category "${catName}" deleted.`);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleMoveCategory = async (index, direction) => {
+    const target = index + direction;
+    if (target < 0 || target >= badgeCategories.length) return;
+    const updated = [...badgeCategories];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(target, 0, moved);
+    setBadgeCategories(updated);
+    await saveActiveCategories(updated);
+  };
+
+  const handleResetCategories = async () => {
+    if (window.confirm('Reset all categories to the 15 standard presets?')) {
+      setBadgeCategories([...DEFAULT_CATEGORIES]);
+      await saveActiveCategories([...DEFAULT_CATEGORIES]);
+      setToastMessage('Categories reset to 15 standard options.');
+      setTimeout(() => setToastMessage(''), 3000);
+    }
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -2656,7 +2741,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 {/* Bottom Row: Category Pills + Search Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-stone-100">
                   <div className="flex items-center flex-wrap gap-1.5">
-                    {['All', 'Mediterranean', 'Cultural', 'Alpine Nature', 'Luxury Escapes', 'Trending'].map((cat) => (
+                    {['All', ...badgeCategories].map((cat) => (
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
@@ -2669,6 +2754,15 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                         {cat}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryManagerOpen(true)}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                      title="Manage categories (add, edit, delete, reorder)"
+                    >
+                      <Tag className="w-3 h-3" />
+                      <span>Manage Categories</span>
+                    </button>
                   </div>
 
                   <div className="relative w-full sm:w-64">
@@ -4154,9 +4248,20 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 </div>
 
                 <div className="relative" ref={badgeDropdownRef}>
-                  <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-1.5">
-                    Badge Category *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block">
+                      Badge Category *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryManagerOpen(true)}
+                      className="text-[11px] font-bold text-amber-700 hover:text-amber-900 underline cursor-pointer flex items-center gap-1"
+                      title="Manage categories (add, edit, delete, reorder)"
+                    >
+                      <Tag className="w-3 h-3" />
+                      <span>Manage Categories</span>
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setBadgeDropdownOpen(!badgeDropdownOpen)}
@@ -4174,7 +4279,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                         : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
                     }`}
                   >
-                    <div className="space-y-1">
+                    <div className="max-h-60 overflow-y-auto space-y-1 pr-1 scrollbar-thin">
                       {badgeCategories.map((cat) => {
                         const isSelected = formData.badge === cat;
                         return (
@@ -4196,6 +4301,19 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                           </button>
                         );
                       })}
+                    </div>
+                    <div className="pt-2 mt-1 border-t border-stone-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBadgeDropdownOpen(false);
+                          setIsCategoryManagerOpen(true);
+                        }}
+                        className="w-full text-center py-2 px-3 rounded-xl text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add / Manage Categories</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -5029,6 +5147,186 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 3.5. CATEGORY MANAGER MODAL ────────────────────────────────────── */}
+      {isCategoryManagerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-stone-200">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-stone-200 flex items-center justify-between bg-stone-50/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-stone-950 font-serif">Manage Package Categories</h3>
+                  <p className="text-xs text-stone-500">Add, rename, reorder, or delete badge categories for all itineraries</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCategoryManagerOpen(false);
+                  setEditingCatIndex(null);
+                }}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Add New Category Bar */}
+            <div className="p-6 border-b border-stone-100 bg-white">
+              <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider block mb-2">
+                Add New Category
+              </label>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAddCategory();
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  value={newCategoryInput}
+                  onChange={(e) => setNewCategoryInput(e.target.value)}
+                  placeholder="e.g. Scuba Diving, Winter Escapes, Luxury Rail..."
+                  className="flex-1 bg-stone-50 border border-stone-300 rounded-2xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 focus:bg-white font-medium"
+                />
+                <button
+                  type="submit"
+                  disabled={!newCategoryInput.trim()}
+                  className="px-5 py-2.5 rounded-2xl text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>Add Category</span>
+                </button>
+              </form>
+            </div>
+
+            {/* List of Active Categories */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-2 max-h-[45vh] scrollbar-thin">
+              <div className="flex items-center justify-between text-xs text-stone-500 font-medium mb-3">
+                <span>Active Categories ({badgeCategories.length})</span>
+                <span className="text-[11px] text-stone-400">Reorder using arrows</span>
+              </div>
+
+              {badgeCategories.map((cat, idx) => {
+                const isEditing = editingCatIndex === idx;
+                return (
+                  <div
+                    key={`${cat}-${idx}`}
+                    className="p-3 rounded-2xl border border-stone-200/90 bg-stone-50/50 hover:bg-white hover:shadow-xs transition-all flex items-center justify-between gap-3"
+                  >
+                    {isEditing ? (
+                      <div className="flex-1 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingCatText}
+                          onChange={(e) => setEditingCatText(e.target.value)}
+                          className="flex-1 bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-stone-900 font-medium"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEditCategory(idx)}
+                          className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                          title="Save change"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingCatIndex(null)}
+                          className="p-1.5 rounded-lg bg-stone-200 text-stone-700 hover:bg-stone-300 cursor-pointer"
+                          title="Cancel"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono text-stone-400 w-5">{idx + 1}.</span>
+                          <span className="text-xs font-bold text-stone-900">{cat}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* Reorder Buttons */}
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveCategory(idx, -1)}
+                            className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-200 disabled:opacity-20 cursor-pointer"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === badgeCategories.length - 1}
+                            onClick={() => handleMoveCategory(idx, 1)}
+                            className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-200 disabled:opacity-20 cursor-pointer"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Edit Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCatIndex(idx);
+                              setEditingCatText(cat);
+                            }}
+                            className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-200 cursor-pointer"
+                            title="Edit Name"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Delete Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(idx)}
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-stone-200 bg-stone-50/70 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleResetCategories}
+                className="text-xs text-stone-500 hover:text-rose-600 underline font-medium cursor-pointer"
+              >
+                Reset to Standard 15 Presets
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCategoryManagerOpen(false);
+                  setEditingCatIndex(null);
+                }}
+                className="px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 transition-all cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
