@@ -134,14 +134,19 @@ export default function JournalModal({
   const nextArticle = currentIndex >= 0 && currentIndex < localizedArticles.length - 1 ? localizedArticles[currentIndex + 1] : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div 
-        className={`relative w-full max-w-5xl max-h-[92vh] rounded-[28px] border shadow-2xl flex flex-col overflow-hidden transition-all ${
+    <div
+      className="fixed inset-0 z-50 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-label={currentArticle?.title || 'Zentrevo Journal'}
+    >
+      <div
+        className={`relative w-full h-full overflow-hidden flex flex-col transition-all ${
           isSapphire
-            ? 'bg-[#0a1630] border-amber-500/40 text-stone-100 shadow-blue-950/80'
+            ? 'bg-[#0a1630] text-stone-100'
             : isEmerald
-              ? 'bg-[#09221b] border-emerald-700/50 text-stone-100 shadow-emerald-950/80'
-              : 'bg-white border-stone-200 text-stone-900 shadow-2xl'
+              ? 'bg-[#09221b] text-stone-100'
+              : 'bg-white text-stone-900'
         }`}
       >
         {/* Modal Top Header Bar */}

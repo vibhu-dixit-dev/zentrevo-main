@@ -12,14 +12,16 @@ function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
+  const [isArrowPaused, setIsArrowPaused] = useState(false);
   const dragState = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false, pointerId: null });
+  const arrowPauseTimerRef = useRef(null);
 
   const updateArrows = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    setCanPrev(el.scrollLeft > 8);
-    setCanNext(el.scrollLeft < maxScroll - 8);
+    const canScroll = el.scrollWidth - el.clientWidth > 8;
+    setCanPrev(canScroll);
+    setCanNext(canScroll);
   }, []);
 
   const getCardStep = useCallback(() => {
@@ -34,11 +36,39 @@ function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
     return Math.min(300, el.clientWidth * 0.8);
   }, []);
 
+  const getLoopPoint = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return 0;
+    const anchor = el.querySelector('[data-loop-anchor]');
+    return anchor ? anchor.offsetLeft : el.scrollWidth / 2;
+  }, []);
+
   const scrollByCard = useCallback((direction) => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollBy({ left: getCardStep() * direction, behavior: 'smooth' });
-  }, [getCardStep]);
+
+    setIsArrowPaused(true);
+    if (arrowPauseTimerRef.current) window.clearTimeout(arrowPauseTimerRef.current);
+    arrowPauseTimerRef.current = window.setTimeout(() => {
+      setIsArrowPaused(false);
+    }, 2800);
+
+    const step = getCardStep() * direction;
+    const loopPoint = getLoopPoint();
+    let next = el.scrollLeft + step;
+    if (loopPoint > 0) {
+      if (next >= loopPoint) next -= loopPoint;
+      if (next < 0) next += loopPoint;
+    }
+    el.scrollTo({ left: next, behavior: 'smooth' });
+    window.setTimeout(updateArrows, 320);
+  }, [getCardStep, getLoopPoint, updateArrows]);
+
+  useEffect(() => {
+    return () => {
+      if (arrowPauseTimerRef.current) window.clearTimeout(arrowPauseTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const el = trackRef.current;
@@ -52,9 +82,8 @@ function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
     };
   }, [articles, updateArrows]);
 
-  // Continuous smooth auto-scroll (marquee), pause on hover/focus/drag
   useEffect(() => {
-    if (!articles.length || isHovering) return undefined;
+    if (!articles.length || isHovering || isArrowPaused) return undefined;
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return undefined;
     }
@@ -67,8 +96,7 @@ function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
       if (el && !dragState.current.active) {
         const maxScroll = el.scrollWidth - el.clientWidth;
         if (maxScroll > 8) {
-          const anchor = el.querySelector('[data-loop-anchor]');
-          const loopPoint = anchor ? anchor.offsetLeft : el.scrollWidth / 2;
+          const loopPoint = getLoopPoint();
           el.scrollLeft += speed;
           if (loopPoint > 0 && el.scrollLeft >= loopPoint) {
             el.scrollLeft -= loopPoint;
@@ -81,7 +109,7 @@ function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
 
     rafId = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(rafId);
-  }, [articles, isHovering, updateArrows]);
+  }, [articles, isHovering, isArrowPaused, updateArrows, getLoopPoint]);
 
   const isInteractiveTarget = (target) => {
     if (!(target instanceof Element)) return false;

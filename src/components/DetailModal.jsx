@@ -43,18 +43,19 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-6 animate-in fade-in duration-200"
-      onClick={onClose}
+    <div
+      className="fixed inset-0 z-50 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-label={localizedDest?.title || 'Destination details'}
     >
-      <div 
-        onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-3xl rounded-[32px] overflow-hidden shadow-2xl border max-h-[90vh] flex flex-col transition-all duration-300 ${
+      <div
+        className={`relative w-full h-full overflow-hidden flex flex-col transition-all duration-300 ${
           isSapphire
-            ? 'bg-[#0c1a38] border-amber-500/35 text-stone-100 shadow-blue-950/70'
-            : isEmerald 
-              ? 'bg-[#0d2b23] border-emerald-800 text-stone-100 shadow-emerald-950/60' 
-              : 'bg-white border-stone-200 text-stone-900 shadow-2xl'
+            ? 'bg-[#0c1a38] text-stone-100'
+            : isEmerald
+              ? 'bg-[#0d2b23] text-stone-100'
+              : 'bg-white text-stone-900'
         }`}
       >
         {/* Floating Top-Right Controls */}
@@ -90,8 +91,8 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
 
         {/* Modal Scrollable Body: Header Image + Full Itinerary Content scroll together smoothly */}
         <div className="overflow-y-auto flex-1 overscroll-contain">
-          {/* Header Image (Scrolls smoothly with content) */}
-          <div className="relative h-64 sm:h-80 w-full overflow-hidden shrink-0">
+          {/* Full-bleed header image */}
+          <div className="relative h-[42vh] sm:h-[48vh] min-h-[220px] w-full overflow-hidden shrink-0">
             <img
               src={localizedDest.image}
               alt={localizedDest.imageAlt || `${localizedDest.title} - ${localizedDest.location} itinerary | Zentrevo`}
@@ -101,18 +102,18 @@ export default function DetailModal({ destination, isOpen, onClose, onBookNow, c
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/20" />
 
-            <div className="absolute bottom-5 left-6 right-16">
+            <div className="absolute bottom-5 left-6 right-16 max-w-5xl">
               <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${localizedDest.tagColor}`}>
                 {localizedDest.location}
               </span>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2 leading-tight drop-shadow-sm">
+              <h3 className="text-2xl sm:text-4xl font-bold text-white mt-2 leading-tight drop-shadow-sm">
                 {localizedDest.title}
               </h3>
             </div>
           </div>
 
           {/* Modal Text & Highlights Content */}
-          <div className="p-6 sm:p-8 space-y-6">
+          <div className="p-6 sm:p-8 lg:p-10 space-y-6 max-w-5xl mx-auto w-full">
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-stone-200/20">
               <div className="flex items-center gap-4 text-xs font-semibold">
                 <span className="flex items-center gap-1.5">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import StatsBar from './components/StatsBar';
@@ -111,6 +111,13 @@ export default function App() {
   const [preselectedGuests, setPreselectedGuests] = useState('');
   const [preselectedDates, setPreselectedDates] = useState('');
   const [heroSearchFilter, setHeroSearchFilter] = useState(null);
+  const destinationReturnPathRef = useRef('/');
+
+  const isDestinationDetailPath = useCallback((path) => {
+    if (!path || !path.startsWith('/destinations/')) return false;
+    const slug = path.replace(/^\/destinations\/?/, '').replace(/\/$/, '');
+    return Boolean(slug) && slug !== 'national' && slug !== 'international';
+  }, []);
 
   const handleHeroSearchFilter = useCallback((filter) => {
     if (!filter) return;
@@ -145,7 +152,16 @@ export default function App() {
     const newPath = `/destinations/${slug}`;
 
     if (pushHistory && typeof window !== 'undefined' && window.location.pathname !== newPath) {
-      window.history.pushState({ type: 'destination', slug }, '', newPath);
+      const currentPathname = window.location.pathname || '/';
+      // Remember listing page (national/international/home) so close returns there
+      if (!isDestinationDetailPath(currentPathname)) {
+        destinationReturnPathRef.current = currentPathname;
+      }
+      window.history.pushState(
+        { type: 'destination', slug, returnPath: destinationReturnPathRef.current },
+        '',
+        newPath
+      );
       setCurrentPath(newPath);
     }
 
@@ -159,19 +175,20 @@ export default function App() {
       canonical: `https://www.zentrevo.in${newPath}`,
       ogImage: destination.image
     });
-  }, []);
+  }, [isDestinationDetailPath]);
 
-  // Handle closing destination modal & restoring home route
+  // Close destination detail and return to the previous listing path (e.g. /destinations/national)
   const handleCloseDestinationModal = useCallback((pushHistory = true) => {
     setIsDetailModalOpen(false);
     setSelectedDestination(null);
 
-    if (pushHistory && typeof window !== 'undefined' && window.location.pathname.startsWith('/destinations/')) {
-      window.history.pushState({}, '', '/');
-      setCurrentPath('/');
+    if (pushHistory && typeof window !== 'undefined' && isDestinationDetailPath(window.location.pathname)) {
+      const returnPath = destinationReturnPathRef.current || '/';
+      window.history.pushState({}, '', returnPath);
+      setCurrentPath(returnPath);
     }
     resetDocumentSeo();
-  }, []);
+  }, [isDestinationDetailPath]);
 
   // Handle opening journal (specific article or full catalog) with individual URL route
   const handleOpenJournal = useCallback((article = null, pushHistory = true) => {

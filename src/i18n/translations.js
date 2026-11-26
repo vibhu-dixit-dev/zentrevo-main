@@ -264,7 +264,7 @@ export const translations = {
       card3Desc: "Legitimate hotel and flight vouchers meeting strict embassy presentation requirements.",
       card4Title: "4. Journey Review",
       card4Desc: "Thorough review of application forms and supporting paperwork prior to submission.",
-      continueBtn: "Got It, Continue to Itinerary",
+      continueBtn: "Got It, Continue to Contact Page",
       footerNote: "Have specific visa questions before booking? Message our dedicated planner directly on WhatsApp."
     },
     detailModal: {
@@ -683,7 +683,7 @@ export const translations = {
       card3Desc: "提供符合使领馆严苛审核标准的确认酒店、航段与接送文件。",
       card4Title: "4. 材料规范初审",
       card4Desc: "在正式递交前为您逐项核对表格与文书规范，减少疏漏。",
-      continueBtn: "明白，继续规划行程",
+      continueBtn: "明白了，继续前往联系页",
       footerNote: "出发前有具体的签证疑问？随时在 WhatsApp 上直接咨询我们的专属旅行规划师。"
     },
     detailModal: {
@@ -1102,7 +1102,7 @@ export const translations = {
       card3Desc: "Documentos de hotel y vuelos legítimos que cumplen con los requisitos oficiales.",
       card4Title: "4. Revisión del Expediente",
       card4Desc: "Verificación exhaustiva de formularios y documentación antes de la entrega.",
-      continueBtn: "Entendido, Continuar al Itinerario",
+      continueBtn: "Entendido, Continuar a Contacto",
       footerNote: "¿Tiene preguntas específicas sobre visados antes de reservar? Hable directamente con su planificador por WhatsApp."
     },
     detailModal: {
@@ -1521,7 +1521,7 @@ export const translations = {
       card3Desc: "مستندات حجز فندقي وتذاكر طيران نظامية ومستوفية للشروط القنصلية بدقة.",
       card4Title: "4. مراجعة وتدقيق الملف",
       card4Desc: "مراجعة شاملة لجميع الاستمارات والوثائق الداعمة قبل تقديمها رسمياً لتفادي الأخطاء.",
-      continueBtn: "فهمت ذلك، المتابعة إلى مسار الرحلة",
+      continueBtn: "فهمت ذلك، المتابعة إلى صفحة التواصل",
       footerNote: "هل لديك استفسارات محددة حول التأشيرات قبل الحجز؟ تواصل مباشرة مع مخطط الرحلات عبر واتساب."
     },
     detailModal: {
