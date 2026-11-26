@@ -38,7 +38,10 @@ import {
   ArrowUp,
   ArrowDown,
   Tag,
-  Clock
+  Clock,
+  AlertTriangle,
+  ExternalLink,
+  Eye
 } from 'lucide-react';
 import {
   getActiveCategories,
@@ -381,6 +384,9 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
   const [editingTripId, setEditingTripId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastTone, setToastTone] = useState('success'); // 'success' | 'warning'
+  const toastTimerRef = useRef(null);
+  const [seoPreview, setSeoPreview] = useState(null); // { title, url, path, kind, cloudSaved }
 
   // Badge Category State & Management (Supports 15+ presets + Custom User Management)
   const [badgeDropdownOpen, setBadgeDropdownOpen] = useState(false);
@@ -1068,9 +1074,26 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     showToast(`Exported ${subscribers.length} leads for Newsletter!`);
   };
 
-  const showToast = (msg) => {
+  const showToast = (msg, tone = 'success', durationMs) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
+    setToastTone(tone === 'warning' ? 'warning' : 'success');
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    const ms = durationMs ?? (tone === 'warning' ? 7000 : 3500);
+    toastTimerRef.current = setTimeout(() => setToastMessage(''), ms);
+  };
+
+  const openSeoPreview = ({ title, slug, kind, cloudSaved }) => {
+    const cleanSlug = String(slug || '').trim();
+    if (!cleanSlug) return;
+    const path = kind === 'journal' ? `/journal/${cleanSlug}` : `/destinations/${cleanSlug}`;
+    setSeoPreview({
+      title: title || cleanSlug,
+      slug: cleanSlug,
+      kind: kind === 'journal' ? 'journal' : 'destination',
+      path,
+      url: `https://www.zentrevo.in${path}`,
+      cloudSaved: !!cloudSaved
+    });
   };
 
   // ─── NEWSLETTER STUDIO STATE & DISPATCH HANDLERS ─────────────────────────
@@ -1619,7 +1642,20 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     const persistResult = await saveActiveDestinations(updatedTrips);
     setCatalogCloudState(persistResult.cloudSaved ? 'synced' : 'local');
     const actionLabel = isAdding ? `Created & published "${formData.title}"` : `Updated "${formData.title}"`;
-    showToast(persistResult.cloudSaved ? `${actionLabel} • Synced to Cloud` : `${actionLabel} (Local cache only)`);
+    if (persistResult.cloudSaved) {
+      showToast(`${actionLabel} • Synced to Cloud • SEO notified`);
+    } else {
+      showToast(
+        `${actionLabel} — NOT on cloud. View Source / Google will NOT see this card until cloud sync succeeds.`,
+        'warning'
+      );
+    }
+    openSeoPreview({
+      title: formData.title,
+      slug: finalSlug,
+      kind: 'destination',
+      cloudSaved: !!persistResult.cloudSaved
+    });
   };
 
   const handleDeleteTrip = async (id, title) => {
@@ -1629,7 +1665,11 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       setCatalogCloudState('syncing');
       const persistResult = await saveActiveDestinations(updatedTrips);
       setCatalogCloudState(persistResult.cloudSaved ? 'synced' : 'local');
-      showToast(persistResult.cloudSaved ? `Removed "${title}" • Cloud Updated` : `Removed "${title}" (Local)`);
+      if (persistResult.cloudSaved) {
+        showToast(`Removed "${title}" • Cloud Updated`);
+      } else {
+        showToast(`Removed "${title}" locally only — cloud catalog may still show it.`, 'warning');
+      }
     }
   };
 
@@ -1637,14 +1677,26 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     const copy = {
       ...trip,
       id: Date.now(),
-      title: `${trip.title} (Bespoke Edition)`
+      title: `${trip.title} (Bespoke Edition)`,
+      slug: trip.slug ? `${trip.slug}-copy` : undefined
     };
     const updatedTrips = [copy, ...trips];
     setTrips(updatedTrips);
     setCatalogCloudState('syncing');
     const persistResult = await saveActiveDestinations(updatedTrips);
     setCatalogCloudState(persistResult.cloudSaved ? 'synced' : 'local');
-    showToast(persistResult.cloudSaved ? `Duplicated "${trip.title}" • Cloud Synced` : `Duplicated "${trip.title}"`);
+    if (persistResult.cloudSaved) {
+      showToast(`Duplicated "${trip.title}" • Cloud Synced • SEO notified`);
+    } else {
+      showToast(`Duplicated "${trip.title}" locally only — SEO/View Source will not see it yet.`, 'warning');
+    }
+    const dupSlug = copy.slug || getDestinationSlug(copy);
+    openSeoPreview({
+      title: copy.title,
+      slug: dupSlug,
+      kind: 'destination',
+      cloudSaved: !!persistResult.cloudSaved
+    });
   };
 
   const handleResetTrips = async () => {
@@ -1747,7 +1799,20 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     const result = await saveActiveBlogArticles(updated);
     setBlogCloudState(result.cloudSaved ? 'synced' : 'local');
     const actionLabel = blogModalMode === 'add' ? `Published "${articlePayload.title}"` : `Updated "${articlePayload.title}"`;
-    showToast(result.cloudSaved ? `${actionLabel} • Synced to Cloud` : `${actionLabel} (Local Cache)`);
+    if (result.cloudSaved) {
+      showToast(`${actionLabel} • Synced to Cloud • SEO notified`);
+    } else {
+      showToast(
+        `${actionLabel} — NOT on cloud. View Source / Google will NOT see this journal until cloud sync succeeds.`,
+        'warning'
+      );
+    }
+    openSeoPreview({
+      title: articlePayload.title,
+      slug: finalSlug,
+      kind: 'journal',
+      cloudSaved: !!result.cloudSaved
+    });
   };
 
   const handleDeleteBlog = async (id, title) => {
@@ -1757,7 +1822,11 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       setBlogCloudState('syncing');
       const result = await saveActiveBlogArticles(updated);
       setBlogCloudState(result.cloudSaved ? 'synced' : 'local');
-      showToast(result.cloudSaved ? `Removed "${title}" • Cloud Synced` : `Removed "${title}"`);
+      if (result.cloudSaved) {
+        showToast(`Removed "${title}" • Cloud Synced`);
+      } else {
+        showToast(`Removed "${title}" locally only — cloud journal may still show it.`, 'warning');
+      }
     }
   };
 
@@ -1765,14 +1834,25 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     const copy = {
       ...article,
       id: Date.now(),
-      title: `${article.title} (Curator's Cut)`
+      title: `${article.title} (Curator's Cut)`,
+      slug: article.slug ? `${article.slug}-copy` : undefined
     };
     const updated = [copy, ...articles];
     setArticles(updated);
     setBlogCloudState('syncing');
     const result = await saveActiveBlogArticles(updated);
     setBlogCloudState(result.cloudSaved ? 'synced' : 'local');
-    showToast(result.cloudSaved ? `Duplicated "${article.title}" • Cloud Synced` : `Duplicated "${article.title}"`);
+    if (result.cloudSaved) {
+      showToast(`Duplicated "${article.title}" • Cloud Synced • SEO notified`);
+    } else {
+      showToast(`Duplicated "${article.title}" locally only — SEO/View Source will not see it yet.`, 'warning');
+    }
+    openSeoPreview({
+      title: copy.title,
+      slug: copy.slug || getBlogSlug(copy),
+      kind: 'journal',
+      cloudSaved: !!result.cloudSaved
+    });
   };
 
   const handleResetBlogs = async () => {
@@ -2770,18 +2850,20 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
 
                   {/* Cloud Status + Counter + Reset + "+ New Card" Button */}
                   <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap ${
+                    <span
+                      title={catalogCloudState === 'local' ? 'Local only — Google / View Source will not see new cards until cloud sync succeeds' : undefined}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap ${
                       catalogCloudState === 'synced'
                         ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                         : catalogCloudState === 'syncing'
                           ? 'bg-amber-50 text-amber-800 border-amber-200'
-                          : 'bg-stone-100 text-stone-600 border-stone-200'
+                          : 'bg-rose-50 text-rose-800 border-rose-200'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${
-                        catalogCloudState === 'synced' ? 'bg-emerald-500' : catalogCloudState === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-stone-400'
+                        catalogCloudState === 'synced' ? 'bg-emerald-500' : catalogCloudState === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-rose-500'
                       }`} />
                       <span>
-                        {catalogCloudState === 'synced' ? 'Cloud Synced' : catalogCloudState === 'syncing' ? 'Syncing Cloud...' : 'Local Cache'}
+                        {catalogCloudState === 'synced' ? 'Cloud Synced' : catalogCloudState === 'syncing' ? 'Syncing Cloud...' : 'Local Only — SEO Offline'}
                       </span>
                     </span>
 
@@ -2880,7 +2962,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                         </span>
                       </div>
 
-                      {/* Top Right: Quick Edit / Duplicate / Delete Actions */}
+                      {/* Top Right: Quick Edit / SEO / Duplicate / Delete Actions */}
                       <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
                         <button
                           onClick={() => handleOpenEdit(trip)}
@@ -2888,6 +2970,18 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                           className="w-8 h-8 rounded-full bg-white/90 hover:bg-white text-stone-900 flex items-center justify-center transition-all cursor-pointer shadow-md hover:scale-110"
                         >
                           <Edit3 className="w-3.5 h-3.5 text-stone-800" />
+                        </button>
+                        <button
+                          onClick={() => openSeoPreview({
+                            title: trip.title,
+                            slug: trip.slug || getDestinationSlug(trip),
+                            kind: 'destination',
+                            cloudSaved: catalogCloudState === 'synced'
+                          })}
+                          title="Preview SEO / View Source URL"
+                          className="w-8 h-8 rounded-full bg-white/90 hover:bg-white text-stone-900 flex items-center justify-center transition-all cursor-pointer shadow-md hover:scale-110"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-amber-700" />
                         </button>
                         <button
                           onClick={() => handleDuplicateTrip(trip)}
@@ -3936,12 +4030,19 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                         Content Management System
                       </span>
                       <span className="text-stone-300">•</span>
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-stone-200 bg-stone-50">
+                      <div
+                        title={blogCloudState === 'local' ? 'Local only — Google / View Source will not see new journals until cloud sync succeeds' : undefined}
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          blogCloudState === 'local'
+                            ? 'border-rose-200 bg-rose-50'
+                            : 'border-stone-200 bg-stone-50'
+                        }`}
+                      >
                         <span className={`w-1.5 h-1.5 rounded-full ${
-                          blogCloudState === 'synced' ? 'bg-emerald-500 animate-pulse' : blogCloudState === 'syncing' ? 'bg-amber-400 animate-spin' : 'bg-stone-400'
+                          blogCloudState === 'synced' ? 'bg-emerald-500 animate-pulse' : blogCloudState === 'syncing' ? 'bg-amber-400 animate-spin' : 'bg-rose-500'
                         }`} />
-                        <span className="text-stone-600">
-                          {blogCloudState === 'synced' ? 'Synced to Cloud (Supabase)' : blogCloudState === 'syncing' ? 'Syncing...' : 'Local Cache'}
+                        <span className={blogCloudState === 'local' ? 'text-rose-800' : 'text-stone-600'}>
+                          {blogCloudState === 'synced' ? 'Synced to Cloud (Supabase)' : blogCloudState === 'syncing' ? 'Syncing...' : 'Local Only — SEO Offline'}
                         </span>
                       </div>
                     </div>
@@ -4139,6 +4240,21 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                           >
                             <Edit3 className="w-3 h-3 text-stone-600" />
                             <span>Edit Story</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => openSeoPreview({
+                              title: article.title,
+                              slug: article.slug || getBlogSlug(article),
+                              kind: 'journal',
+                              cloudSaved: blogCloudState === 'synced'
+                            })}
+                            className="p-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 transition-colors cursor-pointer"
+                            title="Preview SEO / View Source URL"
+                            aria-label="Preview SEO / View Source URL"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
 
                           <button
@@ -5505,11 +5621,119 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         </div>
       )}
 
-      {/* ─── 4. TOAST NOTIFICATION ───────────────────────────────────────────── */}
+      {/* ─── 4. SEO / VIEW-SOURCE PREVIEW PANEL ──────────────────────────────── */}
+      {seoPreview && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-3 sm:p-6 bg-stone-950/40 backdrop-blur-[2px]">
+          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-stone-200 overflow-hidden">
+            <div className={`px-5 py-4 border-b flex items-start justify-between gap-3 ${
+              seoPreview.cloudSaved ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'
+            }`}>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">
+                  SEO / View Source Check
+                </p>
+                <h3 className="font-editorial text-lg font-bold text-stone-950 truncate">
+                  {seoPreview.title}
+                </h3>
+                <p className={`text-xs mt-1 font-semibold ${
+                  seoPreview.cloudSaved ? 'text-emerald-800' : 'text-rose-800'
+                }`}>
+                  {seoPreview.cloudSaved
+                    ? 'Cloud synced — Google can see this page’s HTML.'
+                    : 'Local only — View Source / Google will NOT see this page yet.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSeoPreview(null)}
+                className="p-1.5 rounded-full hover:bg-white/80 text-stone-600 cursor-pointer shrink-0"
+                aria-label="Close SEO preview"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">Live URL</p>
+                <code className="block text-[11px] sm:text-xs font-mono bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5 text-stone-800 break-all">
+                  {seoPreview.url}
+                </code>
+              </div>
+
+              {!seoPreview.cloudSaved && (
+                <div className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-3">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-rose-900 leading-relaxed">
+                    This card is only in this browser. Re-save after cloud is healthy, or check Supabase credentials — otherwise production View Source stays on old/default HTML.
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <a
+                  href={seoPreview.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open Live Page
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.open(seoPreview.url, '_blank', 'noopener,noreferrer');
+                    showToast('Page opened — press Ctrl+U (Mac: Cmd+Option+U) to View Source HTML');
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500 text-stone-950 hover:bg-amber-400 cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Check View Source
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(seoPreview.url);
+                      showToast(`Copied ${seoPreview.path}`);
+                    }
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold border border-stone-200 bg-white hover:bg-stone-50 text-stone-800 cursor-pointer"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  Copy URL
+                </button>
+                <a
+                  href="https://www.zentrevo.in/sitemap.xml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold border border-stone-200 bg-white hover:bg-stone-50 text-stone-800 cursor-pointer"
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  Open Sitemap
+                </a>
+              </div>
+
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                After cloud sync: open View Source and confirm this page’s title / description appear in the HTML. Then use Google Search Console → URL Inspection → Request indexing.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 5. TOAST NOTIFICATION ───────────────────────────────────────────── */}
       {toastMessage && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 p-3.5 sm:p-4 px-4 sm:px-5 max-w-[calc(100vw-2rem)] rounded-2xl bg-stone-950 text-white font-semibold text-xs shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-bottom duration-300 border border-stone-800">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="truncate">{toastMessage}</span>
+        <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 p-3.5 sm:p-4 px-4 sm:px-5 max-w-[min(28rem,calc(100vw-2rem))] rounded-2xl font-semibold text-xs shadow-2xl flex items-start gap-2.5 animate-in slide-in-from-bottom duration-300 border ${
+          toastTone === 'warning'
+            ? 'bg-rose-950 text-white border-rose-800'
+            : 'bg-stone-950 text-white border-stone-800'
+        }`}>
+          {toastTone === 'warning'
+            ? <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+            : <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />}
+          <span className="leading-relaxed">{toastMessage}</span>
         </div>
       )}
 

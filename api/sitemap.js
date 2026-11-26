@@ -141,7 +141,8 @@ ${xmlItems}
 </urlset>`;
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=86400');
+    // Keep short so newly published cards appear in sitemap within ~1 minute
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     return res.status(200).send(sitemapXml);
 
   } catch (err) {

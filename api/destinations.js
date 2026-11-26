@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import notifySearchEngines, { SITE_ORIGIN } from '../server/seo/notifySearchEngines.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -6,6 +7,26 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 
 const STORAGE_BUCKET = 'zentrevo-catalog';
 const STORAGE_FILE = 'destinations.json';
+
+function buildDestinationSeoUrls(list) {
+  if (!Array.isArray(list)) return [];
+  const urls = [];
+  const seen = new Set();
+  for (const d of list) {
+    const slug = String(d?.slug || '').trim();
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    urls.push(`${SITE_ORIGIN}/destinations/${slug}`);
+  }
+  return urls;
+}
+
+function queueSeoNotify(destinations) {
+  const urls = buildDestinationSeoUrls(destinations);
+  Promise.resolve()
+    .then(() => notifySearchEngines({ urls }))
+    .catch((err) => console.warn('SEO notify (destinations):', err?.message || err));
+}
 
 function isMissingTableError(error) {
   if (!error) return false;
@@ -186,10 +207,12 @@ export default async function handler(req, res) {
         await supabase.from('destinations').delete().gte('id', 0);
 
         if (action === 'reset') {
+          queueSeoNotify([]);
           return res.status(200).json({
             success: true,
             source: 'table',
             reset: true,
+            seoNotifyQueued: true,
             message: 'Cloud catalog reset to default curated itineraries.'
           });
         }
@@ -203,10 +226,12 @@ export default async function handler(req, res) {
         }
         if (upsertErr) throw upsertErr;
 
+        queueSeoNotify(payloadDestinations);
         return res.status(200).json({
           success: true,
           source: 'table',
-          count: rows.length
+          count: rows.length,
+          seoNotifyQueued: true
         });
       }
 
@@ -219,10 +244,12 @@ export default async function handler(req, res) {
 
       if (action === 'reset') {
         await supabase.storage.from(STORAGE_BUCKET).remove([STORAGE_FILE]);
+        queueSeoNotify([]);
         return res.status(200).json({
           success: true,
           source: 'storage',
           reset: true,
+          seoNotifyQueued: true,
           message: 'Cloud catalog reset to default curated itineraries.'
         });
       }
@@ -242,10 +269,12 @@ export default async function handler(req, res) {
 
       if (uploadErr) throw uploadErr;
 
+      queueSeoNotify(payloadDestinations);
       return res.status(200).json({
         success: true,
         source: 'storage',
-        count: payloadDestinations.length
+        count: payloadDestinations.length,
+        seoNotifyQueued: true
       });
     } catch (err) {
       console.error('POST /api/destinations error:', err);

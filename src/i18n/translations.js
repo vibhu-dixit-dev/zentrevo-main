@@ -400,7 +400,7 @@ export const translations = {
       allCategories: "All Journeys",
       commissionTitle: "Looking for an Untouched Corner of India?",
       commissionSubtitle: "We design tailored private journeys across all 28 states — Kaziranga wildlife lodges, Spiti cliff retreats, or private Chettinad heritage mansions.",
-      commissionBtn: "Commission a Bespoke Itinerary",
+      commissionBtn: "Contact Us",
       backHome: "Back to Home"
     },
     internationalPage: {
@@ -416,7 +416,7 @@ export const translations = {
       visaBannerBtn: "Explore Visa Guidance",
       commissionTitle: "Seeking a Global Destination Not Listed Here?",
       commissionSubtitle: "Our expedition designers curate private worldwide itineraries — from the French Riviera and Patagonia to New Zealand fjords.",
-      commissionBtn: "Plan Custom World Journey",
+      commissionBtn: "Contact Us",
       backHome: "Back to Home"
     }
   },
@@ -835,7 +835,7 @@ export const translations = {
       visaBannerBtn: "查看签证指引",
       commissionTitle: "想去尚未列出的全球目的地？",
       commissionSubtitle: "我们的旅行设计师可为您量身雕琢全球任何角落的私享旅程——从法国里维埃拉到巴塔哥尼亚荒原。",
-      commissionBtn: "定制全球专属行程",
+      commissionBtn: "联系我们",
       backHome: "返回首页"
     }
   },
@@ -1254,7 +1254,7 @@ export const translations = {
       visaBannerBtn: "Explorar Guía de Visas",
       commissionTitle: "¿Busca un Destino Global No Listado?",
       commissionSubtitle: "Nuestros diseñadores crean itinerarios privados por todo el mundo: desde la Riviera Francesa hasta la Patagonia.",
-      commissionBtn: "Planificar Viaje Mundial a Medida",
+      commissionBtn: "Contáctenos",
       backHome: "Volver al Inicio"
     }
   },
@@ -1673,7 +1673,7 @@ export const translations = {
       visaBannerBtn: "استكشاف إرشادات التأشيرة",
       commissionTitle: "هل تبحث عن وجهة عالمية غير معروضة هنا؟",
       commissionSubtitle: "خبراؤنا يصممون رحلات حصرية حول العالم - من الريفييرا الفرنسية إلى باتاغونيا ومضايق نيوزيلندا.",
-      commissionBtn: "تخطيط رحلة عالمية مخصصة",
+      commissionBtn: "تواصل معنا",
       backHome: "العودة للرئيسية"
     }
   }

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import notifySearchEngines, { SITE_ORIGIN } from '../server/seo/notifySearchEngines.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -6,6 +7,26 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 
 const STORAGE_BUCKET = 'zentrevo-catalog';
 const STORAGE_FILE = 'blogs.json';
+
+function buildBlogSeoUrls(list) {
+  if (!Array.isArray(list)) return [];
+  const urls = [];
+  const seen = new Set();
+  for (const a of list) {
+    const slug = String(a?.slug || '').trim();
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    urls.push(`${SITE_ORIGIN}/journal/${slug}`);
+  }
+  return urls;
+}
+
+function queueSeoNotify(articles) {
+  const urls = buildBlogSeoUrls(articles);
+  Promise.resolve()
+    .then(() => notifySearchEngines({ urls }))
+    .catch((err) => console.warn('SEO notify (blogs):', err?.message || err));
+}
 
 function isMissingTableError(error) {
   if (!error) return false;
@@ -162,9 +183,11 @@ export default async function handler(req, res) {
         // Clear Storage file
         await supabase.storage.from(STORAGE_BUCKET).remove([STORAGE_FILE]);
 
+        queueSeoNotify([]);
         return res.status(200).json({
           success: true,
           reset: true,
+          seoNotifyQueued: true,
           message: 'Cloud blog stories reset to curated editorial defaults.'
         });
       }
@@ -210,11 +233,13 @@ export default async function handler(req, res) {
         throw uploadErr;
       }
 
+      queueSeoNotify(payloadArticles);
       return res.status(200).json({
         success: true,
         cloudConfigured: true,
         source: tableSaved ? 'table+storage' : 'storage',
         count: payloadArticles.length,
+        seoNotifyQueued: true,
         message: `Successfully synchronized ${payloadArticles.length} blog stories to Supabase cloud.`
       });
     } catch (err) {
