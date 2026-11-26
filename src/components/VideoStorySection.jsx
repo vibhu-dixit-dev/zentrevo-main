@@ -156,15 +156,7 @@ function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
   }`;
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-      onFocusCapture={() => setIsHovering(true)}
-      onBlurCapture={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setIsHovering(false);
-      }}
-    >
+    <div className="relative">
       <div className="hidden sm:flex absolute -top-[3.25rem] right-0 items-center gap-2 z-10">
         <button
           type="button"
@@ -202,6 +194,12 @@ function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
               key={`${article.id}-${copy}`}
               data-blog-card={copy === 0 ? '' : undefined}
               data-loop-anchor={copy === 1 && index === 0 ? '' : undefined}
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+              onFocusCapture={() => setIsHovering(true)}
+              onBlurCapture={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) setIsHovering(false);
+              }}
               onClick={() => onOpenJournal && onOpenJournal(article)}
               className={`group shrink-0 w-[min(78vw,250px)] sm:w-[270px] lg:w-[290px] rounded-2xl overflow-hidden border transition-all duration-500 cursor-pointer hover:shadow-xl hover:-translate-y-1.5 ${
                 isSapphire

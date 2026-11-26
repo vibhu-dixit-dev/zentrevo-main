@@ -5,7 +5,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getLocalizedDestinationsList, ensureMissingTranslations } from '../i18n/localizedTravelData';
 
-function DestinationCard({ item, currentTheme, onSelectDestination, formatPrice, t }) {
+function DestinationCard({ item, currentTheme, onSelectDestination, formatPrice, t, onHoverChange }) {
   const isEmerald = currentTheme === 'emerald';
   const isSapphire = currentTheme === 'sapphire';
   const isEditorial = currentTheme === 'editorial';
@@ -19,6 +19,12 @@ function DestinationCard({ item, currentTheme, onSelectDestination, formatPrice,
 
   return (
     <div
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
+      onFocusCapture={() => onHoverChange?.(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) onHoverChange?.(false);
+      }}
       className={`group shrink-0 w-[min(78vw,250px)] sm:w-[270px] lg:w-[290px] snap-start rounded-2xl overflow-hidden border transition-all duration-500 flex flex-col justify-between shadow-sm hover:shadow-xl hover:-translate-y-1.5 ${
         isSapphire
           ? 'bg-[#0c1a38] border-amber-500/30 text-white hover:border-amber-400/60 shadow-blue-950/40'
@@ -282,16 +288,7 @@ function DestinationCarousel({
   }`;
 
   return (
-    <div
-      id={id}
-      className="relative scroll-mt-28"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-      onFocusCapture={() => setIsHovering(true)}
-      onBlurCapture={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setIsHovering(false);
-      }}
-    >
+    <div id={id} className="relative scroll-mt-28">
       <div className="flex items-end justify-between gap-4 mb-4 px-1">
         <div>
           <div className={`inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] mb-1.5 ${
@@ -353,6 +350,7 @@ function DestinationCarousel({
                   onSelectDestination={onSelectDestination}
                   formatPrice={formatPrice}
                   t={t}
+                  onHoverChange={setIsHovering}
                 />
               </div>
             ))
