@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Download, Share, PlusSquare, X, Smartphone } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 const PWA_SEEN_KEY = 'zentrevo_pwa_prompt_seen';
+const PWA_CLIENT_ID_KEY = 'zentrevo_pwa_client_id';
+const PWA_INSTALL_TRACKED_KEY = 'zentrevo_pwa_install_tracked';
 
 function isRunningStandalone() {
   if (typeof window === 'undefined') return false;
@@ -25,6 +27,66 @@ function detectMobileContext() {
   return { isMobile, isIOS };
 }
 
+function detectPlatform() {
+  if (typeof window === 'undefined') return 'unknown';
+  const ua = window.navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  if (/Windows/i.test(ua)) return 'windows';
+  if (/Macintosh|Mac OS/i.test(ua)) return 'macos';
+  if (/Linux/i.test(ua)) return 'linux';
+  return 'unknown';
+}
+
+function getOrCreateClientId() {
+  try {
+    let id = localStorage.getItem(PWA_CLIENT_ID_KEY);
+    if (!id) {
+      id =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `pwa_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(PWA_CLIENT_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+async function trackPwaInstall(source) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    if (localStorage.getItem(PWA_INSTALL_TRACKED_KEY) === 'true') return;
+  } catch {}
+
+  const clientId = getOrCreateClientId();
+
+  try {
+    const res = await fetch('/api/pwa-installs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId,
+        source,
+        platform: detectPlatform(),
+        userAgent: window.navigator.userAgent || '',
+        installedAt: new Date().toISOString()
+      })
+    });
+
+    if (res.ok) {
+      try {
+        localStorage.setItem(PWA_INSTALL_TRACKED_KEY, 'true');
+        localStorage.setItem(PWA_SEEN_KEY, 'true');
+      } catch {}
+    }
+  } catch (err) {
+    console.warn('PWA install tracking notice:', err?.message || err);
+  }
+}
+
 export default function PwaInstallPrompt({ currentTheme = 'editorial' }) {
   const { t, isRTL } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -32,9 +94,18 @@ export default function PwaInstallPrompt({ currentTheme = 'editorial' }) {
   const [isIOSDevice] = useState(() => detectMobileContext().isIOS);
   const [showManualHint, setShowManualHint] = useState(false);
 
+  const recordInstall = useCallback((source) => {
+    trackPwaInstall(source);
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (isRunningStandalone()) return;
+
+    // If the site is already opened as an installed app, count once (covers iOS Add to Home Screen)
+    if (isRunningStandalone()) {
+      recordInstall('standalone_launch');
+      return;
+    }
 
     let alreadySeen = false;
     try {
@@ -52,6 +123,7 @@ export default function PwaInstallPrompt({ currentTheme = 'editorial' }) {
     };
 
     const handleAppInstalled = () => {
+      recordInstall('appinstalled');
       try {
         localStorage.setItem(PWA_SEEN_KEY, 'true');
       } catch {}
@@ -62,7 +134,6 @@ export default function PwaInstallPrompt({ currentTheme = 'editorial' }) {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Show once on initial mobile visit after a brief, non-intrusive delay
     const showTimer = window.setTimeout(() => {
       setIsVisible(true);
     }, 1200);
@@ -72,7 +143,7 @@ export default function PwaInstallPrompt({ currentTheme = 'editorial' }) {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [recordInstall]);
 
   const dismissPrompt = () => {
     try {
@@ -91,6 +162,16 @@ export default function PwaInstallPrompt({ currentTheme = 'editorial' }) {
       await deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
       if (choiceResult?.outcome === 'accepted') {
+        // Prefer the native appinstalled event; fall back if the browser never fires it
+        window.setTimeout(() => {
+          try {
+            if (localStorage.getItem(PWA_INSTALL_TRACKED_KEY) !== 'true') {
+              recordInstall('prompt_accepted');
+            }
+          } catch {
+            recordInstall('prompt_accepted');
+          }
+        }, 2500);
         dismissPrompt();
       } else {
         dismissPrompt();

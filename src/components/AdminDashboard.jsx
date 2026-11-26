@@ -37,7 +37,8 @@ import {
   Image as ImageIcon,
   ArrowUp,
   ArrowDown,
-  Tag
+  Tag,
+  Clock
 } from 'lucide-react';
 import {
   getActiveCategories,
@@ -540,6 +541,12 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   const [inquirySearch, setInquirySearch] = useState('');
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState('All');
 
+  // PWA install tracking (mobile "Install as App")
+  const [pwaInstallCount, setPwaInstallCount] = useState(0);
+  const [pwaInstalls, setPwaInstalls] = useState([]);
+  const [isLoadingPwaInstalls, setIsLoadingPwaInstalls] = useState(true);
+  const [showPwaInstallModal, setShowPwaInstallModal] = useState(false);
+
   // Dedicated Newsletter Subscribers State
   const [newsletterSubscribers, setNewsletterSubscribers] = useState(() => {
     try {
@@ -735,9 +742,29 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     try { localStorage.setItem('zentrevo_cached_subscribers', JSON.stringify(subs)); } catch {}
   };
 
+  const fetchPwaInstalls = async () => {
+    setIsLoadingPwaInstalls(true);
+    try {
+      const res = await fetch('/api/pwa-installs', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) {
+        const installs = Array.isArray(data.installs) ? data.installs : [];
+        // Newest -> oldest
+        installs.sort((a, b) => new Date(b.installed_at).getTime() - new Date(a.installed_at).getTime());
+        setPwaInstalls(installs);
+        setPwaInstallCount(typeof data.count === 'number' ? data.count : installs.length);
+      }
+    } catch (err) {
+      console.warn('PWA installs fetch notice:', err?.message || err);
+    } finally {
+      setIsLoadingPwaInstalls(false);
+    }
+  };
+
   useEffect(() => {
     fetchSupabaseInquiries();
     fetchNewsletterSubscribers();
+    fetchPwaInstalls();
 
     // Setup Supabase Realtime channel to auto-refresh whenever an inquiry or subscriber is submitted
     if (supabase) {
@@ -755,9 +782,17 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         })
         .subscribe();
 
+      const pwaChannel = supabase
+        .channel('admin_pwa_installs_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pwa_installs' }, () => {
+          fetchPwaInstalls();
+        })
+        .subscribe();
+
       return () => {
         supabase.removeChannel(inquiriesChannel);
         supabase.removeChannel(subscribersChannel);
+        supabase.removeChannel(pwaChannel);
       };
     }
   }, []);
@@ -845,22 +880,27 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     };
   }, [inquiries]);
 
-  // Dynamic Bookings Value Metrics (sum of all inquiry plan prices)
+  // Estimated Bookings Value = sum of Plan Value for Booking Confirmed inquiries only
   const bookingMetrics = useMemo(() => {
-    if (!inquiries || inquiries.length === 0) {
-      return { totalValue: 0, avgValue: 0, totalGuests: 0 };
+    const confirmed = (inquiries || []).filter((inq) => {
+      const s = String(inq.status || '').toLowerCase().trim();
+      return s === 'booking confirmed' || s === 'confirmed';
+    });
+
+    if (confirmed.length === 0) {
+      return { totalValue: 0, avgValue: 0, totalGuests: 0, confirmedCount: 0 };
     }
 
     let totalValue = 0;
     let totalGuests = 0;
 
-    inquiries.forEach((inq) => {
-      const price = inq.planPrice || inq.budgetUsd || 0;
+    confirmed.forEach((inq) => {
+      const price = Number(inq.planPrice || inq.budgetUsd || 0) || 0;
       totalValue += price;
 
       const guestsMatch = String(inq.guests || '').match(/\d+/);
       const guestNum = guestsMatch ? parseInt(guestsMatch[0], 10) : 1;
-      totalGuests += (guestNum > 0 ? guestNum : 1);
+      totalGuests += guestNum > 0 ? guestNum : 1;
     });
 
     const avgValue = totalGuests > 0 ? Math.round(totalValue / totalGuests) : totalValue;
@@ -868,7 +908,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     return {
       totalValue,
       avgValue,
-      totalGuests
+      totalGuests,
+      confirmedCount: confirmed.length
     };
   }, [inquiries]);
 
@@ -2099,7 +2140,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
           
           {/* ─── COUTURE KPI SUMMARY TILES (Live Converted Currency - Hidden for Sales Role) ───────────── */}
           {!isSalesRole && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4">
               
               <div className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2">
                 <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
@@ -2163,7 +2204,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                   {isLoadingInquiries && inquiries.length === 0 ? (
                     'Calculating live bookings...'
                   ) : (
-                    `Estimated value from ${inquiries.length} ${inquiries.length === 1 ? 'inquiry' : 'inquiries'}`
+                    `From ${bookingMetrics.confirmedCount} confirmed ${bookingMetrics.confirmedCount === 1 ? 'booking' : 'bookings'}`
                   )}
                 </p>
               </div>
@@ -2201,6 +2242,35 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                   Total newsletter emails sent till date
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPwaInstallModal(true);
+                  fetchPwaInstalls();
+                }}
+                className="p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-2 text-left transition-all hover:border-stone-400 hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-900/20"
+              >
+                <span className="text-[10px] uppercase font-bold tracking-widest text-stone-600 block">
+                  App Installs
+                </span>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-editorial text-3xl font-bold text-stone-950">
+                    {isLoadingPwaInstalls && pwaInstallCount === 0 ? (
+                      <span className="inline-block w-8 h-8 rounded-lg bg-stone-100 animate-pulse" />
+                    ) : (
+                      pwaInstallCount
+                    )}
+                  </span>
+                  <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 inline-flex items-center gap-1">
+                    <Smartphone className="w-3 h-3" />
+                    PWA
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-600 border-t border-stone-100 pt-2">
+                  Tap to view install timestamps (newest first)
+                </p>
+              </button>
 
             </div>
           )}
@@ -5325,6 +5395,110 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 className="px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 transition-all cursor-pointer"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── PWA APP INSTALL HISTORY MODAL ───────────────────────────────────── */}
+      {showPwaInstallModal && (
+        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-6">
+          <button
+            type="button"
+            aria-label="Close app installs"
+            className="absolute inset-0 bg-stone-950/50 backdrop-blur-[2px] cursor-pointer"
+            onClick={() => setShowPwaInstallModal(false)}
+          />
+          <div className="relative w-full sm:max-w-lg max-h-[85vh] rounded-t-3xl sm:rounded-3xl bg-white border border-stone-200 shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
+            <div className="p-5 border-b border-stone-200 flex items-start justify-between gap-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-700 mb-1">
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Mobile App</span>
+                </div>
+                <h3 className="font-editorial text-xl font-bold text-stone-950">
+                  App Installs ({pwaInstallCount})
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Newest installs first · date & time for each device
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPwaInstallModal(false)}
+                className="p-2 rounded-full hover:bg-stone-100 text-stone-500 hover:text-stone-950 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {isLoadingPwaInstalls && pwaInstalls.length === 0 ? (
+                <div className="py-10 text-center text-xs text-stone-500">Loading install history...</div>
+              ) : pwaInstalls.length === 0 ? (
+                <div className="py-10 text-center space-y-2">
+                  <Smartphone className="w-8 h-8 text-stone-300 mx-auto" />
+                  <p className="text-sm font-semibold text-stone-800">No app installs yet</p>
+                  <p className="text-xs text-stone-500 max-w-xs mx-auto">
+                    When guests install Zentrevo from the mobile prompt, each install appears here with a timestamp.
+                  </p>
+                </div>
+              ) : (
+                pwaInstalls.map((install, idx) => {
+                  const when = install.installed_at ? new Date(install.installed_at) : null;
+                  const valid = when && !Number.isNaN(when.getTime());
+                  const platformLabel = String(install.platform || 'unknown').toUpperCase();
+                  return (
+                    <div
+                      key={install.id || `${install.installed_at}-${idx}`}
+                      className="p-3.5 rounded-2xl border border-stone-200 bg-stone-50/70 flex items-start justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 text-xs font-bold text-stone-950">
+                          <Clock className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                          <span>
+                            {valid
+                              ? when.toLocaleString(undefined, {
+                                  weekday: 'short',
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  second: '2-digit'
+                                })
+                              : 'Unknown time'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-stone-500 mt-1 truncate">
+                          {valid ? when.toISOString() : ''}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-white border border-stone-200 text-stone-700">
+                        {platformLabel}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="p-4 border-t border-stone-200 bg-stone-50/80 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={fetchPwaInstalls}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border border-stone-200 bg-white hover:bg-stone-100 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Refresh
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPwaInstallModal(false)}
+                className="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>

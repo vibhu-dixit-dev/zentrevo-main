@@ -1,9 +1,263 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Star, Quote, ArrowRight, Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Play, Pause, Star, Quote, ArrowRight, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
 import { testimonials, getActiveBlogArticles } from '../data/travelData';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../i18n/translations';
 import { getLocalizedArticlesList } from '../i18n/localizedTravelData';
+
+function BlogCarousel({ articles, currentTheme, onOpenJournal, t }) {
+  const isEmerald = currentTheme === 'emerald';
+  const isSapphire = currentTheme === 'sapphire';
+  const trackRef = useRef(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
+  const dragState = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false, pointerId: null });
+
+  const updateArrows = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanPrev(el.scrollLeft > 8);
+    setCanNext(el.scrollLeft < maxScroll - 8);
+  }, []);
+
+  const getCardStep = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return 300;
+    const card = el.querySelector('[data-blog-card]');
+    if (card) {
+      const styles = window.getComputedStyle(el);
+      const gap = parseFloat(styles.columnGap || styles.gap || '16') || 16;
+      return card.getBoundingClientRect().width + gap;
+    }
+    return Math.min(300, el.clientWidth * 0.8);
+  }, []);
+
+  const scrollByCard = useCallback((direction) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: getCardStep() * direction, behavior: 'smooth' });
+  }, [getCardStep]);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    updateArrows();
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    return () => {
+      el.removeEventListener('scroll', updateArrows);
+      window.removeEventListener('resize', updateArrows);
+    };
+  }, [articles, updateArrows]);
+
+  // Continuous smooth auto-scroll (marquee), pause on hover/focus/drag
+  useEffect(() => {
+    if (!articles.length || isHovering) return undefined;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined;
+    }
+
+    let rafId = 0;
+    const speed = 0.55;
+
+    const tick = () => {
+      const el = trackRef.current;
+      if (el && !dragState.current.active) {
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        if (maxScroll > 8) {
+          const anchor = el.querySelector('[data-loop-anchor]');
+          const loopPoint = anchor ? anchor.offsetLeft : el.scrollWidth / 2;
+          el.scrollLeft += speed;
+          if (loopPoint > 0 && el.scrollLeft >= loopPoint) {
+            el.scrollLeft -= loopPoint;
+          }
+          updateArrows();
+        }
+      }
+      rafId = window.requestAnimationFrame(tick);
+    };
+
+    rafId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(rafId);
+  }, [articles, isHovering, updateArrows]);
+
+  const isInteractiveTarget = (target) => {
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest('button, a, input, textarea, select, [role="button"]'));
+  };
+
+  const onPointerDown = (e) => {
+    const el = trackRef.current;
+    if (!el || e.button === 2 || isInteractiveTarget(e.target)) return;
+    dragState.current = {
+      active: true,
+      startX: e.clientX,
+      scrollLeft: el.scrollLeft,
+      moved: false,
+      pointerId: e.pointerId
+    };
+  };
+
+  const onPointerMove = (e) => {
+    const el = trackRef.current;
+    const drag = dragState.current;
+    if (!el || !drag.active) return;
+
+    const dx = e.clientX - drag.startX;
+    if (!drag.moved && Math.abs(dx) < 10) return;
+
+    if (!drag.moved) {
+      drag.moved = true;
+      try {
+        el.setPointerCapture?.(e.pointerId);
+      } catch {}
+    }
+
+    el.scrollLeft = drag.scrollLeft - dx;
+  };
+
+  const endDrag = () => {
+    const el = trackRef.current;
+    const drag = dragState.current;
+    if (!drag.active) return;
+
+    drag.active = false;
+    if (el && drag.pointerId != null) {
+      try {
+        el.releasePointerCapture?.(drag.pointerId);
+      } catch {}
+    }
+
+    if (drag.moved) {
+      window.setTimeout(() => {
+        drag.moved = false;
+      }, 0);
+    }
+  };
+
+  const onClickCapture = (e) => {
+    if (dragState.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragState.current.moved = false;
+    }
+  };
+
+  if (!articles.length) return null;
+
+  const arrowClass = `w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-md border backdrop-blur-md cursor-pointer ${
+    isSapphire
+      ? 'bg-[#0a142c]/90 border-amber-500/40 text-amber-200 hover:bg-amber-400 hover:text-stone-950'
+      : isEmerald
+        ? 'bg-[#0a241d]/90 border-emerald-700/50 text-emerald-200 hover:bg-emerald-400 hover:text-stone-950'
+        : 'bg-white/95 border-stone-200 text-stone-800 hover:bg-stone-950 hover:text-white'
+  }`;
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      onFocusCapture={() => setIsHovering(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setIsHovering(false);
+      }}
+    >
+      <div className="hidden sm:flex absolute -top-[3.25rem] right-0 items-center gap-2 z-10">
+        <button
+          type="button"
+          aria-label="Previous articles"
+          disabled={!canPrev}
+          onClick={() => scrollByCard(-1)}
+          className={`${arrowClass} disabled:opacity-30 disabled:pointer-events-none`}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Next articles"
+          disabled={!canNext}
+          onClick={() => scrollByCard(1)}
+          className={`${arrowClass} disabled:opacity-30 disabled:pointer-events-none`}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div
+        ref={trackRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={onClickCapture}
+        className="flex gap-3.5 sm:gap-4 overflow-x-auto pb-3 select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {[0, 1].flatMap((copy) =>
+          articles.map((article, index) => (
+            <article
+              key={`${article.id}-${copy}`}
+              data-blog-card={copy === 0 ? '' : undefined}
+              data-loop-anchor={copy === 1 && index === 0 ? '' : undefined}
+              onClick={() => onOpenJournal && onOpenJournal(article)}
+              className={`group shrink-0 w-[min(78vw,250px)] sm:w-[270px] lg:w-[290px] rounded-2xl overflow-hidden border transition-all duration-500 cursor-pointer hover:shadow-xl hover:-translate-y-1.5 ${
+                isSapphire
+                  ? 'bg-[#0c1a38] border-amber-500/30 text-stone-100 hover:border-amber-400/60'
+                  : isEmerald
+                    ? 'bg-[#0d2b23] border-emerald-800/40 text-stone-100 hover:border-emerald-500/60'
+                    : 'bg-white border-stone-200 text-stone-900 hover:border-stone-400'
+              }`}
+            >
+              <div className="aspect-[16/10] overflow-hidden relative">
+                <img
+                  src={article.image}
+                  alt={article.imageAlt || `${article.title} - Zentrevo Journal`}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none"
+                  draggable={false}
+                />
+                <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white uppercase">
+                  {article.category}
+                </div>
+              </div>
+
+              <div className="p-3.5 sm:p-4">
+                <div className={`flex items-center justify-between text-[11px] mb-1.5 ${
+                  isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-500'
+                }`}>
+                  <span>{article.date}</span>
+                  <span>{article.readTime}</span>
+                </div>
+
+                <h4 className="font-semibold text-[15px] sm:text-base mb-3 leading-snug line-clamp-2 group-hover:text-amber-400 transition-colors">
+                  {article.title}
+                </h4>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onOpenJournal) onOpenJournal(article);
+                  }}
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold cursor-pointer ${
+                    isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-300' : 'text-stone-900'
+                  }`}
+                >
+                  {t('videoStory.readJournalEntry', 'Read Journal Entry')}
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function VideoStorySection({ currentTheme, onOpenJournal }) {
   const { t, language } = useLanguage();
@@ -36,6 +290,11 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
     ...testimonials[activeTestimonialIndex],
     ...(localizedTestimonials[activeTestimonialIndex] || {})
   };
+
+  const localizedArticles = useMemo(
+    () => getLocalizedArticlesList(articlesList, language),
+    [articlesList, language]
+  );
 
   // IntersectionObserver: Automatically plays when scrolled into view, pauses when scrolled up/away
   useEffect(() => {
@@ -299,21 +558,21 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
 
         {/* Recent Blogs & Journal Section */}
         <div>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-end justify-between gap-4 mb-6 pr-0 sm:pr-24">
             <div>
               <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${
                 isSapphire ? 'text-amber-400' : isEmerald ? 'text-emerald-400' : 'text-amber-800 font-bold'
               }`}>
                 {t('videoStory.fieldNotesBadge', 'Field Notes & Stories')}
               </p>
-              <h3 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-2xl sm:text-3xl`}>
+              <h3 className={`${isEditorial ? 'font-editorial font-normal' : 'font-sans font-bold'} text-xl sm:text-2xl lg:text-3xl`}>
                 {t('videoStory.fieldNotesHeading', 'Adventure Thrills and Excitement Await')}
               </h3>
             </div>
-            <button 
+            <button
               type="button"
               onClick={() => onOpenJournal && onOpenJournal(null)}
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider hover:underline cursor-pointer transition-all ${
+              className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider hover:underline cursor-pointer transition-all shrink-0 ${
                 isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-400' : 'text-stone-900'
               }`}
             >
@@ -322,53 +581,24 @@ export default function VideoStorySection({ currentTheme, onOpenJournal }) {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {getLocalizedArticlesList(articlesList, language).slice(0, 3).map((article) => (
-              <div
-                key={article.id}
-                onClick={() => onOpenJournal && onOpenJournal(article)}
-                className={`group rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-xl cursor-pointer ${
-                  isSapphire
-                    ? 'bg-[#0c1a38] border-amber-500/30 text-stone-100 hover:border-amber-400/60 hover:-translate-y-1'
-                    : isEmerald
-                      ? 'bg-[#0d2b23] border-emerald-800/40 text-stone-100 hover:border-emerald-500/60 hover:-translate-y-1'
-                      : 'bg-white border-stone-200 text-stone-900 hover:border-stone-400 hover:-translate-y-1'
-                }`}
-              >
-                <div className="aspect-[16/10] overflow-hidden relative">
-                  <img
-                    src={article.image}
-                    alt={article.imageAlt || `${article.title} - Zentrevo Journal`}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-semibold text-white uppercase">
-                    {article.category}
-                  </div>
-                </div>
+          <BlogCarousel
+            articles={localizedArticles}
+            currentTheme={currentTheme}
+            onOpenJournal={onOpenJournal}
+            t={t}
+          />
 
-                <div className="p-6">
-                  <div className={`flex items-center justify-between text-xs mb-2 ${
-                    isSapphire || isEmerald ? 'text-stone-300' : 'text-stone-600 font-medium'
-                  }`}>
-                    <span>{article.date}</span>
-                    <span>{article.readTime}</span>
-                  </div>
-
-                  <h4 className="font-semibold text-base mb-4 leading-snug group-hover:text-amber-400 transition-colors">
-                    {article.title}
-                  </h4>
-
-                  <span className={`inline-flex items-center gap-1 text-xs font-semibold ${
-                    isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-300' : 'text-stone-900'
-                  }`}>
-                    {t('videoStory.readJournalEntry', 'Read Journal Entry')}
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="mt-4 sm:hidden">
+            <button
+              type="button"
+              onClick={() => onOpenJournal && onOpenJournal(null)}
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider cursor-pointer ${
+                isSapphire ? 'text-amber-300' : isEmerald ? 'text-emerald-400' : 'text-stone-900'
+              }`}
+            >
+              <span>{t('videoStory.viewAllArticles', 'View All Articles')}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
