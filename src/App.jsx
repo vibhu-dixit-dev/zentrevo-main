@@ -13,13 +13,14 @@ import ChatbotWidget from './components/ChatbotWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 
 const DetailModal = lazy(() => import('./components/DetailModal'));
-const JournalModal = lazy(() => import('./components/JournalModal'));
 const VisaModal = lazy(() => import('./components/VisaModal'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const CancellationRefund = lazy(() => import('./pages/CancellationRefund'));
 const NationalDestinationsPage = lazy(() => import('./pages/NationalDestinationsPage'));
 const InternationalDestinationsPage = lazy(() => import('./pages/InternationalDestinationsPage'));
+const JournalPage = lazy(() => import('./pages/JournalPage'));
+const JournalArticlePage = lazy(() => import('./pages/JournalArticlePage'));
 const SitemapPage = lazy(() => import('./pages/SitemapPage'));
 const ThankYouPage = lazy(() => import('./pages/ThankYouPage'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
@@ -104,7 +105,6 @@ export default function App() {
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'national' | 'international'
-  const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
   const [selectedJournalArticle, setSelectedJournalArticle] = useState(null);
   const [isVisaModalOpen, setIsVisaModalOpen] = useState(false);
   const [preselectedDestination, setPreselectedDestination] = useState('');
@@ -145,7 +145,7 @@ export default function App() {
     if (!destination) return;
     setSelectedDestination(destination);
     setIsDetailModalOpen(true);
-    setIsJournalModalOpen(false);
+    setSelectedJournalArticle(null);
     setIsVisaModalOpen(false);
 
     const slug = getDestinationSlug(destination);
@@ -190,18 +190,19 @@ export default function App() {
     resetDocumentSeo();
   }, [isDestinationDetailPath]);
 
-  // Handle opening journal (specific article or full catalog) with individual URL route
+  // Navigate to dedicated journal listing or article page (full-page, not modal)
   const handleOpenJournal = useCallback((article = null, pushHistory = true) => {
-    setSelectedJournalArticle(article);
-    setIsJournalModalOpen(true);
     setIsDetailModalOpen(false);
     setIsVisaModalOpen(false);
+    setSelectedJournalArticle(article || null);
 
     if (article) {
       const slug = getBlogSlug(article);
       const newPath = `/journal/${slug}`;
       if (pushHistory && typeof window !== 'undefined' && window.location.pathname !== newPath) {
         window.history.pushState({ type: 'journal', slug }, '', newPath);
+        setCurrentPath(newPath);
+      } else if (!pushHistory) {
         setCurrentPath(newPath);
       }
       updateDocumentSeo({
@@ -215,6 +216,8 @@ export default function App() {
       if (pushHistory && typeof window !== 'undefined' && window.location.pathname !== newPath) {
         window.history.pushState({ type: 'journal-index' }, '', newPath);
         setCurrentPath(newPath);
+      } else if (!pushHistory) {
+        setCurrentPath(newPath);
       }
       updateDocumentSeo({
         title: 'Travel Journal & Stories | Zentrevo',
@@ -225,24 +228,11 @@ export default function App() {
     }
   }, []);
 
-  // Handle closing journal modal & restoring home route
-  const handleCloseJournalModal = useCallback((pushHistory = true) => {
-    setIsJournalModalOpen(false);
-    setSelectedJournalArticle(null);
-
-    if (pushHistory && typeof window !== 'undefined' && 
-       (window.location.pathname.startsWith('/journal') || window.location.pathname.startsWith('/blog'))) {
-      window.history.pushState({}, '', '/');
-      setCurrentPath('/');
-    }
-    resetDocumentSeo();
-  }, []);
-
   // Handle opening Visa modal & route
   const handleOpenVisa = useCallback((pushHistory = true) => {
     setIsVisaModalOpen(true);
     setIsDetailModalOpen(false);
-    setIsJournalModalOpen(false);
+    setSelectedJournalArticle(null);
 
     if (pushHistory && typeof window !== 'undefined' && window.location.pathname !== '/visa-guidance') {
       window.history.pushState({ type: 'visa' }, '', '/visa-guidance');
@@ -284,41 +274,11 @@ export default function App() {
     }
   }, []);
 
-  // Handle article change inside the journal modal
-  const handleJournalArticleChange = useCallback((newArticle) => {
-    if (newArticle) {
-      const slug = getBlogSlug(newArticle);
-      const newPath = `/journal/${slug}`;
-      if (typeof window !== 'undefined' && window.location.pathname !== newPath) {
-        window.history.pushState({ type: 'journal', slug }, '', newPath);
-        setCurrentPath(newPath);
-      }
-      updateDocumentSeo({
-        title: `${newArticle.title} | Zentrevo Journal`,
-        description: newArticle.excerpt || newArticle.pullQuote || DEFAULT_SEO.description,
-        canonical: `https://www.zentrevo.in${newPath}`,
-        ogImage: newArticle.image
-      });
-    } else {
-      const newPath = '/journal';
-      if (typeof window !== 'undefined' && window.location.pathname !== newPath) {
-        window.history.pushState({ type: 'journal-index' }, '', newPath);
-        setCurrentPath(newPath);
-      }
-      updateDocumentSeo({
-        title: 'Travel Journal & Stories | Zentrevo',
-        description: 'Dispatches, field notes, and insider stories penned by our global expedition directors.',
-        canonical: 'https://www.zentrevo.in/journal',
-        ogImage: DEFAULT_SEO.ogImage
-      });
-    }
-  }, []);
-
   // Sync route path with state on load & popstate (Back/Forward buttons)
   const syncRouteWithModal = useCallback((path) => {
     if (!path || path === '/' || path.startsWith('/admin')) {
       setIsDetailModalOpen(false);
-      setIsJournalModalOpen(false);
+      setSelectedJournalArticle(null);
       setIsVisaModalOpen(false);
       if (!path.startsWith('/admin')) {
         resetDocumentSeo();
@@ -335,7 +295,7 @@ export default function App() {
       path.startsWith('/thank-you')
     ) {
       setIsDetailModalOpen(false);
-      setIsJournalModalOpen(false);
+      setSelectedJournalArticle(null);
       setIsVisaModalOpen(false);
       if (path.startsWith('/sitemap')) {
         updateDocumentSeo({
@@ -355,7 +315,7 @@ export default function App() {
       path === '/national-tour-packages' || path === '/national-tour-packages/'
     ) {
       setIsDetailModalOpen(false);
-      setIsJournalModalOpen(false);
+      setSelectedJournalArticle(null);
       setIsVisaModalOpen(false);
       updateDocumentSeo({
         title: 'National (Domestic Tours) & Interactive Map of India | Zentrevo',
@@ -372,7 +332,7 @@ export default function App() {
       path === '/international-tour-packages' || path === '/international-tour-packages/'
     ) {
       setIsDetailModalOpen(false);
-      setIsJournalModalOpen(false);
+      setSelectedJournalArticle(null);
       setIsVisaModalOpen(false);
       updateDocumentSeo({
         title: 'International (International Tours) & Curated Escapes | Zentrevo',
@@ -404,7 +364,7 @@ export default function App() {
     // 4. Destinations index: /destinations
     if (path === '/destinations' || path === '/destinations/') {
       setIsDetailModalOpen(false);
-      setIsJournalModalOpen(false);
+      setSelectedJournalArticle(null);
       setIsVisaModalOpen(false);
       resetDocumentSeo();
       const el = document.getElementById('destinations');
@@ -419,8 +379,18 @@ export default function App() {
         const article = findArticleBySlug(slug);
         if (article) {
           handleOpenJournal(article, false);
-          return;
+        } else {
+          setSelectedJournalArticle(null);
+          setIsDetailModalOpen(false);
+          setIsVisaModalOpen(false);
+          updateDocumentSeo({
+            title: 'Story Not Found | Zentrevo Journal',
+            description: DEFAULT_SEO.description,
+            canonical: `https://www.zentrevo.in/journal/${slug}`,
+            ogImage: DEFAULT_SEO.ogImage
+          });
         }
+        return;
       }
     }
 
@@ -433,7 +403,7 @@ export default function App() {
     // 7. Contact root: /contact
     if (path === '/contact' || path === '/contact/') {
       setIsDetailModalOpen(false);
-      setIsJournalModalOpen(false);
+      setSelectedJournalArticle(null);
       setIsVisaModalOpen(false);
       resetDocumentSeo();
       const el = document.getElementById('inquiry');
@@ -443,7 +413,7 @@ export default function App() {
 
     // Fallback: Default home
     setIsDetailModalOpen(false);
-    setIsJournalModalOpen(false);
+    setSelectedJournalArticle(null);
     setIsVisaModalOpen(false);
     resetDocumentSeo();
   }, [handleOpenDestination, handleOpenJournal, handleOpenVisa]);
@@ -601,8 +571,12 @@ export default function App() {
     if (destinationName) {
       setPreselectedDestination(destinationName);
     }
-    handleCloseJournalModal(true);
-    handleScrollToInquiry();
+    setSelectedJournalArticle(null);
+    navigateTo('/');
+    setTimeout(() => {
+      const el = document.getElementById('inquiry');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 150);
   };
 
   // If user navigated to /admin, check authentication
@@ -677,6 +651,116 @@ export default function App() {
     currentPath === '/international-tour-packages' || 
     currentPath === '/international-tour-packages/';
 
+  const isJournalIndexRoute =
+    currentPath === '/journal' ||
+    currentPath === '/journal/' ||
+    currentPath === '/blog' ||
+    currentPath === '/blog/';
+
+  const journalArticleSlug = (() => {
+    if (currentPath.startsWith('/journal/') || currentPath.startsWith('/blog/')) {
+      const slug = currentPath.replace(/^\/(journal|blog)\/?/, '').replace(/\/$/, '');
+      return slug || null;
+    }
+    return null;
+  })();
+
+  const isJournalArticleRoute = Boolean(journalArticleSlug);
+
+  if (isJournalArticleRoute) {
+    const article = selectedJournalArticle || findArticleBySlug(journalArticleSlug);
+    return (
+      <div
+        className={`min-h-screen transition-colors duration-500 font-sans-clean ${
+          isSapphire
+            ? 'bg-[#050a16] text-stone-100'
+            : isEmerald
+              ? 'bg-[#061813] text-stone-100'
+              : 'bg-[#faf9f6] text-stone-900'
+        }`}
+      >
+        <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+          <JournalArticlePage
+            article={article}
+            currentTheme={currentTheme}
+            onSelectTheme={handleSelectTheme}
+            onNavigateHome={() => navigateTo('/')}
+            onNavigate={navigateTo}
+            onOpenInquiry={handleInquireFromJournal}
+            onOpenVisa={handleOpenVisa}
+            onSelectArticle={(a) => handleOpenJournal(a, true)}
+            onBackToJournal={() => handleOpenJournal(null, true)}
+            onInquireStory={handleInquireFromJournal}
+          />
+        </Suspense>
+
+        {isVisaModalOpen && (
+          <Suspense fallback={null}>
+            <VisaModal
+              isOpen={isVisaModalOpen}
+              onClose={handleCloseVisaModal}
+              onGoAhead={handleVisaGoAhead}
+              currentTheme={currentTheme}
+            />
+          </Suspense>
+        )}
+
+        <WhatsAppWidget />
+        <ChatbotWidget currentTheme={currentTheme} />
+        <PwaInstallPrompt currentTheme={currentTheme} />
+      </div>
+    );
+  }
+
+  if (isJournalIndexRoute) {
+    return (
+      <div
+        className={`min-h-screen transition-colors duration-500 font-sans-clean ${
+          isSapphire
+            ? 'bg-[#050a16] text-stone-100'
+            : isEmerald
+              ? 'bg-[#061813] text-stone-100'
+              : 'bg-[#faf9f6] text-stone-900'
+        }`}
+      >
+        <Suspense fallback={<RouteFallback currentTheme={currentTheme} />}>
+          <JournalPage
+            currentTheme={currentTheme}
+            onSelectTheme={handleSelectTheme}
+            onNavigateHome={() => navigateTo('/')}
+            onNavigate={navigateTo}
+            onOpenInquiry={(destName) => {
+              if (destName) setPreselectedDestination(destName);
+              navigateTo('/');
+              setTimeout(() => {
+                const el = document.getElementById('inquiry');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 150);
+            }}
+            onOpenJournal={handleOpenJournal}
+            onOpenVisa={handleOpenVisa}
+            onSelectArticle={(a) => handleOpenJournal(a, true)}
+          />
+        </Suspense>
+
+        {isVisaModalOpen && (
+          <Suspense fallback={null}>
+            <VisaModal
+              isOpen={isVisaModalOpen}
+              onClose={handleCloseVisaModal}
+              onGoAhead={handleVisaGoAhead}
+              currentTheme={currentTheme}
+            />
+          </Suspense>
+        )}
+
+        <WhatsAppWidget />
+        <ChatbotWidget currentTheme={currentTheme} />
+        <PwaInstallPrompt currentTheme={currentTheme} />
+      </div>
+    );
+  }
+
   if (isNationalRoute) {
     return (
       <div 
@@ -729,20 +813,6 @@ export default function App() {
               onClose={handleCloseVisaModal}
               onGoAhead={handleVisaGoAhead}
               currentTheme={currentTheme}
-            />
-          </Suspense>
-        )}
-
-        {/* Interactive Journal & Article Reader Modal */}
-        {isJournalModalOpen && (
-          <Suspense fallback={null}>
-            <JournalModal
-              isOpen={isJournalModalOpen}
-              onClose={handleCloseJournalModal}
-              initialArticle={selectedJournalArticle}
-              currentTheme={currentTheme}
-              onInquireStory={handleInquireFromJournal}
-              onArticleChange={handleJournalArticleChange}
             />
           </Suspense>
         )}
@@ -807,20 +877,6 @@ export default function App() {
               onClose={handleCloseVisaModal}
               onGoAhead={handleVisaGoAhead}
               currentTheme={currentTheme}
-            />
-          </Suspense>
-        )}
-
-        {/* Interactive Journal & Article Reader Modal */}
-        {isJournalModalOpen && (
-          <Suspense fallback={null}>
-            <JournalModal
-              isOpen={isJournalModalOpen}
-              onClose={handleCloseJournalModal}
-              initialArticle={selectedJournalArticle}
-              currentTheme={currentTheme}
-              onInquireStory={handleInquireFromJournal}
-              onArticleChange={handleJournalArticleChange}
             />
           </Suspense>
         )}
@@ -923,20 +979,6 @@ export default function App() {
             onClose={handleCloseDestinationModal}
             onBookNow={handleBookNowFromModal}
             currentTheme={currentTheme}
-          />
-        </Suspense>
-      )}
-
-      {/* Interactive Journal & Article Reader Modal with Route Sync */}
-      {isJournalModalOpen && (
-        <Suspense fallback={null}>
-          <JournalModal
-            isOpen={isJournalModalOpen}
-            onClose={handleCloseJournalModal}
-            initialArticle={selectedJournalArticle}
-            currentTheme={currentTheme}
-            onInquireStory={handleInquireFromJournal}
-            onArticleChange={handleJournalArticleChange}
           />
         </Suspense>
       )}

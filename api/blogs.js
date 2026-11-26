@@ -37,7 +37,28 @@ function isMissingTableError(error) {
   );
 }
 
+function normalizeExternalLinks(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') {
+        const url = item.trim();
+        if (!url) return null;
+        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        return { label: url, url: href };
+      }
+      if (!item || typeof item !== 'object') return null;
+      const url = String(item.url || item.href || '').trim();
+      if (!url) return null;
+      const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+      const label = String(item.label || item.title || url).trim() || href;
+      return { label, url: href };
+    })
+    .filter(Boolean);
+}
+
 function normalizeRowToArticle(row) {
+  const externalLinks = normalizeExternalLinks(row.external_links || row.externalLinks);
   return {
     id: row.id,
     slug: row.slug || '',
@@ -57,6 +78,7 @@ function normalizeRowToArticle(row) {
     excerpt: row.excerpt || '',
     content: Array.isArray(row.content) ? row.content : (row.content ? [row.content] : []),
     highlights: Array.isArray(row.highlights) ? row.highlights : [],
+    externalLinks,
     ...(row.translations && typeof row.translations === 'object' ? { translations: row.translations } : {})
   };
 }
@@ -82,6 +104,7 @@ function normalizeArticleToRow(article, index) {
     excerpt: article.excerpt || '',
     content: Array.isArray(article.content) ? article.content : [],
     highlights: Array.isArray(article.highlights) ? article.highlights : [],
+    external_links: normalizeExternalLinks(article.externalLinks || article.external_links),
     translations: article.translations && typeof article.translations === 'object' ? article.translations : null,
     updated_at: new Date().toISOString()
   };
@@ -207,12 +230,19 @@ export default async function handler(req, res) {
           await supabase.from('blogs').delete().gte('id', 0);
           const rows = payloadArticles.map(normalizeArticleToRow);
           let { error: insertErr } = await supabase.from('blogs').insert(rows);
-          if (insertErr && String(insertErr.message || '').includes('slug')) {
-            // Retry without slug column if PostgreSQL table does not have a slug column
-            const rowsWithoutSlug = rows.map(({ slug, ...rest }) => rest);
-            const { error: retryErr } = await supabase.from('blogs').insert(rowsWithoutSlug);
+          if (insertErr) {
+            const msg = String(insertErr.message || '');
+            let retryRows = rows;
+            if (msg.includes('slug')) {
+              retryRows = retryRows.map(({ slug, ...rest }) => rest);
+            }
+            if (msg.includes('external_links') || msg.includes('externalLinks')) {
+              retryRows = retryRows.map(({ external_links, ...rest }) => rest);
+            }
+            const { error: retryErr } = await supabase.from('blogs').insert(retryRows);
             if (!retryErr) tableSaved = true;
-          } else if (!insertErr) {
+            else console.warn('Blogs table insert retry notice:', retryErr.message);
+          } else {
             tableSaved = true;
           }
         }

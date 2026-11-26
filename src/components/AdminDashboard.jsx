@@ -41,7 +41,8 @@ import {
   Clock,
   AlertTriangle,
   ExternalLink,
-  Eye
+  Eye,
+  Handshake
 } from 'lucide-react';
 import {
   getActiveCategories,
@@ -49,6 +50,13 @@ import {
   syncCategoriesFromCloud,
   DEFAULT_CATEGORIES
 } from '../data/categoriesData';
+import {
+  DEFAULT_PARTNERS as initialPartners,
+  getActivePartners,
+  saveActivePartners,
+  resetActivePartners,
+  syncPartnersFromCloud
+} from '../data/partnersData';
 import { 
   destinations as initialDestinations, 
   getActiveDestinations, 
@@ -236,7 +244,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     pullQuote: '',
     excerpt: '',
     content: '',
-    highlights: ''
+    highlights: '',
+    externalLinks: [] // [{ label, url }]
   };
 
   const [blogFormData, setBlogFormData] = useState(initialBlogForm);
@@ -244,6 +253,24 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   const [destImageInputMode, setDestImageInputMode] = useState('upload'); // 'upload' | 'url'
   const [isUploadingBlogImage, setIsUploadingBlogImage] = useState(false);
   const [isUploadingDestImage, setIsUploadingDestImage] = useState(false);
+
+  // Partners CMS State
+  const [partners, setPartners] = useState(getActivePartners);
+  const [partnersCloudState, setPartnersCloudState] = useState('syncing'); // 'syncing' | 'synced' | 'local'
+  const [partnerSearch, setPartnerSearch] = useState('');
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [partnerModalMode, setPartnerModalMode] = useState('add'); // 'add' | 'edit'
+  const [editingPartnerId, setEditingPartnerId] = useState(null);
+  const initialPartnerForm = {
+    name: '',
+    tagline: '',
+    logo: '',
+    website: '',
+    active: true
+  };
+  const [partnerFormData, setPartnerFormData] = useState(initialPartnerForm);
+  const [partnerLogoInputMode, setPartnerLogoInputMode] = useState('upload'); // 'upload' | 'url'
+  const [isUploadingPartnerLogo, setIsUploadingPartnerLogo] = useState(false);
 
   // File Upload Handlers for Stories & Destinations
   const handleBlogImageFileUpload = async (e) => {
@@ -348,6 +375,54 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     }
   };
 
+  const handlePartnerLogoFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (JPG, PNG, WebP, SVG).');
+      return;
+    }
+
+    setIsUploadingPartnerLogo(true);
+    try {
+      let imageUrl = null;
+      if (supabase) {
+        try {
+          const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const fileName = `partners/${Date.now()}-${safeName}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('zentrevo-catalog')
+            .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('zentrevo-catalog')
+              .getPublicUrl(fileName);
+            if (publicUrlData?.publicUrl) {
+              imageUrl = publicUrlData.publicUrl;
+            }
+          }
+        } catch (storageErr) {
+          console.warn('Supabase partner logo upload bypassed:', storageErr);
+        }
+      }
+
+      if (!imageUrl) {
+        // Keep logos sharper / smaller than destination covers
+        imageUrl = await compressImageFile(file, 512, 0.92);
+      }
+
+      setPartnerFormData((prev) => ({ ...prev, logo: imageUrl }));
+    } catch (err) {
+      console.error('Partner logo upload failed:', err);
+      alert('Could not process logo file. Please try another image or use a logo URL.');
+    } finally {
+      setIsUploadingPartnerLogo(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   useEffect(() => {
     const handleSyncBlogs = () => {
       setArticles(getActiveBlogArticles());
@@ -372,6 +447,31 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       active = false;
       window.removeEventListener('zentrevo_blogs_updated', handleSyncBlogs);
       window.removeEventListener('storage', handleSyncBlogs);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleSyncPartners = () => {
+      setPartners(getActivePartners());
+    };
+    window.addEventListener('zentrevo_partners_updated', handleSyncPartners);
+    window.addEventListener('storage', handleSyncPartners);
+
+    let active = true;
+    syncPartnersFromCloud().then((result) => {
+      if (!active) return;
+      if (result.synced) {
+        setPartnersCloudState('synced');
+        if (result.partners) setPartners(result.partners);
+      } else {
+        setPartnersCloudState('local');
+      }
+    });
+
+    return () => {
+      active = false;
+      window.removeEventListener('zentrevo_partners_updated', handleSyncPartners);
+      window.removeEventListener('storage', handleSyncPartners);
     };
   }, []);
 
@@ -503,6 +603,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     image: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
     description: '',
     highlights: 'Private chartered yacht, Michelin dining, Helicopter transfer',
+    externalLinks: [],
     status: 'Live',
     lat: '',
     lng: '',
@@ -1488,6 +1589,12 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
   const handleOpenEdit = (trip) => {
     setModalMode('edit');
     setEditingTripId(trip.id);
+    const tripLinks = Array.isArray(trip.externalLinks)
+      ? trip.externalLinks.map((l) => ({
+          label: l?.label || l?.title || '',
+          url: l?.url || l?.href || ''
+        }))
+      : [];
     setFormData({
       title: trip.title || '',
       slug: trip.slug || getDestinationSlug(trip) || '',
@@ -1504,6 +1611,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       image: trip.image || '',
       description: trip.description || '',
       highlights: Array.isArray(trip.highlights) ? trip.highlights.join(', ') : (trip.highlights || ''),
+      externalLinks: tripLinks,
       status: trip.status || 'Live',
       lat: trip.lat || '',
       lng: trip.lng || '',
@@ -1518,6 +1626,16 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     const highlightsList = typeof formData.highlights === 'string' 
       ? formData.highlights.split(',').map(s => s.trim()).filter(Boolean)
       : formData.highlights;
+
+    const externalLinks = (Array.isArray(formData.externalLinks) ? formData.externalLinks : [])
+      .map((l) => {
+        const url = String(l?.url || '').trim();
+        if (!url) return null;
+        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        const label = String(l?.label || '').trim() || href;
+        return { label, url: href };
+      })
+      .filter(Boolean);
 
     const parsedRating = parseFloat(formData.rating) || 4.95;
     const parsedReviews = parseInt(formData.reviews, 10) || 0;
@@ -1618,6 +1736,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         rating: parsedRating,
         reviews: parsedReviews,
         highlights: highlightsList,
+        externalLinks,
         ...(autoTranslations ? { translations: autoTranslations } : {})
       };
       updatedTrips = [newTrip, ...trips];
@@ -1632,6 +1751,7 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
         rating: parsedRating,
         reviews: parsedReviews,
         highlights: highlightsList,
+        externalLinks,
         ...(autoTranslations ? { translations: autoTranslations } : {})
       } : t);
     }
@@ -1726,6 +1846,12 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     setEditingArticleId(article.id);
     const contentText = Array.isArray(article.content) ? article.content.join('\n\n') : (article.content || '');
     const highlightsText = Array.isArray(article.highlights) ? article.highlights.join('\n') : (article.highlights || '');
+    const links = Array.isArray(article.externalLinks)
+      ? article.externalLinks.map((l) => ({
+          label: l?.label || l?.title || '',
+          url: l?.url || l?.href || ''
+        }))
+      : [];
 
     setBlogFormData({
       title: article.title || '',
@@ -1742,7 +1868,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       pullQuote: article.pullQuote || '',
       excerpt: article.excerpt || '',
       content: contentText,
-      highlights: highlightsText
+      highlights: highlightsText,
+      externalLinks: links
     });
     setIsBlogModalOpen(true);
   };
@@ -1761,6 +1888,16 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
     const highlightsList = blogFormData.highlights
       ? blogFormData.highlights.split(/\n|,/).map(h => h.trim()).filter(Boolean)
       : [];
+
+    const externalLinks = (Array.isArray(blogFormData.externalLinks) ? blogFormData.externalLinks : [])
+      .map((l) => {
+        const url = String(l?.url || '').trim();
+        if (!url) return null;
+        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        const label = String(l?.label || '').trim() || href;
+        return { label, url: href };
+      })
+      .filter(Boolean);
 
     const finalSlug = slugify(blogFormData.slug || getBlogSlug(blogFormData) || blogFormData.title);
 
@@ -1782,7 +1919,8 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       pullQuote: blogFormData.pullQuote || '',
       excerpt: blogFormData.excerpt || '',
       content: contentParagraphs.length > 0 ? contentParagraphs : [blogFormData.excerpt || 'Bespoke narrative from Zentrevo private curators.'],
-      highlights: highlightsList
+      highlights: highlightsList,
+      externalLinks
     };
 
     let updated;
@@ -1863,6 +2001,111 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
       setBlogCloudState(result.cloudReset ? 'synced' : 'local');
       showToast(result.cloudReset ? 'Restored default Journal articles (Cloud & Local)' : 'Restored default Journal articles');
     }
+  };
+
+  const handleOpenAddPartner = () => {
+    setPartnerModalMode('add');
+    setEditingPartnerId(null);
+    setPartnerFormData({ ...initialPartnerForm });
+    setPartnerLogoInputMode('upload');
+    setIsPartnerModalOpen(true);
+  };
+
+  const handleOpenEditPartner = (partner) => {
+    setPartnerModalMode('edit');
+    setEditingPartnerId(partner.id);
+    setPartnerFormData({
+      name: partner.name || '',
+      tagline: partner.tagline || '',
+      logo: partner.logo || '',
+      website: partner.website || '',
+      active: partner.active !== false
+    });
+    // Prefer URL mode when an external http(s) logo is already set
+    const logo = String(partner.logo || '');
+    setPartnerLogoInputMode(logo.startsWith('http') && !logo.includes('zentrevo-catalog') ? 'url' : 'upload');
+    setIsPartnerModalOpen(true);
+  };
+
+  const handleSavePartner = async (e) => {
+    e.preventDefault();
+    if (!partnerFormData.name.trim()) {
+      alert('Partner name is required.');
+      return;
+    }
+
+    const website = String(partnerFormData.website || '').trim();
+    const normalizedWebsite = website
+      ? (/^https?:\/\//i.test(website) ? website : `https://${website}`)
+      : '';
+
+    const entry = {
+      id: partnerModalMode === 'edit' && editingPartnerId ? editingPartnerId : Date.now(),
+      name: partnerFormData.name.trim(),
+      tagline: partnerFormData.tagline.trim(),
+      logo: partnerFormData.logo.trim(),
+      website: normalizedWebsite,
+      active: partnerFormData.active !== false
+    };
+
+    let updated;
+    if (partnerModalMode === 'edit') {
+      updated = partners.map((p) => (p.id === editingPartnerId ? entry : p));
+    } else {
+      updated = [entry, ...partners];
+    }
+
+    setPartners(updated);
+    setIsPartnerModalOpen(false);
+    setPartnersCloudState('syncing');
+    const result = await saveActivePartners(updated);
+    setPartnersCloudState(result.cloudSaved ? 'synced' : 'local');
+    showToast(
+      result.cloudSaved
+        ? `${partnerModalMode === 'add' ? 'Added' : 'Updated'} "${entry.name}" • Cloud Synced`
+        : `${partnerModalMode === 'add' ? 'Added' : 'Updated'} "${entry.name}" locally only`,
+      result.cloudSaved ? 'success' : 'warning'
+    );
+  };
+
+  const handleDeletePartner = async (id, name) => {
+    if (!window.confirm(`Remove partner "${name}" from the homepage carousel?`)) return;
+    const updated = partners.filter((p) => p.id !== id);
+    setPartners(updated);
+    setPartnersCloudState('syncing');
+    const result = await saveActivePartners(updated);
+    setPartnersCloudState(result.cloudSaved ? 'synced' : 'local');
+    showToast(
+      result.cloudSaved ? `Removed "${name}" • Cloud Synced` : `Removed "${name}" locally only`,
+      result.cloudSaved ? 'success' : 'warning'
+    );
+  };
+
+  const handleMovePartner = async (index, direction) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= partners.length) return;
+    const updated = [...partners];
+    const [item] = updated.splice(index, 1);
+    updated.splice(nextIndex, 0, item);
+    setPartners(updated);
+    setPartnersCloudState('syncing');
+    const result = await saveActivePartners(updated);
+    setPartnersCloudState(result.cloudSaved ? 'synced' : 'local');
+    showToast(
+      result.cloudSaved
+        ? `Reordered "${item.name}" • Homepage carousel updated`
+        : `Reordered "${item.name}" locally — carousel order updated on this device`,
+      result.cloudSaved ? 'success' : 'warning'
+    );
+  };
+
+  const handleResetPartners = async () => {
+    if (!window.confirm('Reset all partners to the dummy curated defaults?')) return;
+    setPartnersCloudState('syncing');
+    const result = await resetActivePartners();
+    setPartners(initialPartners);
+    setPartnersCloudState(result.cloudReset ? 'synced' : 'local');
+    showToast(result.cloudReset ? 'Restored default partners (Cloud & Local)' : 'Restored default partners');
   };
 
   return (
@@ -1973,6 +2216,31 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                       activeTab === 'blogs' ? 'bg-amber-400 text-stone-950' : 'bg-stone-100 text-stone-700'
                     }`}>
                       {articles.length}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Panel Tab: Partners CMS */}
+                <button
+                  onClick={() => {
+                    setActiveTab('partners');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === 'partners'
+                      ? 'bg-stone-950 text-white shadow-sm font-bold'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Handshake className="w-4 h-4" />
+                    <span>Partners</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeTab === 'partners' ? 'bg-amber-400 text-stone-950' : 'bg-stone-100 text-stone-700'
+                    }`}>
+                      {partners.length}
                     </span>
                   </div>
                 </button>
@@ -2133,11 +2401,13 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                       ? 'Cards' 
                       : activeTab === 'blogs'
                         ? 'Journal CMS'
-                        : activeTab === 'inquiries' 
-                          ? 'Inquiries' 
-                          : activeTab === 'emails' 
-                            ? 'Emails' 
-                            : 'Newsletter'}
+                        : activeTab === 'partners'
+                          ? 'Partners'
+                          : activeTab === 'inquiries' 
+                            ? 'Inquiries' 
+                            : activeTab === 'emails' 
+                              ? 'Emails' 
+                              : 'Newsletter'}
               </span>
             </div>
           </div>
@@ -4309,6 +4579,193 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
             </div>
           )}
 
+          {/* ─── PARTNERS CMS ───────────────────────────────────────────────── */}
+          {activeTab === 'partners' && !isSalesRole && (
+            <div className="space-y-5 animate-in fade-in duration-300">
+              <div className="bg-white rounded-3xl border border-stone-200/90 shadow-sm p-5 sm:p-6 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                          partnersCloudState === 'local'
+                            ? 'bg-rose-50 text-rose-800 border-rose-200'
+                            : 'bg-stone-50 text-stone-600 border-stone-200'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          partnersCloudState === 'synced' ? 'bg-emerald-500 animate-pulse' : partnersCloudState === 'syncing' ? 'bg-amber-400 animate-spin' : 'bg-rose-500'
+                        }`} />
+                        <span>
+                          {partnersCloudState === 'synced' ? 'Synced to Cloud (Supabase)' : partnersCloudState === 'syncing' ? 'Syncing...' : 'Local Only'}
+                        </span>
+                      </div>
+                    </div>
+                    <h2 className="font-editorial text-xl sm:text-2xl font-bold tracking-tight text-stone-950">
+                      Partners • Homepage Carousel
+                    </h2>
+                    <p className="text-xs text-stone-600 mt-1 max-w-2xl">
+                      Manage brand partners shown in the left-to-right carousel under the homepage stats ribbon. Changes sync to the `partners` DB table and catalog storage.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleResetPartners}
+                      className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-stone-200"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-stone-500" />
+                      <span>Reset Defaults</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddPartner}
+                      className="px-4 py-2 rounded-xl bg-stone-950 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-md cursor-pointer hover:scale-[1.02]"
+                    >
+                      <Plus className="w-4 h-4 text-amber-400" />
+                      <span>Add Partner</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-stone-100">
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Total Partners</span>
+                    <span className="font-editorial text-2xl font-bold text-stone-950 mt-0.5 block">{partners.length}</span>
+                  </div>
+                  <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/70">
+                    <span className="text-[10px] text-stone-500 uppercase font-bold tracking-wider block">Visible on Site</span>
+                    <span className="font-editorial text-2xl font-bold text-emerald-800 mt-0.5 block">
+                      {partners.filter((p) => p.active !== false).length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 border border-stone-200/90 shadow-sm">
+                <div className="relative max-w-md">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={partnerSearch}
+                    onChange={(e) => setPartnerSearch(e.target.value)}
+                    placeholder="Search partners by name or tagline..."
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-stone-50 border border-stone-200 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-950 focus:bg-white transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {partners
+                  .filter((p) => {
+                    const q = partnerSearch.toLowerCase().trim();
+                    if (!q) return true;
+                    return (
+                      (p.name || '').toLowerCase().includes(q) ||
+                      (p.tagline || '').toLowerCase().includes(q) ||
+                      (p.website || '').toLowerCase().includes(q)
+                    );
+                  })
+                  .map((partner) => {
+                    const realIdx = partners.findIndex((p) => p.id === partner.id);
+                    return (
+                    <div
+                      key={partner.id}
+                      className="bg-white rounded-2xl border border-stone-200/90 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-4"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {partner.logo ? (
+                          <img
+                            src={partner.logo}
+                            alt={partner.name}
+                            className="w-12 h-12 rounded-xl object-contain bg-stone-50 border border-stone-100 p-1.5 shrink-0"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-700 font-bold shrink-0">
+                            {(partner.name || 'P').charAt(0)}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-bold text-stone-950 truncate">{partner.name}</h3>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                              partner.active !== false
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                : 'bg-stone-100 text-stone-500 border border-stone-200'
+                            }`}>
+                              {partner.active !== false ? 'Active' : 'Hidden'}
+                            </span>
+                          </div>
+                          {partner.tagline && (
+                            <p className="text-xs text-stone-500 mt-0.5 truncate">{partner.tagline}</p>
+                          )}
+                          {partner.website && (
+                            <a
+                              href={partner.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-amber-800 hover:underline font-medium inline-flex items-center gap-1 mt-1"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              {partner.website.replace(/^https?:\/\//, '')}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          disabled={realIdx <= 0}
+                          onClick={() => handleMovePartner(realIdx, -1)}
+                          className="p-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30 cursor-pointer"
+                          title="Move up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={realIdx < 0 || realIdx >= partners.length - 1}
+                          onClick={() => handleMovePartner(realIdx, 1)}
+                          className="p-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30 cursor-pointer"
+                          title="Move down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditPartner(partner)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePartner(partner.id, partner.name)}
+                          className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer"
+                          title="Delete partner"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    );
+                  })}
+
+                {partners.length === 0 && (
+                  <div className="p-12 text-center rounded-3xl bg-white border border-stone-200/90 space-y-3">
+                    <Handshake className="w-8 h-8 text-stone-400 mx-auto" />
+                    <h3 className="font-editorial text-lg font-bold text-stone-900">No Partners Yet</h3>
+                    <p className="text-xs text-stone-500">Click “Add Partner” to populate the homepage carousel.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -4877,6 +5334,82 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 />
               </div>
 
+              {/* External / Useful Links */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
+                      <span>External Links</span>
+                    </label>
+                    <p className="text-[10px] text-stone-400 mt-0.5">
+                      Optional outbound links shown on the destination detail page.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({
+                      ...formData,
+                      externalLinks: [...(formData.externalLinks || []), { label: '', url: '' }]
+                    })}
+                    className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-stone-100 hover:bg-stone-200 text-stone-800 inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add Link
+                  </button>
+                </div>
+
+                {(formData.externalLinks || []).length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-[11px] text-stone-500">
+                    No external links yet. Click <strong>Add Link</strong> to attach resources for this itinerary.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {(formData.externalLinks || []).map((link, idx) => (
+                      <div
+                        key={`dest-link-${idx}`}
+                        className="grid grid-cols-1 sm:grid-cols-[1fr_1.4fr_auto] gap-2 items-start rounded-2xl border border-stone-200 bg-stone-50/80 p-3"
+                      >
+                        <input
+                          type="text"
+                          value={link.label || ''}
+                          onChange={(e) => {
+                            const next = [...(formData.externalLinks || [])];
+                            next[idx] = { ...next[idx], label: e.target.value };
+                            setFormData({ ...formData, externalLinks: next });
+                          }}
+                          placeholder="Link title (e.g. Hotel brochure)"
+                          className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                        />
+                        <input
+                          type="url"
+                          value={link.url || ''}
+                          onChange={(e) => {
+                            const next = [...(formData.externalLinks || [])];
+                            next[idx] = { ...next[idx], url: e.target.value };
+                            setFormData({ ...formData, externalLinks: next });
+                          }}
+                          placeholder="https://example.com/resource"
+                          className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = (formData.externalLinks || []).filter((_, i) => i !== idx);
+                            setFormData({ ...formData, externalLinks: next });
+                          }}
+                          className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 cursor-pointer self-center"
+                          title="Remove link"
+                          aria-label="Remove link"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="pt-4 border-t border-stone-200 flex items-center justify-between">
                 <button
@@ -5314,6 +5847,82 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 />
               </div>
 
+              {/* Row 8: External / Useful Links */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
+                      <span>External Links</span>
+                    </label>
+                    <p className="text-[10px] text-stone-400 mt-0.5">
+                      Optional outbound links (guides, bookings, references) shown on the story page.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBlogFormData({
+                      ...blogFormData,
+                      externalLinks: [...(blogFormData.externalLinks || []), { label: '', url: '' }]
+                    })}
+                    className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-stone-100 hover:bg-stone-200 text-stone-800 inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add Link
+                  </button>
+                </div>
+
+                {(blogFormData.externalLinks || []).length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-[11px] text-stone-500">
+                    No external links yet. Click <strong>Add Link</strong> to attach resources for this story.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {(blogFormData.externalLinks || []).map((link, idx) => (
+                      <div
+                        key={`blog-link-${idx}`}
+                        className="grid grid-cols-1 sm:grid-cols-[1fr_1.4fr_auto] gap-2 items-start rounded-2xl border border-stone-200 bg-stone-50/80 p-3"
+                      >
+                        <input
+                          type="text"
+                          value={link.label || ''}
+                          onChange={(e) => {
+                            const next = [...(blogFormData.externalLinks || [])];
+                            next[idx] = { ...next[idx], label: e.target.value };
+                            setBlogFormData({ ...blogFormData, externalLinks: next });
+                          }}
+                          placeholder="Link title (e.g. Official Visa Guide)"
+                          className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900"
+                        />
+                        <input
+                          type="url"
+                          value={link.url || ''}
+                          onChange={(e) => {
+                            const next = [...(blogFormData.externalLinks || [])];
+                            next[idx] = { ...next[idx], url: e.target.value };
+                            setBlogFormData({ ...blogFormData, externalLinks: next });
+                          }}
+                          placeholder="https://example.com/resource"
+                          className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-stone-900 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = (blogFormData.externalLinks || []).filter((_, i) => i !== idx);
+                            setBlogFormData({ ...blogFormData, externalLinks: next });
+                          }}
+                          className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 cursor-pointer self-center"
+                          title="Remove link"
+                          aria-label="Remove link"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="pt-4 border-t border-stone-200 flex items-center justify-between">
                 <button
@@ -5332,6 +5941,209 @@ export default function AdminDashboard({ onExit, onLogout, userRole = 'admin', u
                 </button>
               </div>
 
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── PARTNER ADD / EDIT MODAL ───────────────────────────────────────── */}
+      {isPartnerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-6 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl sm:rounded-[28px] shadow-2xl border border-stone-200/90 overflow-hidden max-h-[94vh] flex flex-col">
+            <div className="px-5 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50/70">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0">
+                  <Handshake className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-stone-950 truncate">
+                    {partnerModalMode === 'add' ? 'Add Partner' : 'Edit Partner'}
+                  </h3>
+                  <p className="text-xs text-stone-500">Shown in the homepage left-to-right partners carousel</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPartnerModalOpen(false)}
+                className="p-2 rounded-xl hover:bg-stone-200/70 text-stone-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePartner} className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5 block">Partner Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={partnerFormData.name}
+                  onChange={(e) => setPartnerFormData({ ...partnerFormData, name: e.target.value })}
+                  placeholder="e.g. Taj Hotels"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-stone-900 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5 block">Tagline</label>
+                <input
+                  type="text"
+                  value={partnerFormData.tagline}
+                  onChange={(e) => setPartnerFormData({ ...partnerFormData, tagline: e.target.value })}
+                  placeholder="e.g. Heritage Luxury Stays"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-stone-900 font-medium"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
+                    Partner Logo
+                  </label>
+                  <div className="inline-flex items-center p-0.5 rounded-xl bg-stone-100 border border-stone-200 text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={() => setPartnerLogoInputMode('upload')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        partnerLogoInputMode === 'upload'
+                          ? 'bg-stone-900 text-white shadow-xs font-semibold'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPartnerLogoInputMode('url')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        partnerLogoInputMode === 'url'
+                          ? 'bg-stone-900 text-white shadow-xs font-semibold'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
+                      <span>Logo URL</span>
+                    </button>
+                  </div>
+                </div>
+
+                {partnerLogoInputMode === 'upload' ? (
+                  <label
+                    htmlFor="partner-logo-upload"
+                    className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
+                      partnerFormData.logo
+                        ? 'border-emerald-300 bg-emerald-50/40 hover:bg-emerald-50/70'
+                        : 'border-stone-300 hover:border-stone-500 bg-stone-50/70 hover:bg-stone-50'
+                    }`}
+                  >
+                    <input
+                      id="partner-logo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePartnerLogoFileUpload}
+                      className="hidden"
+                      disabled={isUploadingPartnerLogo}
+                    />
+                    {isUploadingPartnerLogo ? (
+                      <div className="flex items-center gap-2 py-2">
+                        <RefreshCw className="w-5 h-5 text-stone-600 animate-spin" />
+                        <span className="text-xs font-semibold text-stone-700">Uploading logo...</span>
+                      </div>
+                    ) : partnerFormData.logo ? (
+                      <div className="flex items-center justify-between w-full px-1 gap-3">
+                        <div className="flex items-center gap-3 text-left min-w-0">
+                          <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-stone-200 shrink-0 flex items-center justify-center p-1.5">
+                            <img src={partnerFormData.logo} alt="Logo preview" className="max-w-full max-h-full object-contain" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5 text-emerald-600" /> Logo attached
+                            </span>
+                            <span className="text-[10px] text-stone-500">Click to change from device</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPartnerFormData((prev) => ({ ...prev, logo: '' }));
+                          }}
+                          className="p-1.5 rounded-lg bg-white border border-stone-200 text-stone-500 hover:text-rose-600 hover:border-rose-200 cursor-pointer shrink-0"
+                          title="Remove logo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-2 space-y-1.5">
+                        <UploadCloud className="w-6 h-6 text-stone-400 mx-auto" />
+                        <p className="text-xs font-semibold text-stone-700">Upload logo from device</p>
+                        <p className="text-[10px] text-stone-500">PNG, JPG, WebP, or SVG</p>
+                      </div>
+                    )}
+                  </label>
+                ) : (
+                  <div>
+                    <input
+                      type="url"
+                      value={partnerFormData.logo}
+                      onChange={(e) => setPartnerFormData({ ...partnerFormData, logo: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-stone-900 font-mono"
+                    />
+                    {partnerFormData.logo && (
+                      <div className="mt-2 flex items-center gap-3">
+                        <img
+                          src={partnerFormData.logo}
+                          alt="Logo preview"
+                          className="w-12 h-12 rounded-xl object-contain bg-stone-50 border border-stone-100 p-1.5"
+                          onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
+                        />
+                        <span className="text-[11px] text-stone-500">Logo preview</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5 block">Website URL</label>
+                <input
+                  type="url"
+                  value={partnerFormData.website}
+                  onChange={(e) => setPartnerFormData({ ...partnerFormData, website: e.target.value })}
+                  placeholder="https://www.partner.com"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-stone-900 font-mono"
+                />
+              </div>
+
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={partnerFormData.active !== false}
+                  onChange={(e) => setPartnerFormData({ ...partnerFormData, active: e.target.checked })}
+                  className="w-4 h-4 rounded border-stone-300 text-stone-950 focus:ring-stone-900"
+                />
+                <span className="text-xs font-semibold text-stone-800">Show on homepage carousel</span>
+              </label>
+
+              <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setIsPartnerModalOpen(false)}
+                  className="px-5 py-2.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-950 transition-colors cursor-pointer"
+                >
+                  Discard
+                </button>
+                <button
+                  type="submit"
+                  className="px-7 py-3 rounded-full text-xs font-bold uppercase tracking-wider bg-stone-950 text-white hover:bg-stone-800 transition-all shadow-lg cursor-pointer hover:scale-[1.02]"
+                >
+                  {partnerModalMode === 'add' ? 'Add Partner' : 'Save Changes'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

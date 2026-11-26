@@ -37,7 +37,28 @@ function isMissingTableError(error) {
   );
 }
 
+function normalizeExternalLinks(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') {
+        const url = item.trim();
+        if (!url) return null;
+        const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+        return { label: url, url: href };
+      }
+      if (!item || typeof item !== 'object') return null;
+      const url = String(item.url || item.href || '').trim();
+      if (!url) return null;
+      const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+      const label = String(item.label || item.title || url).trim() || href;
+      return { label, url: href };
+    })
+    .filter(Boolean);
+}
+
 function normalizeRowToTrip(row) {
+  const externalLinks = normalizeExternalLinks(row.external_links || row.externalLinks);
   return {
     id: row.id,
     title: row.title,
@@ -54,6 +75,7 @@ function normalizeRowToTrip(row) {
     imageAlt: row.image_alt || '',
     description: row.description || '',
     highlights: Array.isArray(row.highlights) ? row.highlights : [],
+    externalLinks,
     status: row.status || 'Live',
     ...(row.slug ? { slug: row.slug } : {}),
     ...(row.map_x !== null && row.map_x !== undefined ? { mapX: row.map_x } : {}),
@@ -85,6 +107,7 @@ function normalizeTripToRow(trip, index) {
     image_alt: trip.imageAlt || '',
     description: trip.description || '',
     highlights: Array.isArray(trip.highlights) ? trip.highlights : [],
+    external_links: normalizeExternalLinks(trip.externalLinks || trip.external_links),
     status: trip.status || 'Live',
     slug: trip.slug || null,
     map_x: trip.mapX !== undefined && trip.mapX !== '' ? parseInt(trip.mapX, 10) : null,
@@ -219,9 +242,16 @@ export default async function handler(req, res) {
 
         const rows = payloadDestinations.map(normalizeTripToRow);
         let { error: upsertErr } = await supabase.from('destinations').insert(rows);
-        if (upsertErr && (String(upsertErr.message || '').includes('translations') || upsertErr.code === 'PGRST204')) {
-          const rowsWithoutTranslations = rows.map(({ translations: _t, ...rest }) => rest);
-          const retry = await supabase.from('destinations').insert(rowsWithoutTranslations);
+        if (upsertErr) {
+          const msg = String(upsertErr.message || '');
+          let retryRows = rows;
+          if (msg.includes('translations') || upsertErr.code === 'PGRST204') {
+            retryRows = retryRows.map(({ translations: _t, ...rest }) => rest);
+          }
+          if (msg.includes('external_links') || msg.includes('externalLinks')) {
+            retryRows = retryRows.map(({ external_links, ...rest }) => rest);
+          }
+          const retry = await supabase.from('destinations').insert(retryRows);
           upsertErr = retry.error;
         }
         if (upsertErr) throw upsertErr;

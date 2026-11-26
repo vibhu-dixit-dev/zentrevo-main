@@ -264,6 +264,22 @@ export default async function handler(req, res) {
         };
 
         const paragraphs = Array.isArray(article.content) ? article.content : [article.content || description];
+        const externalLinks = Array.isArray(article.externalLinks)
+          ? article.externalLinks
+          : (Array.isArray(article.external_links) ? article.external_links : []);
+        const linksHtml = externalLinks.length > 0
+          ? `<section style="margin-top: 28px; padding: 18px; border: 1px solid #e7e5e4; border-radius: 14px;">
+              <h2 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #b45309; margin: 0 0 12px;">Useful Links</h2>
+              <ul style="margin: 0; padding-left: 18px;">
+                ${externalLinks.map((l) => {
+                  const href = escapeHtml(l?.url || l?.href || '');
+                  if (!href) return '';
+                  const label = escapeHtml(l?.label || l?.title || l?.url || '');
+                  return `<li style="margin-bottom: 8px;"><a href="${href}" rel="noopener noreferrer" target="_blank" style="color: #1c1917; font-weight: 600;">${label}</a></li>`;
+                }).join('')}
+              </ul>
+            </section>`
+          : '';
         const bodyHtml = `
           <article class="ssr-article max-w-4xl mx-auto px-6 py-12" style="font-family: system-ui, sans-serif;">
             <header class="mb-8">
@@ -276,6 +292,7 @@ export default async function handler(req, res) {
             <div class="ssr-content" style="font-size: 16px; line-height: 1.75; color: #292524;">
               ${paragraphs.map(p => `<p style="margin-bottom: 16px;">${escapeHtml(p)}</p>`).join('\n')}
             </div>
+            ${linksHtml}
           </article>
         `;
 
@@ -412,6 +429,22 @@ export default async function handler(req, res) {
         };
 
         const highlights = Array.isArray(dest.highlights) ? dest.highlights : [];
+        const externalLinks = Array.isArray(dest.externalLinks)
+          ? dest.externalLinks
+          : (Array.isArray(dest.external_links) ? dest.external_links : []);
+        const linksHtml = externalLinks.length > 0
+          ? `<section style="margin-top: 28px; padding: 18px; border: 1px solid #e7e5e4; border-radius: 14px;">
+              <h2 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #b45309; margin: 0 0 12px;">Useful Links</h2>
+              <ul style="margin: 0; padding-left: 18px;">
+                ${externalLinks.map((l) => {
+                  const href = escapeHtml(l?.url || l?.href || '');
+                  if (!href) return '';
+                  const label = escapeHtml(l?.label || l?.title || l?.url || '');
+                  return `<li style="margin-bottom: 8px;"><a href="${href}" rel="noopener noreferrer" target="_blank" style="color: #1c1917; font-weight: 600;">${label}</a></li>`;
+                }).join('')}
+              </ul>
+            </section>`
+          : '';
         const bodyHtml = `
           <div class="ssr-destination max-w-4xl mx-auto px-6 py-12" style="font-family: system-ui, sans-serif;">
             <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #b45309; font-weight: 700;">Zentrevo Curated Expedition &bull; ${escapeHtml(dest.location || 'Global')}</span>
@@ -425,6 +458,7 @@ export default async function handler(req, res) {
                 ${highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('\n')}
               </ul>
             ` : ''}
+            ${linksHtml}
           </div>
         `;
 
